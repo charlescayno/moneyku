@@ -22,7 +22,7 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getDatabase(firebaseApp);
-const DB_PATH = "money_joint_v1"; // shared by both phones
+const DB_PATH = "money_single_v1"; // fresh database state
 const dbRef = ref(db, DB_PATH);
 
 // =============================
@@ -40,8 +40,7 @@ const MONTHS_SHORT = [
 // owner meta
 const OWNERS = {
   charlie: { label: "Charles'", who: "charlie", accent: "blue", text: "text-blue-400", ring: "border-blue-500/20", grad: "from-blue-500 to-indigo-600" },
-  karla: { label: "Ynah's", who: "karla", accent: "rose", text: "text-rose-400", ring: "border-rose-500/20", grad: "from-rose-500 to-pink-600" },
-  joint: { label: "Joint", who: "joint", accent: "indigo", text: "text-indigo-400", ring: "border-indigo-500/20", grad: "from-indigo-500 to-violet-600" },
+  debt: { label: "Debt Tracker", who: "debt", accent: "rose", text: "text-rose-400", ring: "border-rose-500/20", grad: "from-rose-500 to-pink-600" },
 };
 
 // =============================
@@ -122,7 +121,7 @@ function normalize(d) {
   d.accounts = Array.isArray(d.accounts) ? d.accounts : (d.accounts ? Object.values(d.accounts) : []);
   d.startMonth = d.startMonth || currentKey();
   d.items = d.items || {};
-  for (const who of ["charlie", "karla"]) {
+  for (const who of ["charlie", "debt"]) {
     d.items[who] = d.items[who] || {};
     for (const kind of ["income", "expenses"]) {
       const v = d.items[who][kind];
@@ -196,23 +195,22 @@ function itemAmts(it, k) {
 }
 
 function monthTotals(k) {
-  let cI = 0, kI = 0, cE = 0, kE = 0, incRecv = 0, expPaid = 0;
+  let cI = 0, dI = 0, cE = 0, dE = 0, incRecv = 0, expPaid = 0, debtRecv = 0, debtPaid = 0;
   for (const it of getItems("charlie", "income")) if (itemActiveIn(it, k)) { const r = itemAmts(it, k); cI += r.total; incRecv += r.paid; }
-  for (const it of getItems("karla", "income")) if (itemActiveIn(it, k)) { const r = itemAmts(it, k); kI += r.total; incRecv += r.paid; }
+  for (const it of getItems("debt", "income")) if (itemActiveIn(it, k)) { const r = itemAmts(it, k); dI += r.total; debtRecv += r.paid; }
   for (const it of getItems("charlie", "expenses")) if (itemActiveIn(it, k)) { const r = itemAmts(it, k); cE += r.total; expPaid += r.paid; }
-  for (const it of getItems("karla", "expenses")) if (itemActiveIn(it, k)) { const r = itemAmts(it, k); kE += r.total; expPaid += r.paid; }
-  const income = cI + kI, expenses = cE + kE, toPay = expenses - expPaid;
+  for (const it of getItems("debt", "expenses")) if (itemActiveIn(it, k)) { const r = itemAmts(it, k); dE += r.total; debtPaid += r.paid; }
+  const income = cI, expenses = cE, toPay = expenses - expPaid;
   const toReceive = income - incRecv;
+  const debtToReceive = dI - debtRecv;
+  const debtToPay = dE - debtPaid;
   // Projected math excludes already-paid expenses (only what you still OWE reduces funds).
   return {
-    cI, kI, cE, kE, income, expenses, savings: income - toPay,
+    cI, dI, cE, dE, income, expenses, savings: income - toPay,
     incomeReceived: incRecv, expensePaid: expPaid,
     toReceive, toPay,
-    // Net change to funds still pending this month. For the CURRENT month, income
-    // already received + expenses already paid are baked into accountsTotal(), so
-    // only what's still to receive/pay moves the balance — using `savings` here would
-    // double-count already-received income. For future months this equals `savings`.
-    netPending: toReceive - toPay,
+    // Net change to funds still pending this month.
+    netPending: toReceive - toPay + debtToReceive - debtToPay,
   };
 }
 
@@ -232,7 +230,7 @@ function reconcileAutoPaid() {
   const curK = currentKey();
   const inTimeline = timeline().includes(curK);
   const today = new Date().getDate();
-  for (const who of ["charlie", "karla"]) {
+  for (const who of ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
       if (it.dueDay == null) {
         const d = parseDueDay(it.name);
@@ -252,7 +250,7 @@ function reconcileAutoPaid() {
 
 function allInstallments() {
   const out = [];
-  for (const who of ["charlie", "karla"]) {
+  for (const who of ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
       if (it.recurring && it.end) out.push({ ...it, who });
     }
@@ -526,14 +524,14 @@ function personSectionHtml(who) {
     <div class="p-3 space-y-3">
       <div>
         <div class="flex items-center justify-between px-3 mb-1">
-          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Income</p>
+          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
           <button onclick="openItemModal('${who}','income',null)" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
         </div>
         <div class="space-y-0.5">${incHtml}</div>
       </div>
       <div class="border-t border-white/[0.04] pt-3">
         <div class="flex items-center justify-between px-3 mb-1">
-          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Expenses</p>
+          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
           <button onclick="openItemModal('${who}','expenses',null)" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
         </div>
         <div class="space-y-0.5">${expHtml}</div>
@@ -611,7 +609,7 @@ const BANK_DOMAINS = {
 
 function acctIconHtml(a) {
   const bank = bankIconFor(a.name);
-  const ownerKey = a.owner === "karla" ? "karla" : "charlie";
+  const ownerKey = "charlie";
   const o = OWNERS[ownerKey] || OWNERS.charlie;
   const letter = escapeHtml((a.name || "?").trim().charAt(0).toUpperCase() || "?");
   const inner = bank
@@ -646,8 +644,8 @@ function acctGroupHtml(g) {
     : `<span class="text-lg font-black text-white">${letter}</span>`;
   const bg = bank ? "" : "bg-gradient-to-br from-indigo-500 to-violet-600";
   const subs = g.items.map((a) => {
-    const o = OWNERS[a.owner] || OWNERS.charlie;
-    const ok = a.owner === "karla" ? "karla" : "charlie";
+    const o = OWNERS.charlie;
+    const ok = "charlie";
     return `<div onclick="openAccountModal('${a.id}')" class="item-row flex items-center gap-2 py-1.5 pl-2 rounded-lg cursor-pointer">
       <div class="w-5 h-5 rounded-full bg-gradient-to-br ${o.grad} flex items-center justify-center flex-shrink-0 ring-1 ring-white/20">
         <span class="text-[10px] font-black text-white">${o.label.charAt(0)}</span>
@@ -740,7 +738,7 @@ function renderBudget() {
     summary +
     accountsCardHtml() +
     personSectionHtml("charlie") +
-    personSectionHtml("karla");
+    personSectionHtml("debt");
 }
 
 // Installments + projection live in the "More" sheet (header insights button), not the main page.
@@ -903,13 +901,16 @@ window.openItemModal = function (who, kind, id) {
   const amount = it ? amountIn(it, selectedKey) : "";
   const settledNow = it ? isPaid(it.id, selectedKey) : false;
 
-  const title = isNew ? `Add ${kind === "income" ? "Income" : "Expense"}` : "Edit";
+  let title = isNew ? `Add ${kind === "income" ? "Income" : "Expense"}` : "Edit";
+  if (who === "debt" && isNew) {
+    title = kind === "income" ? "Add Person (They owe me)" : "Add Person (I owe them)";
+  }
   $("modal-title").textContent = title;
   $("modal-title").className = `text-2xl font-black uppercase tracking-tight ${o.text}`;
 
   const kids = it ? getKids(it) : [];
   let body = "";
-  body += inputBlock(kind === "income" ? "Source" : "Name", "f-name", name, "text", 'placeholder="e.g. Rent"');
+  body += inputBlock(kind === "income" ? "Source" : (who === "debt" ? "Name" : "Name"), "f-name", name, "text", 'placeholder="e.g. Rent"');
   if (kids.length) {
     body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (₱)</label>
       <div class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-black text-slate-300">${peso(itemTotal(it, selectedKey))} <span class="text-[11px] font-bold text-slate-500">· sum of ${kids.length} sub-expenses</span></div></div>`;
@@ -1022,7 +1023,7 @@ window.saveChildAndAddAnother = async function () {
 
 // Locate a sub-expense (child) by id, returning it with its parent + owner.
 function findChildById(id) {
-  for (const who of ["charlie", "karla"]) {
+  for (const who of ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
       const c = getKids(it).find((x) => x.id === id);
       if (c) return { c, parent: it, who };
@@ -1122,14 +1123,9 @@ window.openAccountModal = function (id) {
   $("modal-title").textContent = isNew ? "Add Account" : "Edit Account";
   $("modal-title").className = "text-2xl font-black uppercase tracking-tight text-emerald-400";
 
-  const owner = a ? (a.owner === "joint" ? "charlie" : a.owner || "charlie") : "charlie";
   let body = "";
   body += inputBlock("Account name", "f-name", a ? a.name : "", "text", 'placeholder="e.g. BPI"');
   body += inputBlock("Balance (₱)", "f-amount", a ? a.amount : "", "number", 'inputmode="decimal" placeholder="0"');
-  body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Owner</label>
-    <div class="grid grid-cols-2 gap-2" id="f-owner" data-val="${owner}">
-      ${["charlie", "karla"].map((w) => `<button type="button" onclick="pickOwner(this,'${w}')" class="py-3 rounded-xl font-bold text-xs ${w === owner ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${OWNERS[w].label}</button>`).join("")}
-    </div></div>`;
   $("modal-body").innerHTML = body;
 
   const delBtn = $("delete-btn");
@@ -1168,7 +1164,7 @@ window.saveModal = async function () {
 
   if (activeEdit.kind === "account") {
     if (!name) return toast("Name required", "error");
-    const owner = $("f-owner").dataset.val;
+    const owner = "charlie";
     if (activeEdit.id) {
       const a = appData.accounts.find((x) => x.id === activeEdit.id);
       if (a) { a.name = name; a.amount = amount; a.owner = owner; }
@@ -1273,7 +1269,7 @@ window.togglePaidQuick = async function (event, id, kind) {
 // When a sub-expense is toggled, update its parent's "X/Y paid" badge + all-paid styling.
 function updateParentBadge(childId) {
   let parent = null;
-  for (const who of ["charlie", "karla"]) {
+  for (const who of ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
       if (getKids(it).some((c) => c.id === childId)) { parent = it; break; }
     }
@@ -1296,7 +1292,7 @@ function updateParentBadge(childId) {
 }
 
 function findItemById(id) {
-  for (const who of ["charlie", "karla"]) {
+  for (const who of ["charlie", "debt"]) {
     for (const kind of ["income", "expenses"]) {
       const it = getItems(who, kind).find((x) => x.id === id);
       if (it) return it;
