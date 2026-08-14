@@ -431,7 +431,7 @@ function itemCategory(it) {
   return 1;
 }
 const CATEGORY_LABELS = ["Auto-pay", "Recurring", "Installments", "One-time"];
-const BANK_LABELS = { maribank: "Maribank", gcash: "GCash", bpi: "BPI", metrobank: "Metrobank", bdo: "BDO", unionbank: "UnionBank" };
+const BANK_LABELS = { maribank: "Maribank", gcash: "GCash", bpi: "BPI", metrobank: "Metrobank", bdo: "BDO", unionbank: "UnionBank", securitybank: "Security Bank" };
 
 function sortItems(items) {
   return items
@@ -510,7 +510,9 @@ function personSectionHtml(who) {
   return `<div class="glass-card rounded-2xl overflow-hidden border ${o.ring}">
     <div class="flex items-center justify-between px-5 py-4 bg-gradient-to-r ${o.grad} bg-opacity-10">
       <div class="flex items-center gap-3">
-        <img src="assets/avatar-${who}.jpg" alt="${o.label}" class="w-9 h-9 rounded-xl object-cover ring-2 ring-white/25 flex-shrink-0" />
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br ${o.grad} ring-2 ring-white/25 flex-shrink-0 flex items-center justify-center">
+          <span class="text-sm font-black text-white">${o.label.charAt(0)}</span>
+        </div>
         <div>
           <h3 class="text-sm font-black text-white uppercase tracking-wide">${o.label}</h3>
           <p class="text-[10px] font-bold ${net >= 0 ? "text-emerald-300" : "text-rose-300"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>
@@ -549,6 +551,7 @@ function bankIconFor(name) {
   if (n.includes("metrobank") || n.includes("metro bank")) return "metrobank";
   if (n.includes("bdo")) return "bdo";
   if (n.includes("unionbank") || n.includes("union bank") || n === "ub") return "unionbank";
+  if (n.includes("securitybank") || n.includes("security bank") || n === "secb") return "securitybank";
   return null;
 }
 // Non-bank brand icons (these don't group; they just show on the row).
@@ -596,17 +599,28 @@ function rowIconHtml(name, sz) {
   if (cat) return `<div class="rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-300" style="font-size:${Math.round(sz * 0.62)}px">${cat}</span></div>`;
   return "";
 }
+const BANK_DOMAINS = {
+  maribank: "maribank.ph",
+  gcash: "gcash.com",
+  bpi: "bpi.com.ph",
+  metrobank: "metrobank.com.ph",
+  bdo: "bdo.com.ph",
+  unionbank: "unionbankph.com",
+  securitybank: "securitybank.com"
+};
+
 function acctIconHtml(a) {
   const bank = bankIconFor(a.name);
   const ownerKey = a.owner === "karla" ? "karla" : "charlie";
+  const o = OWNERS[ownerKey] || OWNERS.charlie;
   const letter = escapeHtml((a.name || "?").trim().charAt(0).toUpperCase() || "?");
   const inner = bank
-    ? `<img src="assets/banks/${bank}.png" alt="" class="w-full h-full object-cover" />`
+    ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[bank]}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
     : `<span class="text-lg font-black text-white">${letter}</span>`;
   const bg = bank ? "" : "bg-gradient-to-br from-indigo-500 to-violet-600";
   return `<div class="acct-icon-wrap">
     <div class="acct-icon ${bg}">${inner}</div>
-    <img src="assets/avatar-${ownerKey}.jpg" alt="" class="acct-owner-badge" />
+    <div class="acct-owner-badge flex items-center justify-center bg-gradient-to-br ${o.grad} text-[8px] font-black text-white">${o.label.charAt(0)}</div>
   </div>`;
 }
 
@@ -635,7 +649,9 @@ function acctGroupHtml(g) {
     const o = OWNERS[a.owner] || OWNERS.charlie;
     const ok = a.owner === "karla" ? "karla" : "charlie";
     return `<div onclick="openAccountModal('${a.id}')" class="item-row flex items-center gap-2 py-1.5 pl-2 rounded-lg cursor-pointer">
-      <img src="assets/avatar-${ok}.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0 ring-1 ring-white/20" />
+      <div class="w-5 h-5 rounded-full bg-gradient-to-br ${o.grad} flex items-center justify-center flex-shrink-0 ring-1 ring-white/20">
+        <span class="text-[10px] font-black text-white">${o.label.charAt(0)}</span>
+      </div>
       <span class="text-[10px] font-bold uppercase ${o.text} flex-1">${o.label}</span>
       <span class="text-sm font-black text-slate-100 flex-shrink-0">${peso(a.amount)}</span>
     </div>`;
