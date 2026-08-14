@@ -10,15 +10,14 @@ import {
 // Firebase config (existing project, new joint path)
 // =============================
 const firebaseConfig = {
-  apiKey: "AIzaSyB8ahT56WbEUaGAymsRNNA-DrfZnUnWIwk",
-  authDomain: "test-database-55379.firebaseapp.com",
-  databaseURL:
-    "https://test-database-55379-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "test-database-55379",
-  storageBucket: "test-database-55379.firebasestorage.app",
-  messagingSenderId: "933688602756",
-  appId: "1:933688602756:web:392a3a4ce040cb9d4452d1",
-  measurementId: "G-1LSTC0N3NJ",
+  apiKey: "AIzaSyDZQHg85LuRKsfEHWvS3ygULUYqizN8lOc",
+  authDomain: "moneyku-db.firebaseapp.com",
+  databaseURL: "https://moneyku-db-default-rtdb.firebaseio.com",
+  projectId: "moneyku-db",
+  storageBucket: "moneyku-db.firebasestorage.app",
+  messagingSenderId: "650460099293",
+  appId: "1:650460099293:web:10870c9285d78c49f4a134",
+  measurementId: "G-Y75TFQMGEE",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
