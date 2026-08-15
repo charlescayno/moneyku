@@ -397,6 +397,11 @@ function itemRowHtml(it, k, kind, who, opts = {}) {
   const installment = it.recurring && it.end;
   const dd = dueDayFor(it);
   const tags = [];
+  if (it.paymentMethod === "bpi_platinum") {
+    tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
+  } else if (it.paymentMethod === "cc_other") {
+    tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 Credit Card</span>`);
+  }
   if (installment) tags.push(`<span class="text-[9px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
   else if (it.recurring && dd != null) tags.push(`<span class="text-[9px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
   else if (it.recurring) tags.push(`<span class="text-[9px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
@@ -1058,6 +1063,51 @@ function monthSelect(id, value, includeOngoing, minKey) {
   return opts.join("");
 }
 
+window.updateBpiCcMonth = function () {
+  const method = $("f-paymethod") ? $("f-paymethod").value : "cash";
+  const box = $("bpi-cc-box");
+  if (!box) return;
+
+  if (method !== "bpi_platinum") {
+    box.classList.add("hidden");
+    return;
+  }
+  box.classList.remove("hidden");
+
+  const txDay = parseInt($("f-txday")?.value || "15", 10);
+  const cutoff = parseInt($("f-cutoff")?.value || "14", 10);
+
+  const baseK = selectedKey || currentKey();
+  const { y, m } = keyParts(baseK);
+
+  let cutoffDate = new Date(y, m, cutoff);
+  if (txDay > cutoff) {
+    cutoffDate = new Date(y, m + 1, cutoff);
+  }
+
+  const dueDate = new Date(cutoffDate.getTime());
+  dueDate.setDate(dueDate.getDate() + 20);
+
+  const targetK = mkKey(dueDate.getFullYear(), dueDate.getMonth());
+
+  const startSelect = $("f-start");
+  if (startSelect) {
+    startSelect.value = targetK;
+  }
+
+  const dueDayInput = $("f-dueday");
+  if (dueDayInput) {
+    dueDayInput.value = dueDate.getDate();
+  }
+
+  const hintEl = $("bpi-cc-hint");
+  if (hintEl) {
+    const cutMonth = MONTHS_SHORT[cutoffDate.getMonth()];
+    const dueMonth = MONTHS[dueDate.getMonth()];
+    hintEl.innerHTML = `💡 Charge on ${MONTHS_SHORT[m]} ${ordinal(txDay)} → Statement Cut-off ${cutMonth} ${ordinal(cutoff)} → <b>Placed in ${dueMonth} ${dueDate.getFullYear()} budget</b> (Due on ${MONTHS_SHORT[dueDate.getMonth()]} ${ordinal(dueDate.getDate())}).`;
+  }
+};
+
 window.openItemModal = function (who, kind, id) {
   const list = getItems(who, kind);
   const it = id ? list.find((x) => x.id === id) : null;
@@ -1096,6 +1146,40 @@ window.openItemModal = function (who, kind, id) {
       <span class="absolute top-1 ${recurring ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all"></span>
     </button>
   </div>`;
+
+  // payment method / category (for expenses)
+  const payMethod = it ? (it.paymentMethod || "cash") : "cash";
+  const txDayVal = it ? (it.txDay || 15) : 15;
+  const cutoffDayVal = it ? (it.cutoffDay || 14) : 14;
+
+  if (kind === "expenses") {
+    body += `<div class="space-y-1">
+      <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Payment Method / Category</label>
+      <select id="f-paymethod" onchange="updateBpiCcMonth()" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">
+        <option value="cash" ${payMethod === "cash" ? "selected" : ""}>Cash / Bank / E-Wallet</option>
+        <option value="bpi_platinum" ${payMethod === "bpi_platinum" ? "selected" : ""}>💳 BPI Platinum Rewards Mastercard</option>
+        <option value="cc_other" ${payMethod === "cc_other" ? "selected" : ""}>💳 Other Credit Card</option>
+      </select>
+    </div>`;
+
+    body += `<div id="bpi-cc-box" class="${payMethod === "bpi_platinum" ? "" : "hidden"} p-4 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl space-y-3">
+      <div class="flex items-center gap-2 text-indigo-300 text-xs font-black">
+        <span class="material-icons text-sm">credit_card</span>
+        <span>BPI Credit Card Auto-Scheduling</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-[10px] font-bold uppercase text-slate-400">Charge Day</label>
+          <input type="number" id="f-txday" min="1" max="31" value="${txDayVal}" oninput="updateBpiCcMonth()" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
+        </div>
+        <div>
+          <label class="text-[10px] font-bold uppercase text-slate-400">Cut-off Day</label>
+          <input type="number" id="f-cutoff" min="1" max="31" value="${cutoffDayVal}" oninput="updateBpiCcMonth()" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
+        </div>
+      </div>
+      <div id="bpi-cc-hint" class="text-[11px] text-indigo-200/80 font-medium bg-indigo-900/30 p-2.5 rounded-xl border border-indigo-500/20"></div>
+    </div>`;
+  }
 
   // start month
   body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Starts</label>
@@ -1142,6 +1226,7 @@ window.openItemModal = function (who, kind, id) {
   else { delBtn.classList.remove("hidden"); delBtn.onclick = () => confirmDelete(); }
 
   openModalShell();
+  if (kind === "expenses") updateBpiCcMonth();
 };
 
 // Sub-expense modal (add/edit a child under a parent expense).
@@ -1378,6 +1463,10 @@ window.saveModal = async function () {
   if (ddInput && ddInput.value !== "") { const d = parseInt(ddInput.value, 10); if (d >= 1 && d <= 31) dueDay = d; }
   const list = appData.items[who][type];
 
+  const payMethod = $("f-paymethod") ? $("f-paymethod").value : "cash";
+  const txDay = $("f-txday") ? parseInt($("f-txday").value, 10) : null;
+  const cutoffDay = $("f-cutoff") ? parseInt($("f-cutoff").value, 10) : null;
+
   if (id) {
     const it = list.find((x) => x.id === id);
     if (it) {
@@ -1386,6 +1475,9 @@ window.saveModal = async function () {
       it.start = start;
       it.end = recurring ? end : null;
       it.dueDay = dueDay;
+      it.paymentMethod = payMethod;
+      it.txDay = txDay;
+      it.cutoffDay = cutoffDay;
       const scope = $("f-scope") ? $("f-scope").value : "all";
       if (getKids(it).length) {
         // amount is derived from sub-expenses; leave it.amount untouched
@@ -1405,7 +1497,7 @@ window.saveModal = async function () {
       appData.paid[selectedKey][id] = on;
     }
   } else {
-    list.push({ id: generateId(), name, amount, start, end: recurring ? end : null, recurring, dueDay });
+    list.push({ id: generateId(), name, amount, start, end: recurring ? end : null, recurring, dueDay, paymentMethod: payMethod, txDay, cutoffDay });
   }
   await syncSet();
   closeModal(); renderAll(); toast("Saved");
