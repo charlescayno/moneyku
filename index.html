@@ -54,6 +54,41 @@
       </div>
     </div>
 
+    <!-- LOCK SCREEN -->
+    <div
+      id="lock-screen"
+      class="fixed inset-0 z-[90] bg-slate-900 hidden flex-col items-center justify-center pointer-events-auto"
+    >
+      <div class="w-full max-w-sm px-8 flex flex-col items-center gap-6">
+        <div class="w-20 h-20 rounded-3xl bg-slate-800 flex items-center justify-center border border-slate-700 shadow-xl mb-4">
+          <span class="material-icons text-4xl text-slate-400">lock</span>
+        </div>
+        <div class="text-center w-full">
+          <h2 class="text-2xl font-black text-white mb-2 tracking-tight">Vault Locked</h2>
+          <p class="text-slate-400 text-sm font-medium mb-8">Enter your secure passphrase to view dashboard</p>
+        </div>
+        <div class="w-full relative">
+          <input 
+            type="password" 
+            id="lock-password" 
+            class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl py-4 pl-5 pr-14 text-center text-xl font-bold tracking-widest text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
+          <button id="lock-toggle-btn" onclick="toggleLockPassword()" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer" type="button">
+            <span class="material-icons" style="font-size: 20px" id="lock-toggle-icon">visibility</span>
+          </button>
+        </div>
+        <button 
+          onclick="unlockApp()" 
+          class="w-full mt-2 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-sm transition-colors"
+        >
+          Unlock
+        </button>
+        <p id="lock-error" class="h-4 text-xs font-bold text-rose-400 mt-2 opacity-0 transition-opacity">Incorrect password</p>
+      </div>
+    </div>
+
     <!-- MONEY FALLING CANVAS OVERLAY -->
     <canvas
       id="money-canvas"
@@ -282,6 +317,6 @@
       <span id="toast-text" class="text-sm font-bold text-white">Done!</span>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=20260815_7"></script>
   </body>
 </html>

@@ -1732,14 +1732,53 @@ function initParticles() {
 // =============================
 // Boot
 // =============================
+window.unlockApp = function () {
+  const pwd = $("lock-password").value.toLowerCase();
+  if (pwd === "lokomoko") {
+    const lock = $("lock-screen");
+    const app = $("app");
+    lock.style.opacity = "0";
+    lock.style.pointerEvents = "none";
+    setTimeout(() => { lock.classList.remove("flex"); lock.classList.add("hidden"); }, 700);
+    app.style.opacity = "1";
+    initParticles();
+  } else {
+    const err = $("lock-error");
+    err.style.opacity = "1";
+    setTimeout(() => { err.style.opacity = "0"; }, 2000);
+  }
+};
+
+window.toggleLockPassword = function () {
+  const input = $("lock-password");
+  const icon = $("lock-toggle-icon");
+  if (input.type === "password") {
+    input.type = "text";
+    icon.textContent = "visibility_off";
+  } else {
+    input.type = "password";
+    icon.textContent = "visibility";
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const pwdInput = $("lock-password");
+  if (pwdInput) {
+    pwdInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") unlockApp();
+    });
+  }
+});
+
 function revealApp() {
   const intro = $("intro-screen");
-  const app = $("app");
   intro.style.opacity = "0";
   intro.style.pointerEvents = "none";
   setTimeout(() => { intro.style.display = "none"; }, 700);
-  app.style.opacity = "1";
-  initParticles();
+  
+  const lock = $("lock-screen");
+  lock.classList.remove("hidden");
+  lock.classList.add("flex");
 }
 
 function runIntro() {
