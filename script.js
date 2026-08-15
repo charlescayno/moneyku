@@ -500,16 +500,19 @@ function paymentMethodGroupHtml(pm, list, k, kind, who) {
   const total = list.reduce((s, it) => s + amountIn(it, k), 0);
   const subs = sortItems(list).map((it) => itemRowHtml(it, k, kind, who, { hidePaymentTag: true })).join("");
   const label = PM_LABELS[pm] || pm;
-  return `<div class="py-1 mt-1">
-    <div class="flex items-center gap-3 px-3 py-2 bg-indigo-900/10 rounded-xl">
-      <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-        <span class="text-[14px]">💳</span>
+  return `<details open class="py-1 mt-1 group">
+    <summary class="flex justify-between items-center px-3 py-2 bg-indigo-900/10 hover:bg-indigo-900/20 rounded-xl cursor-pointer list-none select-none outline-none">
+      <div class="flex items-center gap-2">
+        <span class="material-icons text-[14px] text-indigo-400 transition-transform group-open:rotate-90">chevron_right</span>
+        <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+          <span class="text-[14px]">💳</span>
+        </div>
+        <p class="text-sm font-black text-indigo-300 flex-1 min-w-0 truncate">${label}</p>
       </div>
-      <p class="text-sm font-black text-indigo-300 flex-1 min-w-0 truncate">${label}</p>
       <p class="text-sm font-black text-indigo-300 flex-shrink-0">${peso(total)}</p>
-    </div>
-    <div class="ml-4 pl-3 border-l border-indigo-700/30 space-y-0.5 mt-1">${subs}</div>
-  </div>`;
+    </summary>
+    <div class="ml-8 pl-3 border-l border-indigo-700/30 space-y-0.5 mt-2">${subs}</div>
+  </details>`;
 }
 
 // A bank owned across items -> one icon + name + total, each item a sub-row (like accounts).
