@@ -598,23 +598,31 @@ function categoryIcon(name) {
   if (/pet|dog|cat|kobe|dudu/.test(n)) return "pets";
   return null;
 }
-// Row icon: brand/bank logo, else a category material-icon tile, else nothing.
-function rowIconHtml(name, sz) {
-  const brand = iconFor(name);
-  if (brand) return `<div class="rounded-lg overflow-hidden flex-shrink-0" style="width:${sz}px;height:${sz}px"><img src="assets/banks/${brand}.png" alt="" class="w-full h-full object-cover" /></div>`;
-  const cat = categoryIcon(name);
-  if (cat) return `<div class="rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-300" style="font-size:${Math.round(sz * 0.62)}px">${cat}</span></div>`;
-  return "";
-}
-const BANK_DOMAINS = {
+const BRAND_DOMAINS = {
   maribank: "maribank.ph",
   gcash: "gcash.com",
   bpi: "bpi.com.ph",
   metrobank: "metrobank.com.ph",
   bdo: "bdo.com.ph",
   unionbank: "unionbankph.com",
-  securitybank: "securitybank.com"
+  securitybank: "securitybank.com",
+  netflix: "netflix.com",
+  youtube: "youtube.com",
+  prulife: "prulifeuk.com.ph",
+  cms: "everynation.org",
+  ccf: "ccf.org.ph",
+  claude: "anthropic.com"
 };
+
+// Row icon: brand/bank logo, else a category material-icon tile, else nothing.
+function rowIconHtml(name, sz) {
+  const brand = iconFor(name);
+  if (brand && BRAND_DOMAINS[brand]) return `<div class="rounded-lg overflow-hidden flex-shrink-0" style="width:${sz}px;height:${sz}px"><img src="https://www.google.com/s2/favicons?domain=${BRAND_DOMAINS[brand]}&sz=128" alt="" class="w-full h-full object-cover bg-white" /></div>`;
+  const cat = categoryIcon(name);
+  if (cat) return `<div class="rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-300" style="font-size:${Math.round(sz * 0.62)}px">${cat}</span></div>`;
+  return "";
+}
+const BANK_DOMAINS = BRAND_DOMAINS;
 
 function acctIconHtml(a) {
   const bank = bankIconFor(a.name);
