@@ -460,11 +460,18 @@ function categoryGroupedHtml(items, k, kind, who) {
   if (!items.length) return "";
   const sorted = sortItems(items);
   const showHeaders = new Set(sorted.map(itemCategory)).size > 1;
+  
+  const subtotals = {};
+  for (const it of sorted) {
+    const c = itemCategory(it);
+    subtotals[c] = (subtotals[c] || 0) + amountIn(it, k);
+  }
+  
   let html = "", lastCat = -1;
   for (const it of sorted) {
     const c = itemCategory(it);
     if (showHeaders && c !== lastCat) {
-      html += `<p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 px-3 pt-2 pb-0.5">${CATEGORY_LABELS[c]}</p>`;
+      html += `<div class="flex justify-between items-center px-3 pt-2 pb-0.5"><p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">${CATEGORY_LABELS[c]}</p><p class="text-[9px] font-black text-slate-600">${peso(subtotals[c])}</p></div>`;
       lastCat = c;
     }
     html += itemRowHtml(it, k, kind, who);
