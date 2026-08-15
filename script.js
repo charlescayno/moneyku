@@ -461,20 +461,35 @@ function categoryGroupedHtml(items, k, kind, who) {
   const sorted = sortItems(items);
   const showHeaders = new Set(sorted.map(itemCategory)).size > 1;
   
-  const subtotals = {};
+  const buckets = {};
   for (const it of sorted) {
     const c = itemCategory(it);
-    subtotals[c] = (subtotals[c] || 0) + amountIn(it, k);
+    (buckets[c] = buckets[c] || []).push(it);
   }
   
-  let html = "", lastCat = -1;
-  for (const it of sorted) {
-    const c = itemCategory(it);
-    if (showHeaders && c !== lastCat) {
-      html += `<div class="flex justify-between items-center px-3 pt-2 pb-0.5"><p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">${CATEGORY_LABELS[c]}</p><p class="text-[9px] font-black text-slate-600">${peso(subtotals[c])}</p></div>`;
-      lastCat = c;
+  let html = "";
+  for (const cStr of Object.keys(buckets).sort((a, b) => Number(a) - Number(b))) {
+    const c = Number(cStr);
+    const list = buckets[c];
+    const subtotal = list.reduce((s, it) => s + amountIn(it, k), 0);
+    const rowsHtml = list.map(it => itemRowHtml(it, k, kind, who)).join("");
+    
+    if (showHeaders) {
+      html += `<details open class="group mb-1">
+        <summary class="flex justify-between items-center px-3 pt-2 pb-1 cursor-pointer list-none select-none hover:bg-slate-800/30 rounded-lg outline-none -ml-2 -mr-2 mb-0.5">
+          <div class="flex items-center gap-1.5 ml-2">
+            <span class="material-icons text-[12px] text-slate-600 transition-transform group-open:rotate-90">chevron_right</span>
+            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">${CATEGORY_LABELS[c]}</p>
+          </div>
+          <p class="text-[9px] font-black text-slate-600 mr-2">${peso(subtotal)}</p>
+        </summary>
+        <div class="space-y-0.5">
+          ${rowsHtml}
+        </div>
+      </details>`;
+    } else {
+      html += rowsHtml;
     }
-    html += itemRowHtml(it, k, kind, who);
   }
   return html;
 }
