@@ -809,23 +809,9 @@ function renderBudget() {
 
   $("budget-body").innerHTML =
     summary +
-    `<!-- Charts Section -->
-    <section id="charts-section" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-      <div class="glass-card rounded-3xl p-5 border border-white/5 relative flex flex-col">
-        <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Expenses Breakdown</h3>
-        <div class="flex-1 relative w-full h-[250px]"><canvas id="pieChart"></canvas></div>
-      </div>
-      <div class="glass-card rounded-3xl p-5 border border-white/5 relative flex flex-col">
-        <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">6-Month Trend</h3>
-        <div class="flex-1 relative w-full h-[250px]"><canvas id="barChart"></canvas></div>
-      </div>
-    </section>` +
     accountsCardHtml() +
     personSectionHtml("charlie") +
     personSectionHtml("debt");
-    
-  // Render charts after DOM is updated
-  setTimeout(() => renderCharts(k), 0);
 }
 
 // Installments + projection live in the "More" sheet (header insights button), not the main page.
