@@ -407,6 +407,11 @@ function itemRowHtml(it, k, kind, who, opts = {}) {
   if (installment) tags.push(`<span class="text-[9px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
   else if (it.recurring && dd != null) tags.push(`<span class="text-[9px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
   else if (it.recurring) tags.push(`<span class="text-[9px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
+  
+  if (it.paymentMethod === "bpi_platinum" && it.txDate) {
+    tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event</span>Purchased: ${it.txDate}</span>`);
+  }
+  
   let progress = "";
   if (installment) {
     const total = monthsInclusive(it.start, it.end);
@@ -1237,10 +1242,16 @@ window.openItemModal = function (who, kind, id) {
       </select>
     </div>`;
 
+    const txDateVal = it ? (it.txDate || "") : "";
+
     body += `<div id="bpi-cc-box" class="${payMethod === "bpi_platinum" ? "" : "hidden"} p-4 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl space-y-3">
       <div class="flex items-center gap-2 text-indigo-300 text-xs font-black">
         <span class="material-icons text-sm">credit_card</span>
         <span>BPI Credit Card Auto-Scheduling</span>
+      </div>
+      <div>
+        <label class="text-[10px] font-bold uppercase text-slate-400">Date of Purchase</label>
+        <input type="date" id="f-txdate" value="${txDateVal}" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
@@ -1542,6 +1553,7 @@ window.saveModal = async function () {
   const payMethod = $("f-paymethod") ? $("f-paymethod").value : "cash";
   const txDay = $("f-txday") ? parseInt($("f-txday").value, 10) : null;
   const cutoffDay = $("f-cutoff") ? parseInt($("f-cutoff").value, 10) : null;
+  const txDate = $("f-txdate") ? $("f-txdate").value : null;
 
   if (id) {
     const it = list.find((x) => x.id === id);
@@ -1554,6 +1566,7 @@ window.saveModal = async function () {
       it.paymentMethod = payMethod;
       it.txDay = txDay;
       it.cutoffDay = cutoffDay;
+      if (txDate) it.txDate = txDate; else delete it.txDate;
       const scope = $("f-scope") ? $("f-scope").value : "all";
       if (getKids(it).length) {
         // amount is derived from sub-expenses; leave it.amount untouched
@@ -1581,7 +1594,9 @@ window.saveModal = async function () {
       appData.paid[selectedKey][id] = on;
     }
   } else {
-    list.push({ id: generateId(), name, amount, start, end: recurring ? end : null, recurring, dueDay, paymentMethod: payMethod, txDay, cutoffDay });
+    const newItem = { id: generateId(), name, amount, start, end: recurring ? end : null, recurring, dueDay, paymentMethod: payMethod, txDay, cutoffDay };
+    if (txDate) newItem.txDate = txDate;
+    list.push(newItem);
   }
   await syncSet();
   closeModal(); renderAll(); toast("Saved");
