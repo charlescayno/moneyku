@@ -478,10 +478,10 @@ function categoryGroupedHtml(items, k, kind, who) {
       html += `<details open class="group mb-1">
         <summary class="flex justify-between items-center px-3 pt-2 pb-1 cursor-pointer list-none select-none hover:bg-slate-800/30 rounded-lg outline-none -ml-2 -mr-2 mb-0.5">
           <div class="flex items-center gap-1.5 ml-2">
-            <span class="material-icons text-[12px] text-slate-600 transition-transform group-open:rotate-90">chevron_right</span>
-            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">${CATEGORY_LABELS[c]}</p>
+            <span class="material-icons text-[14px] text-slate-500 transition-transform group-open:rotate-90">chevron_right</span>
+            <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">${CATEGORY_LABELS[c]}</p>
           </div>
-          <p class="text-[9px] font-black text-slate-600 mr-2">${peso(subtotal)}</p>
+          <p class="text-sm font-black text-slate-500 mr-2">${peso(subtotal)}</p>
         </summary>
         <div class="space-y-0.5">
           ${rowsHtml}
