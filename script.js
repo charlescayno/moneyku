@@ -1213,6 +1213,7 @@ window.openItemModal = function (who, kind, id) {
     body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Apply amount to</label>
       <select id="f-scope" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">
         <option value="all">All months</option>
+        <option value="future">This and future months</option>
         <option value="month" ${hasOverride(id, selectedKey) ? "selected" : ""}>${monthName(selectedKey)} ${keyParts(selectedKey).y} only</option>
       </select></div>`;
   }
@@ -1498,6 +1499,14 @@ window.saveModal = async function () {
       } else if (recurring && scope === "month") {
         appData.overrides[selectedKey] = appData.overrides[selectedKey] || {};
         appData.overrides[selectedKey][id] = amount;
+      } else if (recurring && scope === "future" && cmpKey(selectedKey, it.start) > 0) {
+        const prevMonth = addMonths(selectedKey, -1);
+        const clone = JSON.parse(JSON.stringify(it));
+        clone.id = generateId();
+        clone.start = selectedKey;
+        clone.amount = amount;
+        list.push(clone);
+        it.end = prevMonth;
       } else {
         it.amount = amount;
         if (appData.overrides[selectedKey]) delete appData.overrides[selectedKey][id];
