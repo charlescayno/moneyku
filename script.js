@@ -397,10 +397,12 @@ function itemRowHtml(it, k, kind, who, opts = {}) {
   const installment = it.recurring && it.end;
   const dd = dueDayFor(it);
   const tags = [];
-  if (it.paymentMethod === "bpi_platinum") {
-    tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
-  } else if (it.paymentMethod === "cc_other") {
-    tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 Credit Card</span>`);
+  if (!opts.hidePaymentTag) {
+    if (it.paymentMethod === "bpi_platinum") {
+      tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
+    } else if (it.paymentMethod === "cc_other") {
+      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 Credit Card</span>`);
+    }
   }
   if (installment) tags.push(`<span class="text-[9px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
   else if (it.recurring && dd != null) tags.push(`<span class="text-[9px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
@@ -470,6 +472,24 @@ function categoryGroupedHtml(items, k, kind, who) {
   return html;
 }
 
+const PM_LABELS = { bpi_platinum: "BPI Platinum", cc_other: "Credit Card" };
+
+function paymentMethodGroupHtml(pm, list, k, kind, who) {
+  const total = list.reduce((s, it) => s + amountIn(it, k), 0);
+  const subs = sortItems(list).map((it) => itemRowHtml(it, k, kind, who, { hidePaymentTag: true })).join("");
+  const label = PM_LABELS[pm] || pm;
+  return `<div class="py-1 mt-1">
+    <div class="flex items-center gap-3 px-3 py-2 bg-indigo-900/10 rounded-xl">
+      <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+        <span class="text-[14px]">💳</span>
+      </div>
+      <p class="text-sm font-black text-indigo-300 flex-1 min-w-0 truncate">${label}</p>
+      <p class="text-sm font-black text-indigo-300 flex-shrink-0">${peso(total)}</p>
+    </div>
+    <div class="ml-4 pl-3 border-l border-indigo-700/30 space-y-0.5 mt-1">${subs}</div>
+  </div>`;
+}
+
 // A bank owned across items -> one icon + name + total, each item a sub-row (like accounts).
 function bankGroupHtml(bank, list, k, kind, who) {
   const total = list.reduce((s, it) => s + amountIn(it, k), 0);
@@ -492,12 +512,42 @@ function groupedRowsHtml(items, k, kind, who) {
   const parents = items.filter((it) => getKids(it).length);
   for (const it of parents) html += itemRowHtml(it, k, kind, who);
   const rest = items.filter((it) => !getKids(it).length);
-  // 2. bank groups (banks with 2+ items)
-  const buckets = {}, order = [];
-  for (const it of rest) { const b = bankIconFor(it.name); if (b) (buckets[b] = buckets[b] || []).push(it); }
-  for (const it of rest) { const b = bankIconFor(it.name); if (b && buckets[b].length > 1 && !order.includes(b)) order.push(b); }
+  
   const grouped = new Set();
-  for (const b of order) { buckets[b].forEach((it) => grouped.add(it.id)); html += bankGroupHtml(b, buckets[b], k, kind, who); }
+  
+  // 2a. Payment Method groups (e.g., bpi_platinum)
+  const pmBuckets = {}, pmOrder = [];
+  for (const it of rest) {
+    if (it.paymentMethod && it.paymentMethod !== 'cash' && it.paymentMethod !== 'none') {
+      const pm = it.paymentMethod;
+      (pmBuckets[pm] = pmBuckets[pm] || []).push(it);
+    }
+  }
+  for (const it of rest) {
+    const pm = it.paymentMethod;
+    if (pm && pm !== 'cash' && pm !== 'none' && pmBuckets[pm].length > 1 && !pmOrder.includes(pm)) pmOrder.push(pm);
+  }
+  for (const pm of pmOrder) { 
+    pmBuckets[pm].forEach((it) => grouped.add(it.id)); 
+    html += paymentMethodGroupHtml(pm, pmBuckets[pm], k, kind, who); 
+  }
+
+  // 2b. bank groups (banks with 2+ items, not already grouped)
+  const buckets = {}, order = [];
+  for (const it of rest) { 
+    if (grouped.has(it.id)) continue;
+    const b = bankIconFor(it.name); 
+    if (b) (buckets[b] = buckets[b] || []).push(it); 
+  }
+  for (const it of rest) { 
+    if (grouped.has(it.id)) continue;
+    const b = bankIconFor(it.name); 
+    if (b && buckets[b].length > 1 && !order.includes(b)) order.push(b); 
+  }
+  for (const b of order) { 
+    buckets[b].forEach((it) => grouped.add(it.id)); 
+    html += bankGroupHtml(b, buckets[b], k, kind, who); 
+  }
   // 3. category groups for everything else
   html += categoryGroupedHtml(rest.filter((it) => !grouped.has(it.id)), k, kind, who);
   return html;
