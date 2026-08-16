@@ -279,6 +279,7 @@ function renderAll() {
   updateHeader();
   renderMonthStrip();
   renderBudget();
+  fetchInvestmentRates();
 }
 
 function updateHeader() {
@@ -808,6 +809,93 @@ function accountsCardHtml() {
   </details>`;
 }
 
+function investmentsCardHtml() {
+  const inv = appData.investments || { customPowiPrice: null, customUsdPhp: null, cachedPowi: 0, cachedUsdPhp: 0 };
+  const shares = 99;
+  const price = parseFloat(inv.customPowiPrice) || parseFloat(inv.cachedPowi) || 0;
+  const rate = parseFloat(inv.customUsdPhp) || parseFloat(inv.cachedUsdPhp) || 0;
+  
+  const totalUsd = shares * price;
+  const totalPhp = totalUsd * rate;
+  
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-amber-500/10 md:col-span-2 mt-4">
+    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+          <span class="material-icons text-white" style="font-size:18px">trending_up</span>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-white uppercase tracking-wide">Investments</h3>
+          <p class="text-[10px] text-slate-400">POWI Stock Holdings</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-base font-black text-amber-400">${peso(totalPhp)}</p>
+        <p class="text-[10px] text-slate-500 font-bold">$${totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+      </div>
+    </summary>
+    <div class="p-4 pt-0 space-y-3">
+      <div class="bg-slate-900/40 rounded-xl p-3 flex justify-between items-center">
+        <div>
+          <p class="text-xs font-bold text-slate-300">POWI Shares</p>
+          <p class="text-[10px] text-slate-500">Power Integrations</p>
+        </div>
+        <p class="text-sm font-black text-white">${shares}</p>
+      </div>
+      <div class="flex gap-2">
+        <div class="flex-1 bg-slate-900/40 rounded-xl p-3">
+          <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-bold">Stock Price</p>
+          <p class="text-sm font-black text-slate-200">$${price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+        </div>
+        <div class="flex-1 bg-slate-900/40 rounded-xl p-3">
+          <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-bold">Exchange Rate</p>
+          <p class="text-sm font-black text-slate-200">₱${rate.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+        </div>
+      </div>
+      <button onclick="openInvestmentModal()" class="w-full mt-2 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl font-bold text-amber-400 text-[11px] flex items-center justify-center gap-1 transition-transform">
+        <span class="material-icons" style="font-size:16px">edit</span>Edit Rates
+      </button>
+    </div>
+  </details>`;
+}
+
+async function fetchInvestmentRates() {
+  if (!appData.investments) {
+    appData.investments = { customPowiPrice: null, customUsdPhp: null, cachedPowi: 0, cachedUsdPhp: 0, lastFetch: 0 };
+  }
+  const now = Date.now();
+  if (now - (appData.investments.lastFetch || 0) < 3600000 && appData.investments.cachedPowi > 0) {
+    return; // Use cache
+  }
+  
+  let changed = false;
+  try {
+    const powiRes = await fetch("https://corsproxy.io/?" + encodeURIComponent("https://query1.finance.yahoo.com/v8/finance/chart/POWI"));
+    const powiData = await powiRes.json();
+    const price = powiData.chart.result[0].meta.regularMarketPrice;
+    if (price && appData.investments.cachedPowi !== price) {
+      appData.investments.cachedPowi = price;
+      changed = true;
+    }
+  } catch (e) { console.error("POWI fetch error", e); }
+  
+  try {
+    const rateRes = await fetch("https://open.er-api.com/v6/latest/USD");
+    const rateData = await rateRes.json();
+    const php = rateData.rates.PHP;
+    if (php && appData.investments.cachedUsdPhp !== php) {
+      appData.investments.cachedUsdPhp = php;
+      changed = true;
+    }
+  } catch (e) { console.error("PHP rate fetch error", e); }
+  
+  appData.investments.lastFetch = now;
+  if (changed) {
+    await syncSet();
+    renderBudget();
+  }
+}
+
 // The 4 summary stat cells with the color/sign rules.
 function statsGridHtml(t) {
   const current = currentMoneyAt();
@@ -854,6 +942,7 @@ function renderBudget() {
   $("budget-body").innerHTML =
     summary +
     accountsCardHtml() +
+    investmentsCardHtml() +
     personSectionHtml("charlie") +
     personSectionHtml("debt");
 }
@@ -1572,6 +1661,28 @@ window.toggleField = function (btn) {
 // =============================
 // Modal — accounts
 // =============================
+window.openInvestmentModal = function () {
+  const inv = appData.investments || {};
+  activeEdit = { kind: "investment" };
+  $("modal-title").textContent = "Edit Rates";
+  $("modal-title").className = "text-2xl font-black uppercase tracking-tight text-amber-400";
+  
+  $("modal-body").innerHTML = `
+    <div class="space-y-4">
+      <div>
+        <label class="block text-[10px] font-black tracking-widest text-slate-400 uppercase mb-1">Custom POWI Price (USD)</label>
+        <input type="number" id="mod-powi" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-amber-500 transition-colors" placeholder="Leave empty for auto" value="${inv.customPowiPrice || ''}">
+      </div>
+      <div>
+        <label class="block text-[10px] font-black tracking-widest text-slate-400 uppercase mb-1">Custom Exchange Rate (PHP)</label>
+        <input type="number" id="mod-rate" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-amber-500 transition-colors" placeholder="Leave empty for auto" value="${inv.customUsdPhp || ''}">
+      </div>
+    </div>
+  `;
+  $("delete-btn").classList.add("hidden");
+  openModalShell();
+};
+
 window.openAccountModal = function (id) {
   const a = id ? (appData.accounts || []).find((x) => x.id === id) : null;
   const isNew = !a;
@@ -1617,6 +1728,19 @@ window.saveModal = async function () {
   if (!activeEdit) return;
   const name = ($("f-name")?.value || "").trim();
   const amount = parseFloat($("f-amount")?.value) || 0;
+
+  if (activeEdit.kind === "investment") {
+    const powiVal = $("mod-powi").value;
+    const rateVal = $("mod-rate").value;
+    
+    if (!appData.investments) appData.investments = {};
+    appData.investments.customPowiPrice = powiVal ? parseFloat(powiVal) : null;
+    appData.investments.customUsdPhp = rateVal ? parseFloat(rateVal) : null;
+    
+    await syncSet();
+    closeModal(); renderAll(); toast("Saved");
+    return;
+  }
 
   if (activeEdit.kind === "account") {
     if (!name) return toast("Name required", "error");
