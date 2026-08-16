@@ -504,6 +504,8 @@ const PM_LABELS = { bpi_platinum: "BPI Platinum", cc_other: "Credit Card" };
 
 function paymentMethodGroupHtml(pm, list, k, kind, who) {
   const total = list.reduce((s, it) => s + amountIn(it, k), 0);
+  const allPaid = list.length > 0 && list.every(it => isPaid(it.id, k));
+  const idsStr = list.map(it => it.id).join(",");
   const subs = sortItems(list).map((it) => itemRowHtml(it, k, kind, who, { hidePaymentTag: true })).join("");
   const label = PM_LABELS[pm] || pm;
   return `<details open class="py-1 mt-1 group">
@@ -515,7 +517,12 @@ function paymentMethodGroupHtml(pm, list, k, kind, who) {
         </div>
         <p class="text-sm font-black text-indigo-300 flex-1 min-w-0 truncate">${label}</p>
       </div>
-      <p class="text-sm font-black text-indigo-300 flex-shrink-0">${peso(total)}</p>
+      <div class="flex items-center gap-3">
+        <button onclick="togglePaidGroup(event, '${idsStr}', '${k}', '${kind}')" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="paid-check ${allPaid ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 border">
+          <span class="material-icons check-icon text-white" style="font-size:16px">check</span>
+        </button>
+        <p class="text-sm font-black text-indigo-300 flex-shrink-0">${peso(total)}</p>
+      </div>
     </summary>
     <div class="ml-8 pl-3 border-l border-indigo-700/30 space-y-0.5 mt-2">${subs}</div>
   </details>`;
@@ -1626,6 +1633,24 @@ window.togglePaidQuick = async function (event, id, kind) {
     flashLabel(valEl || btn, kind === "income" ? "Received!" : "Paid!");
   }
   refreshRealized();
+  await syncSet();
+};
+
+window.togglePaidGroup = async function (event, idsStr, k, kind) {
+  event.stopPropagation();
+  const ids = idsStr.split(",");
+  if (!ids.length) return;
+  
+  appData.paid[k] = appData.paid[k] || {};
+  const allPaid = ids.every(id => appData.paid[k][id] === true);
+  const targetState = !allPaid;
+  
+  for (const id of ids) {
+    appData.paid[k][id] = targetState;
+  }
+  
+  refreshRealized();
+  renderAll(); // full re-render needed to update all sub-rows
   await syncSet();
 };
 
