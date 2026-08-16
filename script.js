@@ -54,6 +54,7 @@ let activeEdit = null; // { kind, ... }
 // Chart.js instances
 let pieChartInstance = null;
 let barChartInstance = null;
+let projectionChartInstance = null;
 
 // =============================
 // Helpers
@@ -857,7 +858,7 @@ function renderBudget() {
     personSectionHtml("debt");
 }
 
-// Installments + projection live in the "More" sheet (header insights button), not the main page.
+// Installments + projection live in the "More" sheet (header insights button).
 window.openMore = function () {
   const body = $("more-body");
   const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
@@ -865,6 +866,13 @@ window.openMore = function () {
   body.querySelectorAll("details").forEach((d) => (d.open = true));
   const ov = $("more-overlay");
   ov.classList.add("open");
+  
+  // Render chart after DOM is updated
+  setTimeout(() => {
+    if (typeof renderProjectionChart === "function") {
+      renderProjectionChart();
+    }
+  }, 10);
 };
 window.closeMore = function () {
   $("more-overlay").classList.remove("open");
@@ -945,7 +953,99 @@ function projectionInnerHtml() {
       <div><p class="text-sm font-black text-white">${y}</p><p class="text-[10px] text-slate-500">end ${peso(v.endBal)}</p></div>
       <div class="text-right"><p class="text-[9px] uppercase text-slate-500 font-bold">Saved</p><p class="text-xs font-black ${v.savings >= 0 ? "text-emerald-400" : "text-amber-400"}">${v.savings >= 0 ? "+" : ""}${peso(v.savings)}</p></div>
     </div>`).join("");
-  return `<div class="space-y-2">${yearCards}</div>`;
+  return `
+    <div class="h-48 mb-4">
+      <canvas id="projectionChart"></canvas>
+    </div>
+    <div class="space-y-2">${yearCards}</div>
+  `;
+}
+
+function renderProjectionChart() {
+  const ctx = document.getElementById('projectionChart');
+  if (!ctx || !window.Chart) return;
+  
+  const keys = timeline();
+  let bal = accountsTotal();
+  const series = keys.map((k) => { const t = monthTotals(k); bal += t.netPending; return { k, bal, savings: t.savings }; });
+  
+  const years = {};
+  series.forEach((s) => { 
+    const y = keyParts(s.k).y; 
+    years[y] = years[y] || { savings: 0, endBal: s.bal }; 
+    years[y].savings += s.savings; 
+    years[y].endBal = s.bal; 
+  });
+  
+  const labels = Object.keys(years);
+  const endBals = labels.map(y => years[y].endBal);
+  const savings = labels.map(y => years[y].savings);
+  
+  if (projectionChartInstance) projectionChartInstance.destroy();
+  
+  projectionChartInstance = new Chart(ctx, {
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          type: 'line',
+          label: 'End Balance',
+          data: endBals,
+          borderColor: '#8b5cf6', // violet-500
+          backgroundColor: '#8b5cf6',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 3,
+        },
+        {
+          type: 'bar',
+          label: 'Yearly Savings',
+          data: savings,
+          backgroundColor: savings.map(s => s >= 0 ? '#34d399' : '#f43f5e'), // emerald-400 or rose-500
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { usePointStyle: true, boxWidth: 6 }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleFont: { size: 11, weight: 'bold' },
+          bodyFont: { size: 13, weight: '900' },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) { label += ': '; }
+              if (context.parsed.y !== null) {
+                label += peso(context.parsed.y);
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false, color: '#334155' }, ticks: { font: { size: 10 } } },
+        y: { 
+          grid: { color: '#334155', borderDash: [4, 4] }, 
+          border: { display: false }, 
+          ticks: { 
+            font: { size: 10 }, 
+            callback: function(value) { return '₱' + (value / 1000) + 'k'; } 
+          } 
+        }
+      }
+    }
+  });
 }
 
 // =============================
