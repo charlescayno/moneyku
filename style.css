@@ -119,13 +119,14 @@ input[type="checkbox"]:checked::before {
 /* Left edge keeps full padding (first chip + ring not clipped); right edge fades out
    exactly at the card's right edge so the last chip doesn't hard-crop. */
 #month-strip {
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 52px), transparent calc(100% - 24px));
-  mask-image: linear-gradient(to right, #000 calc(100% - 52px), transparent calc(100% - 24px));
+  /* Disabled mask-image as it causes the element to be hidden on iOS Safari */
+  /* -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 52px), transparent calc(100% - 24px));
+  mask-image: linear-gradient(to right, black 0%, black calc(100% - 52px), transparent calc(100% - 24px)); */
 }
 @media (min-width: 768px) {
   #month-strip {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent calc(100% - 32px));
-    mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent calc(100% - 32px));
+    /* -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 64px), transparent calc(100% - 32px));
+    mask-image: linear-gradient(to right, black 0%, black calc(100% - 64px), transparent calc(100% - 32px)); */
   }
 }
 
