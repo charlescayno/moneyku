@@ -90,6 +90,17 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+function parseMathAmount(str) {
+  if (typeof str !== "string") return parseFloat(str) || 0;
+  const sanitized = str.replace(/[^0-9+\-*/().]/g, "");
+  if (!sanitized) return 0;
+  try {
+    return parseFloat(new Function("return " + sanitized)()) || 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
 // --- month-key math (keys are "YYYY-MM", lexicographically ordered) ---
 function mkKey(y, m /* 0-11 */) { return `${y}-${String(m + 1).padStart(2, "0")}`; }
 function keyParts(k) { const [y, m] = k.split("-").map(Number); return { y, m: m - 1 }; }
@@ -1418,7 +1429,7 @@ window.openItemModal = function (who, kind, id) {
     body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (₱)</label>
       <div class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-black text-slate-300">${peso(itemTotal(it, selectedKey))} <span class="text-[11px] font-bold text-slate-500">· sum of ${kids.length} sub-expenses</span></div></div>`;
   } else {
-    body += inputBlock("Amount (₱)", "f-amount", amount, "number", 'inputmode="decimal" placeholder="0"');
+    body += inputBlock("Amount (₱)", "f-amount", amount, "text", 'inputmode="text" placeholder="0"');
   }
 
   // recurring toggle
@@ -1530,7 +1541,7 @@ window.openChildModal = function (who, parentId, childId) {
   const settledNow = c ? isPaid(c.id, selectedKey) : false;
   let body = `<p class="text-[11px] text-slate-500 mb-1">Under <span class="font-bold text-slate-300">${escapeHtml(parent.name)}</span></p>`;
   body += inputBlock("Name", "f-name", c ? c.name : "", "text", 'placeholder="e.g. Electricity"');
-  body += inputBlock("Estimate (₱)", "f-amount", c ? c.amount : "", "number", 'inputmode="decimal" placeholder="0"');
+  body += inputBlock("Estimate (₱)", "f-amount", c ? c.amount : "", "text", 'inputmode="text" placeholder="0"');
   if (!isNew) {
     body += `<div id="spend-section">${spendSectionHtml(who, parentId, c)}</div>`;
     body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
@@ -1551,7 +1562,7 @@ window.openChildModal = function (who, parentId, childId) {
 window.saveChildAndAddAnother = async function () {
   if (!activeEdit || activeEdit.kind !== "child") return;
   const name = ($("f-name")?.value || "").trim();
-  const amount = parseFloat($("f-amount")?.value) || 0;
+  const amount = parseMathAmount($("f-amount")?.value);
   if (!name) return toast("Name required", "error");
   const { who, parentId } = activeEdit;
   const parent = getItems(who, "expenses").find((x) => x.id === parentId);
@@ -1692,7 +1703,7 @@ window.openAccountModal = function (id) {
 
   let body = "";
   body += inputBlock("Account name", "f-name", a ? a.name : "", "text", 'placeholder="e.g. BPI"');
-  body += inputBlock("Balance (₱)", "f-amount", a ? a.amount : "", "number", 'inputmode="decimal" placeholder="0"');
+  body += inputBlock("Balance (₱)", "f-amount", a ? a.amount : "", "text", 'inputmode="text" placeholder="0"');
   $("modal-body").innerHTML = body;
 
   const delBtn = $("delete-btn");
@@ -1727,7 +1738,7 @@ window.closeModal = function () {
 window.saveModal = async function () {
   if (!activeEdit) return;
   const name = ($("f-name")?.value || "").trim();
-  const amount = parseFloat($("f-amount")?.value) || 0;
+  const amount = parseMathAmount($("f-amount")?.value);
 
   if (activeEdit.kind === "investment") {
     const powiVal = $("mod-powi").value;
