@@ -907,6 +907,54 @@ async function fetchInvestmentRates() {
   }
 }
 
+function monthOverviewCardHtml() {
+  const keys = timeline();
+  const currentY = keyParts(selectedKey).y;
+  let bal = accountsTotal();
+  
+  const series = keys.map((k) => {
+    const t = monthTotals(k);
+    bal += t.netPending;
+    return { k, bal, savings: t.savings };
+  });
+
+  const yearSeries = series.filter(s => keyParts(s.k).y === currentY);
+  if (!yearSeries.length) return "";
+
+  const cells = yearSeries.map(s => {
+    const mName = monthName(s.k).substring(0,3);
+    const isCurrent = s.k === selectedKey;
+    const bg = isCurrent ? "bg-indigo-900/50 border border-indigo-500/40 ring-1 ring-indigo-500/20" : "bg-slate-900/40 border border-white/5";
+    return `
+      <div class="${bg} rounded-xl p-3 flex flex-col justify-between transition-colors hover:bg-slate-800 cursor-pointer" onclick="selectMonth('${s.k}')">
+        <div class="flex justify-between items-center mb-2">
+          <p class="text-xs font-black ${isCurrent ? 'text-indigo-300' : 'text-slate-200'}">${mName}</p>
+          <p class="text-[9px] font-black ${s.savings >= 0 ? "text-emerald-400" : "text-amber-400"}">${s.savings >= 0 ? "+" : ""}${peso(s.savings)}</p>
+        </div>
+        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">End Bal</p>
+        <p class="text-[11px] font-black text-white">${peso(s.bal)}</p>
+      </div>
+    `;
+  }).join("");
+
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 md:col-span-2 mt-4">
+    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <span class="material-icons text-white" style="font-size:18px">calendar_month</span>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-white uppercase tracking-wide">${currentY} Overview</h3>
+          <p class="text-[10px] text-slate-400">Month by month</p>
+        </div>
+      </div>
+    </summary>
+    <div class="p-3 pt-0 grid grid-cols-2 md:grid-cols-3 gap-2">
+      ${cells}
+    </div>
+  </details>`;
+}
+
 // The 4 summary stat cells with the color/sign rules.
 function statsGridHtml(t) {
   const current = currentMoneyAt();
@@ -954,6 +1002,7 @@ function renderBudget() {
     summary +
     accountsCardHtml() +
     investmentsCardHtml() +
+    monthOverviewCardHtml() +
     personSectionHtml("charlie") +
     personSectionHtml("debt");
 }
