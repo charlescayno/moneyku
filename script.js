@@ -55,6 +55,7 @@ let activeEdit = null; // { kind, ... }
 let pieChartInstance = null;
 let barChartInstance = null;
 let projectionChartInstance = null;
+let monthOverviewChartInstance = null;
 
 // =============================
 // Helpers
@@ -908,6 +909,31 @@ async function fetchInvestmentRates() {
 }
 
 function monthOverviewCardHtml() {
+  const currentY = keyParts(selectedKey).y;
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 md:col-span-2 mt-4">
+    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <span class="material-icons text-white" style="font-size:18px">calendar_month</span>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-white uppercase tracking-wide">${currentY} Overview</h3>
+          <p class="text-[10px] text-slate-400">Month by month balance</p>
+        </div>
+      </div>
+    </summary>
+    <div class="p-4 pt-0">
+      <div class="h-48 w-full relative">
+        <canvas id="monthOverviewChart"></canvas>
+      </div>
+    </div>
+  </details>`;
+}
+
+function renderMonthOverviewChart() {
+  const ctx = document.getElementById('monthOverviewChart');
+  if (!ctx || !window.Chart) return;
+  
   const keys = timeline();
   const currentY = keyParts(selectedKey).y;
   let bal = accountsTotal();
@@ -919,40 +945,78 @@ function monthOverviewCardHtml() {
   });
 
   const yearSeries = series.filter(s => keyParts(s.k).y === currentY);
-  if (!yearSeries.length) return "";
+  if (!yearSeries.length) return;
 
-  const cells = yearSeries.map(s => {
-    const mName = monthName(s.k).substring(0,3);
-    const isCurrent = s.k === selectedKey;
-    const bg = isCurrent ? "bg-indigo-900/50 border border-indigo-500/40 ring-1 ring-indigo-500/20" : "bg-slate-900/40 border border-white/5";
-    return `
-      <div class="${bg} rounded-xl p-3 flex flex-col justify-between transition-colors hover:bg-slate-800 cursor-pointer" onclick="selectMonth('${s.k}')">
-        <div class="flex justify-between items-center mb-2">
-          <p class="text-xs font-black ${isCurrent ? 'text-indigo-300' : 'text-slate-200'}">${mName}</p>
-          <p class="text-[9px] font-black ${s.savings >= 0 ? "text-emerald-400" : "text-amber-400"}">${s.savings >= 0 ? "+" : ""}${peso(s.savings)}</p>
-        </div>
-        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">End Bal</p>
-        <p class="text-[11px] font-black text-white">${peso(s.bal)}</p>
-      </div>
-    `;
-  }).join("");
+  const labels = yearSeries.map(s => monthName(s.k).substring(0,3));
+  const data = yearSeries.map(s => s.bal);
+  
+  if (monthOverviewChartInstance) monthOverviewChartInstance.destroy();
+  
+  // Custom plugin to draw values on top of points if datalabels isn't used
+  const pointLabelsPlugin = {
+    id: 'pointLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx, data, scales: { x, y } } = chart;
+      ctx.save();
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = '#cbd5e1'; // slate-300
+      
+      chart.getDatasetMeta(0).data.forEach((datapoint, index) => {
+        const val = data.datasets[0].data[index];
+        const text = peso(val);
+        ctx.fillText(text, datapoint.x, datapoint.y - 8);
+      });
+      ctx.restore();
+    }
+  };
 
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 md:col-span-2 mt-4">
-    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-          <span class="material-icons text-white" style="font-size:18px">calendar_month</span>
-        </div>
-        <div>
-          <h3 class="text-sm font-black text-white uppercase tracking-wide">${currentY} Overview</h3>
-          <p class="text-[10px] text-slate-400">Month by month</p>
-        </div>
-      </div>
-    </summary>
-    <div class="p-3 pt-0 grid grid-cols-2 md:grid-cols-3 gap-2">
-      ${cells}
-    </div>
-  </details>`;
+  monthOverviewChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'End Balance',
+        data: data,
+        borderColor: '#818cf8', // indigo-400
+        backgroundColor: '#818cf8',
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 4,
+        pointBackgroundColor: '#1e293b',
+        pointBorderColor: '#818cf8',
+        pointBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 20, right: 20, left: 20 }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleFont: { size: 11, weight: 'bold' },
+          bodyFont: { size: 13, weight: '900' },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return peso(context.parsed.y);
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false, color: '#334155' }, ticks: { font: { size: 10 }, color: '#94a3b8' } },
+        y: { display: false, min: Math.min(...data) * 0.95 } // hide y axis for cleaner look, give some bottom padding
+      }
+    },
+    plugins: [pointLabelsPlugin]
+  });
 }
 
 // The 4 summary stat cells with the color/sign rules.
@@ -1005,6 +1069,10 @@ function renderBudget() {
     monthOverviewCardHtml() +
     personSectionHtml("charlie") +
     personSectionHtml("debt");
+    
+  setTimeout(() => {
+    renderMonthOverviewChart();
+  }, 10);
 }
 
 // Installments + projection live in the "More" sheet (header insights button).
