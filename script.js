@@ -57,11 +57,18 @@ let barChartInstance = null;
 let projectionChartInstance = null;
 let monthOverviewChartInstance = null;
 let hideProjected = localStorage.getItem("hideProjected") !== "false";
+let hideInvestments = localStorage.getItem("hideInvestments") !== "false";
 let overviewPage = 0;
 
 window.toggleProjected = function() {
   hideProjected = !hideProjected;
   localStorage.setItem("hideProjected", hideProjected);
+  renderBudget();
+}
+
+window.toggleInvestments = function() {
+  hideInvestments = !hideInvestments;
+  localStorage.setItem("hideInvestments", hideInvestments);
   renderBudget();
 }
 
@@ -380,7 +387,7 @@ function renderMonthBanner() {
 }
 
 // A sub-expense row (checked/edited individually).
-function childRowHtml(parentId, c, k, who) {
+function childRowHtml(parentId, c, k, who, kind = "expenses") {
   const paid = isPaid(c.id, k);
   const est = Number(c.amount) || 0;
   const spent = spentIn(c.id, k);
@@ -388,25 +395,25 @@ function childRowHtml(parentId, c, k, who) {
   const over = spent > est;
   const pct = est > 0 ? Math.min(100, Math.round((spent / est) * 100)) : (spent > 0 ? 100 : 0);
   const remaining = est - spent;
-  // Right-side amount: the locked final once checked, otherwise the budgeted estimate.
   const rightMain = paid ? childFinal(c, k) : est;
-  // Show a spend tracker line only while tracking is in progress (has entries, not yet locked).
+  
   const spendLine = (hasSpend && !paid)
-    ? `<div class="child-spendline flex items-center gap-1.5 mt-1">
-        <div class="flex-1 h-1 bg-slate-900/70 rounded-full overflow-hidden max-w-[130px]"><div class="h-full ${over ? "bg-rose-500" : "bg-gradient-to-r from-emerald-500 to-teal-400"} rounded-full" style="width:${pct}%"></div></div>
+    ? `<div class="child-spendline flex items-center gap-2 mt-1">
+        <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden max-w-[100px]"><div class="h-full ${over ? "bg-rose-500" : "bg-emerald-400"} rounded-full" style="width:${pct}%"></div></div>
         <span class="text-[10px] font-bold ${over ? "text-rose-400" : "text-emerald-400"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
       </div>`
     : "";
-  return `<div data-child="${c.id}" onclick="openChildModal('${who}','${parentId}','${c.id}')" class="item-row flex items-center gap-2 py-1.5 pl-2 rounded-lg cursor-pointer ${paid ? "opacity-60" : ""}">
-    <button onclick="togglePaidQuick(event,'${c.id}','expenses')" title="Mark paid" class="paid-check ${paid ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border">
-      <span class="material-icons check-icon text-white" style="font-size:13px">check</span>
+    
+  return `<div data-child="${c.id}" onclick="openChildModal('${who}','${parentId}','${c.id}')" class="item-row flex items-center gap-4 py-2.5 px-6 cursor-pointer hover:bg-white/5 transition-colors">
+    <button onclick="togglePaidQuick(event,'${c.id}','expenses')" title="Mark paid" class="paid-check ${paid ? "is-paid bg-emerald-500/20 border-emerald-500" : "bg-transparent border-slate-700"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-colors">
+      <span class="material-icons check-icon ${paid ? "text-emerald-400 opacity-100" : "text-transparent opacity-0"} transition-opacity" style="font-size:14px">check</span>
     </button>
-    ${rowIconHtml(c.name, 24)}
+    ${rowIconHtml(c.name, 20, kind, true)}
     <div class="flex-1 min-w-0">
-      <span class="item-name block text-[13px] font-bold text-slate-300 truncate ${paid ? "line-through" : ""}">${escapeHtml(c.name)}</span>
+      <span class="item-name block text-sm font-bold ${paid ? "text-slate-500 line-through" : "text-slate-200"} truncate">${escapeHtml(c.name)}</span>
       ${spendLine}
     </div>
-    <span class="child-amt text-[13px] font-black text-white flex-shrink-0">${peso(rightMain)}</span>
+    <span class="child-amt text-sm font-black ${paid ? "text-slate-600 line-through" : "text-slate-300"} flex-shrink-0">${peso(rightMain)}</span>
   </div>`;
 }
 // An expandable parent (its amount = sum of sub-expenses).
@@ -419,27 +426,36 @@ function parentRowHtml(it, k, kind, who, opts = {}) {
   const icon = opts.hideIcon ? null : iconFor(it.name);
   const iconInner = icon
     ? `<img src="assets/banks/${icon}.png" alt="" class="w-full h-full object-cover" />`
-    : `<span class="material-icons text-white" style="font-size:20px">home_work</span>`;
-  const iconBg = icon ? "" : "bg-gradient-to-br from-violet-500 to-fuchsia-600";
-  const childRows = kids.map((c) => childRowHtml(it.id, c, k, who)).join("");
-  return `<details open class="item-parent glass-card rounded-2xl border border-violet-500/25 overflow-hidden my-1.5" data-parent="${it.id}" data-who="${who}">
-    <summary class="parent-summary flex items-center gap-3 px-4 py-3.5 cursor-pointer list-none bg-gradient-to-r from-violet-500/[0.12] via-violet-500/[0.04] to-transparent ${allPaid ? "opacity-70" : ""}">
-      <div class="acct-icon ${iconBg} flex-shrink-0">${iconInner}</div>
+    : `<span class="material-icons text-white" style="font-size:24px">home_work</span>`;
+  const iconBg = icon ? "bg-slate-800" : "bg-gradient-to-br from-fuchsia-500 to-purple-600";
+  const childRows = kids.map((c) => childRowHtml(it.id, c, k, who, kind)).join("");
+  const kidsIds = kids.map(c => c.id).join(",");
+  
+  return `<details open class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
+    <summary class="parent-summary flex items-center gap-4 p-5 cursor-pointer list-none ${allPaid ? "opacity-70" : ""}">
+      <div class="acct-icon w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 shadow-lg">${iconInner}</div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1.5">
-          <p class="item-name text-base font-black text-white truncate ${allPaid ? "line-through" : ""}">${escapeHtml(it.name)}</p>
-          <span class="parent-caret material-icons text-violet-300/70 flex-shrink-0" style="font-size:18px">chevron_right</span>
+          <p class="item-name text-lg font-black text-white truncate ${allPaid ? "line-through" : ""}">${escapeHtml(it.name)}</p>
+          <span class="parent-caret material-icons text-slate-500 transition-transform duration-300 group-open:-rotate-180" style="font-size:20px">expand_more</span>
         </div>
-        <div class="flex items-center gap-2 mt-1.5">
-          <div class="flex-1 h-1.5 bg-slate-900/60 rounded-full overflow-hidden max-w-[150px]"><div class="parent-bar h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-300" style="width:${pct}%"></div></div>
-          <span class="text-[10px] font-black text-violet-300 uppercase tracking-wide flex-shrink-0"><span class="parent-paid-count">${paidCount}</span>/${kids.length} paid</span>
+        <div class="flex items-center gap-3 mt-1.5">
+          <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden max-w-[120px]"><div class="parent-bar h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded-full transition-all duration-300" style="width:${pct}%"></div></div>
+          <span class="text-[10px] font-black text-purple-300 uppercase tracking-widest"><span class="parent-paid-count">${paidCount}</span>/${kids.length} paid</span>
         </div>
       </div>
-      <p class="text-base font-black text-white flex-shrink-0">${peso(total)}</p>
+      <div class="flex flex-col items-end gap-1 flex-shrink-0">
+        <p class="text-lg font-black text-white">${peso(total)}</p>
+        <button onclick="togglePaidGroup(event, '${kidsIds}', '${k}', '${kind}')" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="text-slate-500 hover:text-purple-400 transition-colors flex items-center gap-1 ${allPaid ? "text-purple-500" : ""}">
+          <span class="material-icons" style="font-size:16px">${allPaid ? "done_all" : "checklist"}</span>
+        </button>
+      </div>
     </summary>
-    <div class="px-4 pb-2 pt-1 space-y-0.5">
+    <div class="pb-4 pt-1 space-y-0 relative">
       ${childRows}
-      <button onclick="openChildModal('${who}','${it.id}',null)" class="w-full py-2 text-[11px] font-bold text-violet-300/80 hover:text-violet-200 flex items-center justify-center gap-1 rounded-lg"><span class="material-icons" style="font-size:14px">add</span>Add sub-expense</button>
+      <div class="px-6 mt-3">
+        <button onclick="openChildModal('${who}','${it.id}',null)" class="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>
+      </div>
     </div>
   </details>`;
 }
@@ -448,7 +464,7 @@ function itemRowHtml(it, k, kind, who, opts = {}) {
   if (getKids(it).length) return parentRowHtml(it, k, kind, who, opts);
   const amt = amountIn(it, k);
   const settled = isPaid(it.id, k); // income => received, expense => paid
-  const iconHtml = opts.hideIcon ? "" : rowIconHtml(it.name, 28);
+  const iconHtml = opts.hideIcon ? "" : rowIconHtml(it.name, 28, kind);
   const installment = it.recurring && it.end;
   const dd = dueDayFor(it);
   const tags = [];
@@ -761,12 +777,19 @@ const BRAND_DOMAINS = {
 };
 
 // Row icon: brand/bank logo, else a category material-icon tile, else nothing.
-function rowIconHtml(name, sz) {
+function rowIconHtml(name, sz, kind = "expenses", noBg = false) {
   const brand = iconFor(name);
-  if (brand && BRAND_DOMAINS[brand]) return `<div class="rounded-lg overflow-hidden flex-shrink-0" style="width:${sz}px;height:${sz}px"><img src="https://www.google.com/s2/favicons?domain=${BRAND_DOMAINS[brand]}&sz=128" alt="" class="w-full h-full object-cover bg-white" /></div>`;
+  if (brand && BRAND_DOMAINS[brand]) {
+    if (noBg) return `<div class="flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><img src="https://www.google.com/s2/favicons?domain=${BRAND_DOMAINS[brand]}&sz=128" alt="" class="w-4/5 h-4/5 object-contain grayscale opacity-60" /></div>`;
+    return `<div class="rounded-lg overflow-hidden flex-shrink-0" style="width:${sz}px;height:${sz}px"><img src="https://www.google.com/s2/favicons?domain=${BRAND_DOMAINS[brand]}&sz=128" alt="" class="w-full h-full object-cover bg-white" /></div>`;
+  }
   const cat = categoryIcon(name);
+  const iconName = cat || (kind === "income" ? "payments" : "receipt_long");
+  
+  if (noBg) return `<span class="material-icons text-slate-500 flex-shrink-0 flex items-center justify-center" style="font-size:${Math.round(sz * 0.85)}px; width:${sz}px; height:${sz}px;">${iconName}</span>`;
+  
   if (cat) return `<div class="rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-300" style="font-size:${Math.round(sz * 0.62)}px">${cat}</span></div>`;
-  return "";
+  return `<div class="rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-500" style="font-size:${Math.round(sz * 0.62)}px">${iconName}</span></div>`;
 }
 const BANK_DOMAINS = BRAND_DOMAINS;
 
@@ -881,13 +904,18 @@ function investmentsCardHtml() {
           <span class="material-icons text-white" style="font-size:18px">trending_up</span>
         </div>
         <div>
-          <h3 class="text-sm font-black text-white uppercase tracking-wide">Investments</h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-black text-white uppercase tracking-wide">Investments</h3>
+            <button onclick="event.preventDefault(); toggleInvestments()" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
+              <span class="material-icons" style="font-size: 14px">${hideInvestments ? 'visibility_off' : 'visibility'}</span>
+            </button>
+          </div>
           <p class="text-[10px] text-slate-400">POWI Stock Holdings ${asOfDate ? `<span class="text-white/30 ml-1">· As of ${asOfDate}</span>` : ''}</p>
         </div>
       </div>
       <div class="text-right">
-        <p class="text-base font-black text-amber-400">${peso(totalPhp)}</p>
-        <p class="text-[10px] text-slate-500 font-bold">$${totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+        <p class="text-base font-black text-amber-400">${hideInvestments ? '••••••' : peso(totalPhp)}</p>
+        <p class="text-[10px] text-slate-500 font-bold">${hideInvestments ? '••••••' : '$' + totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
       </div>
     </summary>
     <div class="p-4 pt-0 space-y-3">
@@ -1080,10 +1108,12 @@ function renderBudget() {
   $("budget-body").innerHTML =
     summary +
     accountsCardHtml() +
-    investmentsCardHtml() +
-    monthOverviewCardHtml() +
     personSectionHtml("charlie") +
-    personSectionHtml("debt");
+    personSectionHtml("debt") +
+    `<div class="md:col-span-2 space-y-5">
+      ${investmentsCardHtml()}
+      ${monthOverviewCardHtml()}
+    </div>`;
 }
 
 // Installments + projection live in the "More" sheet (header insights button).
