@@ -56,7 +56,7 @@ let pieChartInstance = null;
 let barChartInstance = null;
 let projectionChartInstance = null;
 let monthOverviewChartInstance = null;
-let hideProjected = localStorage.getItem("hideProjected") === "true";
+let hideProjected = localStorage.getItem("hideProjected") !== "false";
 
 window.toggleProjected = function() {
   hideProjected = !hideProjected;
