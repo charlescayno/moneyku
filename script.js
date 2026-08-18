@@ -645,13 +645,16 @@ function personSectionHtml(who) {
       </div>
     </div>
     <div class="p-3 space-y-3">
-      <div>
-        <div class="flex items-center justify-between px-3 mb-1">
-          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
-          <button onclick="openItemModal('${who}','income',null)" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
-        </div>
-        <div class="space-y-0.5">${incHtml}</div>
-      </div>
+      <details class="group">
+        <summary class="flex items-center justify-between px-3 mb-1 cursor-pointer list-none">
+          <div class="flex items-center gap-1">
+            <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
+          </div>
+          <button onclick="event.preventDefault(); openItemModal('${who}','income',null)" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+        </summary>
+        <div class="space-y-0.5 mt-2">${incHtml}</div>
+      </details>
       <div class="border-t border-white/[0.04] pt-3">
         <div class="flex items-center justify-between px-3 mb-1">
           <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
@@ -834,6 +837,11 @@ function investmentsCardHtml() {
   const price = parseFloat(inv.customPowiPrice) || parseFloat(inv.cachedPowi) || 0;
   const rate = parseFloat(inv.customUsdPhp) || parseFloat(inv.cachedUsdPhp) || 0;
   
+  let asOfDate = "";
+  if (inv.lastFetch) {
+    asOfDate = new Date(inv.lastFetch).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  
   const totalUsd = shares * price;
   const totalPhp = totalUsd * rate;
   
@@ -845,7 +853,7 @@ function investmentsCardHtml() {
         </div>
         <div>
           <h3 class="text-sm font-black text-white uppercase tracking-wide">Investments</h3>
-          <p class="text-[10px] text-slate-400">POWI Stock Holdings</p>
+          <p class="text-[10px] text-slate-400">POWI Stock Holdings ${asOfDate ? `<span class="text-white/30 ml-1">· As of ${asOfDate}</span>` : ''}</p>
         </div>
       </div>
       <div class="text-right">
@@ -859,7 +867,10 @@ function investmentsCardHtml() {
           <p class="text-xs font-bold text-slate-300">POWI Shares</p>
           <p class="text-[10px] text-slate-500">Power Integrations</p>
         </div>
-        <p class="text-sm font-black text-white">${shares}</p>
+        <div class="text-right">
+          <p class="text-sm font-black text-white">${shares}</p>
+          <p class="text-[9px] text-emerald-400 font-bold tracking-wider mt-0.5">+36 expected on Apr 2027</p>
+        </div>
       </div>
       <div class="flex gap-2">
         <div class="flex-1 bg-slate-900/40 rounded-xl p-3">
