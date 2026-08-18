@@ -935,14 +935,16 @@ function monthOverviewCardHtml() {
           <span class="material-icons text-white" style="font-size:18px">calendar_month</span>
         </div>
         <div>
-          <h3 class="text-sm font-black text-white uppercase tracking-wide">${currentY} Overview</h3>
+          <h3 class="text-sm font-black text-white uppercase tracking-wide">Overview to 2028</h3>
           <p class="text-[10px] text-slate-400">Month by month balance</p>
         </div>
       </div>
     </summary>
     <div class="p-4 pt-0">
-      <div class="h-48 w-full relative">
-        <canvas id="monthOverviewChart"></canvas>
+      <div class="w-full overflow-x-auto pb-2" style="-webkit-overflow-scrolling: touch;">
+        <div class="h-48 relative" style="min-width: 800px;">
+          <canvas id="monthOverviewChart"></canvas>
+        </div>
       </div>
     </div>
   </details>`;
@@ -962,10 +964,16 @@ function renderMonthOverviewChart() {
     return { k, bal, savings: t.savings };
   });
 
-  const yearSeries = series.filter(s => keyParts(s.k).y === currentY);
+  const yearSeries = series.filter(s => {
+    const y = keyParts(s.k).y;
+    return y >= currentY && y <= 2028;
+  });
   if (!yearSeries.length) return;
 
-  const labels = yearSeries.map(s => monthName(s.k).substring(0,3));
+  const labels = yearSeries.map(s => {
+    const { y, m } = keyParts(s.k);
+    return `${MONTHS_SHORT[m]} '${String(y).slice(2)}`;
+  });
   const data = yearSeries.map(s => s.bal);
   
   if (monthOverviewChartInstance) monthOverviewChartInstance.destroy();
