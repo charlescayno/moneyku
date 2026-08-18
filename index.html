@@ -33,21 +33,7 @@
     <link rel="apple-touch-icon" href="assets/money-icon.png" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'spider-red': '#de0606',
-              'spider-blue': '#007fd7',
-              'spider-dark': '#3f3f3f',
-              'spider-darkred': '#ac0202',
-              'spider-light': '#e2e2e2'
-            }
-          }
-        }
-      }
-    </script>
+    
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
@@ -55,12 +41,12 @@
     <link rel="stylesheet" href="style.css?v=20260815_24" />
   </head>
   <body
-    class="bg-spider-dark text-spider-light overflow-hidden font-sans select-none"
+    class="bg-slate-900 text-white overflow-hidden font-sans select-none"
   >
     <!-- INTRO SPLASH -->
     <div
       id="intro-screen"
-      class="fixed inset-0 z-[100] bg-spider-dark flex flex-col items-center justify-center pointer-events-auto overflow-hidden transition-opacity duration-700"
+      class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center pointer-events-auto overflow-hidden transition-opacity duration-700"
     >
       <div id="intro-particles" class="absolute inset-0"></div>
       <div
@@ -68,14 +54,14 @@
         class="relative z-10 flex flex-col items-center gap-4 transition-all duration-700"
       >
         <div class="intro-avatars flex justify-center">
-          <div id="intro-charlie" class="intro-av bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-black text-spider-light">C</div>
+          <div id="intro-charlie" class="intro-av bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-black text-white">C</div>
           <img src="assets/money-icon.png" id="intro-money" class="intro-money" alt="Money" />
         </div>
         <div
           class="text-center leading-[0.9] px-8 opacity-0 transition-opacity duration-500"
           id="intro-tag"
         >
-          <p class="text-2xl md:text-3xl font-black italic uppercase tracking-tight text-spider-light">
+          <p class="text-2xl md:text-3xl font-black italic uppercase tracking-tight text-white">
             Charles'
           </p>
           <p class="text-lg md:text-xl font-black uppercase tracking-[0.3em] mt-2 bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-400 bg-clip-text text-transparent">
@@ -88,31 +74,31 @@
     <!-- LOCK SCREEN -->
     <div
       id="lock-screen"
-      class="fixed inset-0 z-[90] bg-spider-dark hidden flex-col items-center justify-center pointer-events-auto"
+      class="fixed inset-0 z-[90] bg-slate-900 hidden flex-col items-center justify-center pointer-events-auto"
     >
       <div class="w-full max-w-sm px-8 flex flex-col items-center gap-6">
         <div class="w-20 h-20 rounded-3xl bg-slate-800 flex items-center justify-center border border-slate-700 shadow-xl mb-4">
           <span class="material-icons text-4xl text-slate-400">lock</span>
         </div>
         <div class="text-center w-full">
-          <h2 class="text-2xl font-black text-spider-light mb-2 tracking-tight">Vault Locked</h2>
+          <h2 class="text-2xl font-black text-white mb-2 tracking-tight">Vault Locked</h2>
           <p class="text-slate-400 text-sm font-medium mb-8">Enter your secure passphrase to view dashboard</p>
         </div>
         <div class="w-full relative">
           <input 
             type="password" 
             id="lock-password" 
-            class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl py-4 pl-5 pr-14 text-center text-xl font-bold tracking-widest text-spider-light focus:outline-none focus:border-indigo-500 transition-colors"
+            class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl py-4 pl-5 pr-14 text-center text-xl font-bold tracking-widest text-white focus:outline-none focus:border-indigo-500 transition-colors"
             placeholder="••••••••"
             autocomplete="current-password"
           />
-          <button id="lock-toggle-btn" onclick="toggleLockPassword()" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-spider-light transition-colors cursor-pointer" type="button">
+          <button id="lock-toggle-btn" onclick="toggleLockPassword()" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer" type="button">
             <span class="material-icons" style="font-size: 20px" id="lock-toggle-icon">visibility</span>
           </button>
         </div>
         <button 
           onclick="unlockApp()" 
-          class="w-full mt-2 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-spider-light font-black uppercase tracking-widest text-sm transition-colors"
+          class="w-full mt-2 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-sm transition-colors"
         >
           Unlock
         </button>
@@ -129,12 +115,12 @@
     <!-- APP SHELL -->
     <div
       id="app"
-      class="h-screen flex flex-col opacity-0 transition-opacity duration-500 max-w-2xl md:max-w-5xl mx-auto bg-spider-dark"
+      class="h-screen flex flex-col opacity-0 transition-opacity duration-500 max-w-2xl md:max-w-5xl mx-auto bg-slate-900"
     >
       <!-- SYNC INDICATOR -->
       <div
         id="sync-bar"
-        class="h-[2px] bg-spider-dark relative overflow-hidden flex-shrink-0"
+        class="h-[2px] bg-slate-900 relative overflow-hidden flex-shrink-0"
         style="opacity: 0; transition: opacity 0.3s ease"
       >
         <div
@@ -144,12 +130,12 @@
 
       <!-- HEADER -->
       <header
-        class="px-6 md:px-8 pt-6 pb-3 flex justify-between items-end bg-spider-dark/80 backdrop-blur-md sticky top-0 z-40 flex-shrink-0"
+        class="px-6 md:px-8 pt-6 pb-3 flex justify-between items-end bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex-shrink-0"
       >
         <div>
           <h1
             id="current-month-display"
-            class="text-2xl md:text-3xl font-black tracking-tight text-spider-light uppercase italic leading-none"
+            class="text-2xl md:text-3xl font-black tracking-tight text-white uppercase italic leading-none"
           >
             JULY
           </h1>
@@ -163,7 +149,7 @@
           <button
             onclick="openItemModal('charlie','expenses',null)"
             title="Add Expense"
-            class="h-12 px-4 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-spider-light font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-1.5 shadow-lg shadow-rose-950/40 active:scale-95 transition-all"
+            class="h-12 px-4 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-1.5 shadow-lg shadow-rose-950/40 active:scale-95 transition-all"
           >
             <span class="material-icons text-lg">add</span>
             <span class="hidden sm:inline">Expense</span>
@@ -215,10 +201,10 @@
     >
       <div
         id="more-sheet"
-        class="bg-spider-dark w-full max-w-2xl rounded-t-3xl sm:rounded-3xl border border-white/5 shadow-2xl flex flex-col max-h-[85vh] translate-y-full sm:translate-y-6 sm:opacity-0 transition-all duration-400 ease-out"
+        class="bg-slate-900 w-full max-w-2xl rounded-t-3xl sm:rounded-3xl border border-white/5 shadow-2xl flex flex-col max-h-[85vh] translate-y-full sm:translate-y-6 sm:opacity-0 transition-all duration-400 ease-out"
       >
         <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
-          <h3 class="text-lg font-black uppercase tracking-wide text-spider-light">Overview</h3>
+          <h3 class="text-lg font-black uppercase tracking-wide text-white">Overview</h3>
           <button onclick="closeMore()" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
             <span class="material-icons text-slate-400">close</span>
           </button>
@@ -244,7 +230,7 @@
         <div class="flex justify-between items-start mb-6 flex-shrink-0">
           <h3
             id="modal-title"
-            class="text-2xl font-black uppercase tracking-tight text-spider-light"
+            class="text-2xl font-black uppercase tracking-tight text-white"
           >
             Edit Item
           </h3>
@@ -273,7 +259,7 @@
           <button
             id="save-btn"
             onclick="saveModal()"
-            class="flex-1 py-5 font-bold text-spider-light bg-indigo-600 rounded-2xl transition-transform shadow-lg shadow-indigo-900/40 disabled:opacity-50 disabled:pointer-events-none"
+            class="flex-1 py-5 font-bold text-white bg-indigo-600 rounded-2xl transition-transform shadow-lg shadow-indigo-900/40 disabled:opacity-50 disabled:pointer-events-none"
           >
             Save
           </button>
@@ -311,10 +297,10 @@
             id="confirm-icon"
             class="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-lg shadow-rose-500/20"
           >
-            <span class="material-icons text-spider-light text-3xl">delete_outline</span>
+            <span class="material-icons text-white text-3xl">delete_outline</span>
           </div>
         </div>
-        <h3 id="confirm-title" class="text-xl font-black text-spider-light text-center">
+        <h3 id="confirm-title" class="text-xl font-black text-white text-center">
           Delete item?
         </h3>
         <p id="confirm-sub" class="text-sm text-slate-400 text-center">
@@ -323,7 +309,7 @@
         <div class="space-y-2 pt-2">
           <button
             id="confirm-action-btn"
-            class="w-full py-4 font-black text-spider-light bg-rose-600 rounded-2xl transition-transform shadow-lg shadow-rose-900/30"
+            class="w-full py-4 font-black text-white bg-rose-600 rounded-2xl transition-transform shadow-lg shadow-rose-900/30"
           >
             Delete
           </button>
@@ -342,11 +328,11 @@
       id="toast"
       class="fixed top-6 left-1/2 -translate-x-1/2 z-[80] px-5 py-3 bg-slate-800 border border-white/10 rounded-2xl shadow-2xl flex items-center gap-3 opacity-0 -translate-y-4 pointer-events-none transition-all duration-500"
     >
-      <span id="toast-icon" class="material-icons text-spider-blue text-lg">check_circle</span>
-      <span id="toast-text" class="text-sm font-bold text-spider-light">Done!</span>
+      <span id="toast-icon" class="material-icons text-emerald-400 text-lg">check_circle</span>
+      <span id="toast-text" class="text-sm font-bold text-white">Done!</span>
     </div>
 
-    <script type="module" src="script.js?v=20260816_36"></script>
+    <script type="module" src="script.js?v=20260816_37"></script>
   </body>
 </html>
 
