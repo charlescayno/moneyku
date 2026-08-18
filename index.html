@@ -9,6 +9,22 @@
     <title>Charles | Money</title>
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#0f172a" />
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        var splash = document.getElementById("intro-splash");
+        if (splash) {
+          splash.style.opacity = "1";
+          splash.innerHTML = "<div style='padding:20px; color:red; font-size:12px; font-family:monospace; background:#222; height:100vh; overflow:auto;'><b>ERROR:</b><br>" + msg + "<br><br><b>Line:</b> " + line + ":" + col + "<br><br><b>Stack:</b><br>" + (error ? error.stack : '') + "</div>";
+        }
+      };
+      window.addEventListener("unhandledrejection", function(event) {
+        var splash = document.getElementById("intro-splash");
+        if (splash) {
+          splash.style.opacity = "1";
+          splash.innerHTML = "<div style='padding:20px; color:orange; font-size:12px; font-family:monospace; background:#222; height:100vh; overflow:auto;'><b>PROMISE REJECTION:</b><br>" + event.reason + "</div>";
+        }
+      });
+    </script>
     <!-- 💸 money-with-wings favicon -->
     <link
       rel="icon"
@@ -330,7 +346,7 @@
       <span id="toast-text" class="text-sm font-bold text-spider-light">Done!</span>
     </div>
 
-    <script type="module" src="script.js?v=20260816_35"></script>
+    <script type="module" src="script.js?v=20260816_36"></script>
   </body>
 </html>
 
