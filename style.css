@@ -846,3 +846,4 @@ details.item-parent[open] > summary .parent-caret { transform: rotate(90deg); }
 .pending-bar {
   box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
 }
+
