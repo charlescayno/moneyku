@@ -988,7 +988,7 @@ function monthOverviewCardHtml() {
   
   // Year selector for jump
   let yearSelectHtml = `<select onchange="jumpOverviewYear(this)" class="bg-transparent text-[10px] font-bold text-slate-400 uppercase tracking-wide outline-none appearance-none cursor-pointer">`;
-  const endY = keyParts(keys[keys.length - 1]).k.y || 2046; // fallback if needed
+  const endY = keyParts(keys[keys.length - 1]).y || 2046; // fallback if needed
   for (let y = currentY; y <= endY; y++) {
     yearSelectHtml += `<option value="${y}" ${pageItems[0] && keyParts(pageItems[0].k).y === y ? 'selected' : ''}>${y}</option>`;
   }
