@@ -436,7 +436,7 @@ function parentRowHtml(it, k, kind, who, opts = {}) {
   const childRows = kids.map((c) => childRowHtml(it.id, c, k, who, kind)).join("");
   const kidsIds = kids.map(c => c.id).join(",");
   
-  return `<details open class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
+  return `<details class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
     <summary class="parent-summary flex items-center gap-4 p-5 cursor-pointer list-none ${allPaid ? "opacity-70" : ""}">
       <div class="acct-icon w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 shadow-lg">${iconInner}</div>
       <div class="flex-1 min-w-0">
