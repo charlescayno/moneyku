@@ -1514,7 +1514,7 @@ function monthSelect(id, value, includeOngoing, minKey) {
   return opts.join("");
 }
 
-window.updateBpiCcMonth = function () {
+window.updateBpiCcMonth = function (isExistingInit = false) {
   const method = $("f-paymethod") ? $("f-paymethod").value : "cash";
   const box = $("bpi-cc-box");
   if (!box) return;
@@ -1541,14 +1541,16 @@ window.updateBpiCcMonth = function () {
 
   const targetK = mkKey(dueDate.getFullYear(), dueDate.getMonth());
 
-  const startSelect = $("f-start");
-  if (startSelect) {
-    startSelect.value = targetK;
-  }
+  if (!isExistingInit) {
+    const startSelect = $("f-start");
+    if (startSelect) {
+      startSelect.value = targetK;
+    }
 
-  const dueDayInput = $("f-dueday");
-  if (dueDayInput) {
-    dueDayInput.value = dueDate.getDate();
+    const dueDayInput = $("f-dueday");
+    if (dueDayInput) {
+      dueDayInput.value = dueDate.getDate();
+    }
   }
 
   const hintEl = $("bpi-cc-hint");
@@ -1684,7 +1686,10 @@ window.openItemModal = function (who, kind, id) {
   else { delBtn.classList.remove("hidden"); delBtn.onclick = () => confirmDelete(); }
 
   openModalShell();
-  if (kind === "expenses") updateBpiCcMonth();
+  if (kind === "expenses") updateBpiCcMonth(!!it);
+
+  // Focus name field
+  setTimeout(() => $("f-name")?.focus(), 50);
 };
 
 // Sub-expense modal (add/edit a child under a parent expense).
