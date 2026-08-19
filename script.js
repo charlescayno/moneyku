@@ -57,7 +57,7 @@ let barChartInstance = null;
 let projectionChartInstance = null;
 let monthOverviewChartInstance = null;
 let hideProjected = localStorage.getItem("hideProjected") !== "false";
-let hideInvestments = localStorage.getItem("hideInvestments") !== "false";
+let hideInvestments = localStorage.getItem("hideInvestments") === null ? true : localStorage.getItem("hideInvestments") === "true";
 let overviewPage = 0;
 
 window.toggleProjected = function() {
