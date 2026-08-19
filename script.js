@@ -203,6 +203,7 @@ function emptyData() {
 // =============================
 function getItems(who, kind) { return (appData.items?.[who]?.[kind] || []).filter(Boolean); }
 function itemActiveIn(it, k) {
+  if (appData.deleted?.[k]?.[it.id]) return false;
   if (!it.recurring) return it.start === k;
   if (cmpKey(k, it.start) < 0) return false;
   if (it.end && cmpKey(k, it.end) > 0) return false;
@@ -2180,35 +2181,103 @@ function refreshRealized() {
 // --- delete via confirm ---
 function confirmDelete() {
   const c = $("confirm-overlay");
+
+  let isRecurring = false;
+  if (activeEdit && activeEdit.kind !== "account") {
+    let item;
+    if (activeEdit.kind === "child") {
+      const parent = getItems(activeEdit.who, "expenses").find(x => x.id === activeEdit.parentId);
+      item = parent ? getKids(parent).find(x => x.id === activeEdit.id) : null;
+    } else {
+      item = getItems(activeEdit.who, activeEdit.type).find(x => x.id === activeEdit.id);
+    }
+    if (item && item.recurring) {
+      isRecurring = true;
+    }
+  }
+
+  const btnContainer = $("confirm-buttons");
+  if (isRecurring) {
+     $("confirm-title").textContent = "Delete recurring item?";
+     $("confirm-sub").textContent = "How do you want to handle this deletion?";
+     btnContainer.innerHTML = `
+        <button onclick="doDelete('month')" class="w-full py-4 font-black text-white bg-rose-600/80 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg">This month only</button>
+        <button onclick="doDelete('future')" class="w-full py-4 font-black text-white bg-rose-600/80 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg">This & future months</button>
+        <button onclick="doDelete('all')" class="w-full py-4 font-black text-rose-200 bg-rose-900/50 hover:bg-rose-900 rounded-2xl transition-colors mt-4">All occurrences</button>
+        <button onclick="closeConfirm()" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform mt-2">Cancel</button>
+     `;
+  } else {
+     $("confirm-title").textContent = "Delete item?";
+     $("confirm-sub").textContent = "This removes it from every month.";
+     btnContainer.innerHTML = `
+        <button onclick="doDelete('all')" class="w-full py-4 font-black text-white bg-rose-600 rounded-2xl transition-transform shadow-lg shadow-rose-900/30">Delete</button>
+        <button onclick="closeConfirm()" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform">Cancel</button>
+     `;
+  }
+
   c.classList.add("open");
   c.style.opacity = "1"; c.style.pointerEvents = "auto";
-  $("confirm-action-btn").onclick = doDelete;
 }
+
 window.closeConfirm = function () {
   const c = $("confirm-overlay");
   c.classList.remove("open");
   c.style.opacity = "0"; c.style.pointerEvents = "none";
 };
-async function doDelete() {
+
+window.doDelete = async function (scope = "all") {
   if (!activeEdit) return;
   if (activeEdit.kind === "account") {
     appData.accounts = appData.accounts.filter((a) => a.id !== activeEdit.id);
   } else if (activeEdit.kind === "child") {
     const { who, parentId, id } = activeEdit;
     const parent = getItems(who, "expenses").find((x) => x.id === parentId);
-    if (parent && Array.isArray(parent.children)) parent.children = parent.children.filter((c) => c.id !== id);
-    for (const k of Object.keys(appData.paid)) delete appData.paid[k][id];
-    for (const k of Object.keys(appData.spend || {})) { if (appData.spend[k]) delete appData.spend[k][id]; }
+    if (!parent) return;
+    const kids = getKids(parent);
+    const item = kids.find(x => x.id === id);
+    if (!item) return;
+
+    if (scope === "month") {
+      appData.deleted = appData.deleted || {};
+      appData.deleted[selectedKey] = appData.deleted[selectedKey] || {};
+      appData.deleted[selectedKey][id] = true;
+    } else if (scope === "future") {
+      item.end = addMonths(selectedKey, -1);
+      if (cmpKey(item.end, item.start) < 0) {
+        parent.children = kids.filter((c) => c.id !== id);
+      }
+    } else {
+      parent.children = kids.filter((c) => c.id !== id);
+      for (const k of Object.keys(appData.paid)) delete appData.paid[k][id];
+      for (const k of Object.keys(appData.spend || {})) { if (appData.spend[k]) delete appData.spend[k][id]; }
+      for (const k of Object.keys(appData.deleted || {})) { if (appData.deleted[k]) delete appData.deleted[k][id]; }
+    }
   } else {
     const { who, type, id } = activeEdit;
-    appData.items[who][type] = appData.items[who][type].filter((x) => x.id !== id);
-    // clean orphaned per-month state
-    for (const k of Object.keys(appData.paid)) delete appData.paid[k][id];
-    for (const k of Object.keys(appData.overrides)) delete appData.overrides[k][id];
+    const list = appData.items[who][type];
+    const item = list.find((x) => x.id === id);
+
+    if (scope === "month") {
+      appData.deleted = appData.deleted || {};
+      appData.deleted[selectedKey] = appData.deleted[selectedKey] || {};
+      appData.deleted[selectedKey][id] = true;
+    } else if (scope === "future") {
+      if (item) {
+        item.end = addMonths(selectedKey, -1);
+        if (cmpKey(item.end, item.start) < 0) {
+          appData.items[who][type] = list.filter(x => x.id !== id);
+        }
+      }
+    } else {
+      appData.items[who][type] = list.filter((x) => x.id !== id);
+      for (const k of Object.keys(appData.paid)) delete appData.paid[k][id];
+      for (const k of Object.keys(appData.overrides)) delete appData.overrides[k][id];
+      for (const k of Object.keys(appData.deleted || {})) { if (appData.deleted[k]) delete appData.deleted[k][id]; }
+    }
   }
   await syncSet();
   closeConfirm(); closeModal(); renderAll(); toast("Deleted");
-}
+};
 
 // =============================
 // Toast
