@@ -93,12 +93,12 @@
             placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
             autocomplete="current-password"
           />
-          <button id="lock-toggle-btn" onclick="toggleLockPassword()" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer" type="button">
+          <button id="lock-toggle-btn" data-action="toggleLockPassword" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer" type="button">
             <span class="material-icons" style="font-size: 20px" id="lock-toggle-icon">visibility</span>
           </button>
         </div>
         <button 
-          onclick="unlockApp()" 
+          data-action="unlockApp" 
           class="w-full mt-2 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-sm transition-colors"
         >
           Unlock
@@ -148,7 +148,7 @@
         </div>
         <div class="flex items-center gap-2">
           <button
-            onclick="openItemModal('charlie','expenses',null)"
+            data-action="openItemModal" data-arg0="charlie" data-arg1="expenses"
             title="Add Expense"
             class="h-12 px-4 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-1.5 shadow-lg shadow-rose-950/40 active:scale-95 transition-all"
           >
@@ -156,13 +156,13 @@
             <span class="hidden sm:inline">Expense</span>
           </button>
           <button
-            onclick="openMore()"
+            data-action="openMore"
             class="w-12 h-12 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-2xl transition-transform shadow-lg"
           >
             <span class="material-icons text-indigo-400">insights</span>
           </button>
           <button
-            onclick="toggleMonthPicker()"
+            data-action="toggleMonthPicker"
             class="w-12 h-12 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-2xl transition-transform shadow-lg md:hidden"
           >
             <span class="material-icons text-indigo-400">calendar_month</span>
@@ -206,7 +206,7 @@
       >
         <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
           <h3 class="text-lg font-black uppercase tracking-wide text-white">Overview</h3>
-          <button onclick="closeMore()" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
+          <button data-action="closeMore" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
             <span class="material-icons text-slate-400">close</span>
           </button>
         </div>
@@ -252,14 +252,14 @@
 
         <div class="mt-8 flex gap-4 flex-shrink-0">
           <button
-            onclick="closeModal()"
+            data-action="closeModal"
             class="flex-1 py-5 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform"
           >
             Cancel
           </button>
           <button
             id="save-btn"
-            onclick="saveModal()"
+            data-action="saveModal"
             class="flex-1 py-5 font-bold text-white bg-indigo-600 rounded-2xl transition-transform shadow-lg shadow-indigo-900/40 disabled:opacity-50 disabled:pointer-events-none"
           >
             Save
@@ -277,7 +277,7 @@
         <!-- Year groups injected -->
       </div>
       <button
-        onclick="toggleMonthPicker()"
+        data-action="toggleMonthPicker"
         class="fixed bottom-8 left-1/2 -translate-x-1/2 w-14 h-14 flex items-center justify-center bg-slate-800 rounded-full shadow-2xl transition-transform aspect-square"
       >
         <span class="material-icons">close</span>
@@ -315,7 +315,7 @@
             Delete
           </button>
           <button
-            onclick="closeConfirm()"
+            data-action="closeConfirm"
             class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform"
           >
             Cancel
@@ -334,6 +334,6 @@
     </div>
 
     <!-- Main Script -->
-    <script type="module" src="script.js?v=20260820_LayoutFix"></script>
+    <script type="module" src="script.js?v=20260820_Delegation"></script>
   </body>
 </html>

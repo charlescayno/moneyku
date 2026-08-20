@@ -381,7 +381,7 @@ function renderMonthStrip() {
       ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/40 ring-2 ring-indigo-400/60"
       : "bg-slate-800/60 text-slate-400";
     const year = keyParts(k).y;
-    return `<button onclick="selectMonth('${k}')" data-k="${k}"
+    return `<button data-action="selectMonth" data-arg0="${k}" data-k="${k}"
       class="month-chip ${isNow ? "is-now" : ""} flex-shrink-0 relative px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wide transition-colors ${cls}">
       ${isNow ? '<span class="now-banner">Now</span>' : ""}
       <div class="flex flex-col items-center">
@@ -407,7 +407,7 @@ function renderMonthBanner() {
   el.classList.remove("hidden");
   const label = `${monthName(selectedKey)} ${keyParts(selectedKey).y}`;
   const jump = timeline().includes(nowK)
-    ? `<button onclick="selectMonth('${nowK}')" class="text-[11px] font-black uppercase tracking-wider text-white bg-indigo-500/80 hover:bg-indigo-500 rounded-lg px-3 py-1.5 flex items-center gap-1.5 shadow-lg shadow-indigo-900/30 transition-colors"><span class="material-icons" style="font-size:15px">undo</span>Back to ${monthShort(nowK)}</button>`
+    ? `<button data-action="selectMonth" data-arg0="${nowK}" class="text-[11px] font-black uppercase tracking-wider text-white bg-indigo-500/80 hover:bg-indigo-500 rounded-lg px-3 py-1.5 flex items-center gap-1.5 shadow-lg shadow-indigo-900/30 transition-colors"><span class="material-icons" style="font-size:15px">undo</span>Back to ${monthShort(nowK)}</button>`
     : "";
   el.innerHTML = `<div class="flex items-center justify-between gap-2 py-2 pl-4 pr-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
     <span class="text-[11px] font-black uppercase tracking-wider text-amber-400">Viewing ${label}</span>
@@ -433,8 +433,8 @@ function childRowHtml(parentId, c, k, who, kind = "expenses") {
       </div>`
     : "";
     
-  return `<div data-child="${c.id}" onclick="openChildModal('${who}','${parentId}','${c.id}')" class="item-row flex items-center gap-4 py-2.5 px-6 cursor-pointer hover:bg-white/5 transition-colors">
-    <button onclick="togglePaidQuick(event,'${c.id}','expenses')" title="Mark paid" class="paid-check ${paid ? "is-paid bg-emerald-500/20 border-emerald-500" : "bg-transparent border-slate-700"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-colors">
+  return `<div data-child="${c.id}" data-action="openChildModal" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" class="item-row flex items-center gap-4 py-2.5 px-6 cursor-pointer hover:bg-white/5 transition-colors">
+    <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark paid" class="paid-check ${paid ? "is-paid bg-emerald-500/20 border-emerald-500" : "bg-transparent border-slate-700"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-colors">
       <span class="material-icons check-icon ${paid ? "text-emerald-400 opacity-100" : "text-transparent opacity-0"} transition-opacity" style="font-size:14px">check</span>
     </button>
     ${rowIconHtml(c.name, 20, kind, true)}
@@ -475,7 +475,7 @@ function parentRowHtml(it, k, kind, who, opts = {}) {
       </div>
       <div class="flex flex-col items-end gap-1 flex-shrink-0">
         <p class="text-lg font-black text-white">${peso(total)}</p>
-        <button onclick="togglePaidGroup(event, '${kidsIds}', '${k}', '${kind}')" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="text-slate-500 hover:text-purple-400 transition-colors flex items-center gap-1 ${allPaid ? "text-purple-500" : ""}">
+        <button data-action="togglePaidGroup" data-arg0="${kidsIds}" data-arg1="${k}" data-arg2="${kind}" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="text-slate-500 hover:text-purple-400 transition-colors flex items-center gap-1 ${allPaid ? "text-purple-500" : ""}">
           <span class="material-icons" style="font-size:16px">${allPaid ? "done_all" : "checklist"}</span>
         </button>
       </div>
@@ -483,7 +483,7 @@ function parentRowHtml(it, k, kind, who, opts = {}) {
     <div class="pb-4 pt-1 space-y-0 relative">
       ${childRows}
       <div class="px-6 mt-3">
-        <button onclick="openChildModal('${who}','${it.id}',null)" class="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>
+        <button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>
       </div>
     </div>
   </details>`;
@@ -538,9 +538,9 @@ function itemRowHtml(it, k, kind, who, opts = {}) {
       <span class="inst-bar-count text-[9px] font-bold text-slate-500 flex-shrink-0">${paidM}/${total}</span>
     </div>`;
   }
-  return `<div onclick="openItemModal('${who}','${kind}','${it.id}')"
+  return `<div data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
     class="item-row flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors cursor-pointer ${settled ? "opacity-60" : ""}">
-    <button onclick="togglePaidQuick(event,'${it.id}','${kind}')" title="${kind === "income" ? "Mark received" : "Mark paid"}" class="paid-check ${settled ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 border">
+    <button data-action="togglePaidQuick" data-arg0="${it.id}" data-arg1="${kind}" title="${kind === "income" ? "Mark received" : "Mark paid"}" class="paid-check ${settled ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 border">
       <span class="material-icons check-icon text-white" style="font-size:16px">check</span>
     </button>
     ${iconHtml}
@@ -634,7 +634,7 @@ function paymentMethodGroupHtml(pm, list, k, kind, who) {
         <p class="text-sm font-black text-indigo-300 flex-1 min-w-0 truncate">${label}</p>
       </div>
       <div class="flex items-center gap-3">
-        <button onclick="togglePaidGroup(event, '${idsStr}', '${k}', '${kind}')" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="paid-check ${allPaid ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 border">
+        <button data-action="togglePaidGroup" data-arg0="${idsStr}" data-arg1="${k}" data-arg2="${kind}" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="paid-check ${allPaid ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 border">
           <span class="material-icons check-icon text-white" style="font-size:16px">check</span>
         </button>
         <p class="text-sm font-black text-indigo-300 flex-shrink-0">${peso(total)}</p>
@@ -741,14 +741,14 @@ function personSectionHtml(who) {
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
           </div>
-          <button onclick="event.preventDefault(); openItemModal('${who}','income',null)" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+          <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
         </summary>
         <div class="space-y-0.5 mt-2">${incHtml}</div>
       </details>
       <div class="border-t border-white/[0.04] pt-3">
         <div class="flex items-center justify-between px-3 mb-1">
           <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
-          <button onclick="openItemModal('${who}','expenses',null)" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+          <button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
         </div>
         <div class="space-y-0.5">${expHtml}</div>
       </div>
@@ -856,7 +856,7 @@ function acctIconHtml(a) {
 // One standalone account row (icon + owner badge + name + owner + amount).
 function acctRowHtml(a) {
   const o = OWNERS[a.owner] || OWNERS.charlie;
-  return `<div onclick="openAccountModal('${a.id}')" class="item-row flex items-center gap-3 py-2.5 px-3 rounded-xl cursor-pointer">
+  return `<div data-action="openAccountModal" data-arg0="${a.id}" class="item-row flex items-center gap-3 py-2.5 px-3 rounded-xl cursor-pointer">
     ${acctIconHtml(a)}
     <div class="flex-1 min-w-0">
       <p class="text-sm font-bold text-slate-200 truncate">${escapeHtml(a.name)}</p>
@@ -877,7 +877,7 @@ function acctGroupHtml(g) {
   const subs = g.items.map((a) => {
     const o = OWNERS.charlie;
     const ok = "charlie";
-    return `<div onclick="openAccountModal('${a.id}')" class="item-row flex items-center gap-2 py-1.5 pl-2 rounded-lg cursor-pointer">
+    return `<div data-action="openAccountModal" data-arg0="${a.id}" class="item-row flex items-center gap-2 py-1.5 pl-2 rounded-lg cursor-pointer">
       <div class="w-5 h-5 rounded-full bg-gradient-to-br ${o.grad} flex items-center justify-center flex-shrink-0 ring-1 ring-white/20">
         <span class="text-[10px] font-black text-white">${o.label.charAt(0)}</span>
       </div>
@@ -923,7 +923,7 @@ function accountsCardHtml() {
     </summary>
     <div class="p-3 pt-0 space-y-0.5">
       ${rows}
-      <button onclick="openAccountModal(null)" class="w-full mt-2 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1 transition-transform"><span class="material-icons" style="font-size:16px">add</span>Add account</button>
+      <button data-action="openAccountModal" class="w-full mt-2 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1 transition-transform"><span class="material-icons" style="font-size:16px">add</span>Add account</button>
     </div>
   </details>`;
 }
@@ -951,7 +951,7 @@ function investmentsCardHtml() {
         <div>
           <div class="flex items-center gap-2">
             <h3 class="text-sm font-black text-white uppercase tracking-wide">Investments</h3>
-            <button onclick="event.preventDefault(); toggleInvestments()" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
+            <button data-action="toggleInvestments" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
               <span class="material-icons" style="font-size: 14px">${hideInvestments ? 'visibility_off' : 'visibility'}</span>
             </button>
           </div>
@@ -984,7 +984,7 @@ function investmentsCardHtml() {
           <p class="text-sm font-black text-slate-200">₱${rate.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
         </div>
       </div>
-      <button onclick="openInvestmentModal()" class="w-full mt-2 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl font-bold text-amber-400 text-[11px] flex items-center justify-center gap-1 transition-transform">
+      <button data-action="openInvestmentModal" class="w-full mt-2 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl font-bold text-amber-400 text-[11px] flex items-center justify-center gap-1 transition-transform">
         <span class="material-icons" style="font-size:16px">edit</span>Edit Rates
       </button>
     </div>
@@ -1060,7 +1060,7 @@ function monthOverviewCardHtml() {
   });
   
   // Year selector for jump
-  let yearSelectHtml = `<select onchange="jumpOverviewYear(this)" class="bg-transparent text-[10px] font-bold text-slate-400 uppercase tracking-wide outline-none appearance-none cursor-pointer">`;
+  let yearSelectHtml = `<select data-action="jumpOverviewYear" data-arg0="this" class="bg-transparent text-[10px] font-bold text-slate-400 uppercase tracking-wide outline-none appearance-none cursor-pointer">`;
   const endY = keyParts(keys[keys.length - 1]).y || 2046; // fallback if needed
   for (let y = currentY; y <= endY; y++) {
     yearSelectHtml += `<option value="${y}" ${pageItems[0] && keyParts(pageItems[0].k).y === y ? 'selected' : ''}>${y}</option>`;
@@ -1085,7 +1085,7 @@ function monthOverviewCardHtml() {
       </div>
       
       <div class="flex items-center justify-between px-2">
-        <button onclick="prevOverviewPage()" class="text-xs font-bold ${safePage > 0 ? 'text-emerald-400' : 'text-slate-600'} flex items-center" ${safePage === 0 ? 'disabled' : ''}>
+        <button data-action="prevOverviewPage" class="text-xs font-bold ${safePage > 0 ? 'text-emerald-400' : 'text-slate-600'} flex items-center" ${safePage === 0 ? 'disabled' : ''}>
           <span class="material-icons" style="font-size:14px">chevron_left</span> Prev
         </button>
         
@@ -1094,7 +1094,7 @@ function monthOverviewCardHtml() {
           ${yearSelectHtml}
         </div>
         
-        <button onclick="nextOverviewPage()" class="text-xs font-bold ${safePage < maxPage ? 'text-emerald-400' : 'text-slate-600'} flex items-center" ${safePage === maxPage ? 'disabled' : ''}>
+        <button data-action="nextOverviewPage" class="text-xs font-bold ${safePage < maxPage ? 'text-emerald-400' : 'text-slate-600'} flex items-center" ${safePage === maxPage ? 'disabled' : ''}>
           Next <span class="material-icons" style="font-size:14px">chevron_right</span>
         </button>
       </div>
@@ -1135,13 +1135,13 @@ function renderBudget() {
 <div class="min-w-0 flex-1">
 <div class="flex items-center gap-2">
             <p class="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Projected · end of ${monthName(k)}</p>
-            <button onclick="toggleProjected()" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
+            <button data-action="toggleProjected" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
               <span class="material-icons" style="font-size: 14px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
             </button>
           </div>
           <p id="sum-projected" class="text-3xl sm:text-4xl md:text-5xl font-black text-white mt-1 leading-none truncate">${hideProjected ? '••••••' : peso(projected)}</p>
         </div>
-        <button onclick="openItemModal('charlie','expenses',null)" class="px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
+        <button data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
           <span class="material-icons text-base text-rose-400">add_circle</span>
           <span>+ Expense</span>
         </button>
@@ -1531,7 +1531,7 @@ window.toggleMonthPicker = function () {
       <div>
         <p class="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-3">${y}</p>
         <div class="grid grid-cols-3 gap-3">
-          ${keys.map((k) => `<button onclick="selectMonth('${k}')" class="py-4 rounded-2xl font-black text-sm ${k === selectedKey ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"} transition-transform">${MONTHS_SHORT[keyParts(k).m]}</button>`).join("")}
+          ${keys.map((k) => `<button data-action="selectMonth" data-arg0="${k}" class="py-4 rounded-2xl font-black text-sm ${k === selectedKey ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"} transition-transform">${MONTHS_SHORT[keyParts(k).m]}</button>`).join("")}
         </div>
       </div>`).join("");
   }
@@ -1640,7 +1640,7 @@ window.openItemModal = function (who, kind, id) {
   // recurring toggle
   body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
     <div><p class="text-sm font-bold text-white">Recurring</p><p class="text-[10px] text-slate-500">Repeats every month</p></div>
-    <button type="button" id="f-recurring" data-on="${recurring}" onclick="toggleField(this)" class="w-14 h-8 rounded-full transition-colors ${recurring ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
+    <button type="button" id="f-recurring" data-on="${recurring}" data-action="toggleField" data-arg0="this" class="w-14 h-8 rounded-full transition-colors ${recurring ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
       <span class="absolute top-1 ${recurring ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all"></span>
     </button>
   </div>`;
@@ -1653,7 +1653,7 @@ window.openItemModal = function (who, kind, id) {
   if (kind === "expenses") {
     body += `<div class="space-y-1">
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Payment Method / Category</label>
-      <select id="f-paymethod" onchange="updateBpiCcMonth()" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">
+      <select id="f-paymethod" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">
         <option value="cash" ${payMethod === "cash" ? "selected" : ""}>Cash / Bank / E-Wallet</option>
         <option value="bpi_platinum" ${payMethod === "bpi_platinum" ? "selected" : ""}>💳 BPI Platinum Rewards Mastercard</option>
         <option value="cc_other" ${payMethod === "cc_other" ? "selected" : ""}>💳 Other Credit Card</option>
@@ -1674,11 +1674,11 @@ window.openItemModal = function (who, kind, id) {
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="text-[10px] font-bold uppercase text-slate-400">Charge Day</label>
-          <input type="number" id="f-txday" min="1" max="31" value="${txDayVal}" oninput="updateBpiCcMonth()" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
+          <input type="number" id="f-txday" min="1" max="31" value="${txDayVal}" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
         </div>
         <div>
           <label class="text-[10px] font-bold uppercase text-slate-400">Cut-off Day</label>
-          <input type="number" id="f-cutoff" min="1" max="31" value="${cutoffDayVal}" oninput="updateBpiCcMonth()" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
+          <input type="number" id="f-cutoff" min="1" max="31" value="${cutoffDayVal}" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
         </div>
       </div>
       <div id="bpi-cc-hint" class="text-[11px] text-indigo-200/80 font-medium bg-indigo-900/30 p-2.5 rounded-xl border border-indigo-500/20"></div>
@@ -1720,14 +1720,14 @@ window.openItemModal = function (who, kind, id) {
     }
     body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
       <div><p class="text-sm font-bold text-white">${verb} in ${monthShort(selectedKey)}</p><p class="text-[10px] text-slate-500">${hint}</p></div>
-      <button type="button" id="f-paid" data-on="${settledNow}" onclick="toggleField(this)" class="w-14 h-8 rounded-full transition-colors ${settledNow ? "bg-emerald-600" : "bg-slate-700"} relative flex-shrink-0">
+      <button type="button" id="f-paid" data-on="${settledNow}" data-action="toggleField" data-arg0="this" class="w-14 h-8 rounded-full transition-colors ${settledNow ? "bg-emerald-600" : "bg-slate-700"} relative flex-shrink-0">
         <span class="absolute top-1 ${settledNow ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all"></span>
       </button>
     </div>`;
   }
 
   if (!isNew && kind === "expenses") {
-    body += `<button type="button" onclick="openChildModal('${who}','${id}',null)" class="w-full py-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"><span class="material-icons" style="font-size:18px">account_tree</span>Add sub-expense</button>`;
+    body += `<button type="button" data-action="openChildModal" data-arg0="${who}" data-arg1="${id}" class="w-full py-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"><span class="material-icons" style="font-size:18px">account_tree</span>Add sub-expense</button>`;
   }
 
   $("modal-body").innerHTML = body;
@@ -1760,10 +1760,10 @@ window.openChildModal = function (who, parentId, childId) {
     body += `<div id="spend-section">${spendSectionHtml(c)}</div>`;
     body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
       <div><p class="text-sm font-bold text-white">Paid in ${monthShort(selectedKey)}</p><p class="text-[10px] text-slate-500">Locks the final for this month${getSpendList(c.id, selectedKey).length ? "" : " (at the estimate)"}</p></div>
-      <button type="button" id="f-paid" data-on="${settledNow}" onclick="toggleField(this)" class="w-14 h-8 rounded-full transition-colors ${settledNow ? "bg-emerald-600" : "bg-slate-700"} relative flex-shrink-0"><span class="absolute top-1 ${settledNow ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all"></span></button>
+      <button type="button" id="f-paid" data-on="${settledNow}" data-action="toggleField" data-arg0="this" class="w-14 h-8 rounded-full transition-colors ${settledNow ? "bg-emerald-600" : "bg-slate-700"} relative flex-shrink-0"><span class="absolute top-1 ${settledNow ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all"></span></button>
     </div>`;
   } else {
-    body += `<button type="button" onclick="saveChildAndAddAnother()" class="w-full py-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2"><span class="material-icons" style="font-size:18px">playlist_add</span>Save &amp; add another</button>`;
+    body += `<button type="button" data-action="saveChildAndAddAnother" class="w-full py-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2"><span class="material-icons" style="font-size:18px">playlist_add</span>Save &amp; add another</button>`;
   }
   $("modal-body").innerHTML = body;
   const delBtn = $("delete-btn");
@@ -1821,7 +1821,7 @@ function spendSectionHtml(it) {
       <span class="material-icons text-emerald-400" style="font-size:16px">payments</span>
       <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}</span>
       <span class="text-[13px] font-black text-white">${peso(e.amount)}</span>
-      <button type="button" onclick="deleteSpend('${e.id}')" title="Remove" class="text-slate-500 hover:text-rose-400 flex-shrink-0"><span class="material-icons" style="font-size:16px">close</span></button>
+      <button type="button" data-action="deleteSpend" data-arg0="${e.id}" title="Remove" class="text-slate-500 hover:text-rose-400 flex-shrink-0"><span class="material-icons" style="font-size:16px">close</span></button>
     </div>`).join("");
   return `<div class="space-y-2">
     <div class="flex items-center justify-between ml-1">
@@ -1835,7 +1835,7 @@ function spendSectionHtml(it) {
     ${rows ? `<div class="space-y-1.5">${rows}</div>` : `<p class="text-[11px] text-slate-600 text-center py-1">No spending logged yet.</p>`}
     <div class="spend-add flex items-center gap-2">
       <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Add spending  ₱0" onkeydown="if(event.key==='Enter'){event.preventDefault();addSpend();}" class="spend-amt bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" />
-      <button type="button" onclick="addSpend()" title="Log spending" class="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 flex items-center justify-center active:scale-95 transition-transform"><span class="material-icons" style="font-size:22px">add</span></button>
+      <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 flex items-center justify-center active:scale-95 transition-transform"><span class="material-icons" style="font-size:22px">add</span></button>
     </div>
   </div>`;
 }
@@ -2224,17 +2224,17 @@ function confirmDelete() {
      $("confirm-title").textContent = "Delete recurring item?";
      $("confirm-sub").textContent = "How do you want to handle this deletion?";
      btnContainer.innerHTML = `
-        <button onclick="doDelete('month')" class="w-full py-4 font-black text-white bg-rose-600/80 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg">This month only</button>
-        <button onclick="doDelete('future')" class="w-full py-4 font-black text-white bg-rose-600/80 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg">This & future months</button>
-        <button onclick="doDelete('all')" class="w-full py-4 font-black text-rose-200 bg-rose-900/50 hover:bg-rose-900 rounded-2xl transition-colors mt-4">All occurrences</button>
-        <button onclick="closeConfirm()" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform mt-2">Cancel</button>
+        <button data-action="doDelete" data-arg0="month" class="w-full py-4 font-black text-white bg-rose-600/80 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg">This month only</button>
+        <button data-action="doDelete" data-arg0="future" class="w-full py-4 font-black text-white bg-rose-600/80 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg">This & future months</button>
+        <button data-action="doDelete" data-arg0="all" class="w-full py-4 font-black text-rose-200 bg-rose-900/50 hover:bg-rose-900 rounded-2xl transition-colors mt-4">All occurrences</button>
+        <button data-action="closeConfirm" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform mt-2">Cancel</button>
      `;
   } else {
      $("confirm-title").textContent = "Delete item?";
      $("confirm-sub").textContent = "This removes it from every month.";
      btnContainer.innerHTML = `
-        <button onclick="doDelete('all')" class="w-full py-4 font-black text-white bg-rose-600 rounded-2xl transition-transform shadow-lg shadow-rose-900/30">Delete</button>
-        <button onclick="closeConfirm()" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform">Cancel</button>
+        <button data-action="doDelete" data-arg0="all" class="w-full py-4 font-black text-white bg-rose-600 rounded-2xl transition-transform shadow-lg shadow-rose-900/30">Delete</button>
+        <button data-action="closeConfirm" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform">Cancel</button>
      `;
   }
 
@@ -2580,3 +2580,69 @@ function handleSwipe() {
     }
   }
 }
+
+
+// =============================
+// Event Delegation
+// =============================
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.getAttribute('data-action');
+  
+  if (action === 'openItemModal') e.preventDefault(); // if it was a link/button
+  
+  const args = [];
+  let i = 0;
+  while (btn.hasAttribute('data-arg' + i)) {
+    const val = btn.getAttribute('data-arg' + i);
+    // Try parsing number if it's purely numeric, but it could be an ID. Let's just pass strings for now.
+    // Wait, the functions expect specific types? Strings usually work.
+    // Wait, boolean 'true'/'false'?
+    args.push(val);
+    i++;
+  }
+  
+  // Quick fix for specific event arguments
+  if (action === 'togglePaidQuick') args.unshift(e);
+  if (action === 'togglePaidGroup') args.unshift(e);
+  if (action === 'pickOwner') args.unshift(btn);
+  if (action === 'toggleField') args.unshift(btn);
+  if (action === 'jumpOverviewYear') args.unshift(btn);
+  
+  if (typeof window[action] === 'function') {
+    window[action](...args);
+  }
+});
+
+document.addEventListener('change', (e) => {
+  const target = e.target;
+  if (!target.hasAttribute('data-action')) return;
+  const action = target.getAttribute('data-action');
+  
+  if (action === 'jumpOverviewYear') {
+    window[action](target);
+  }
+});
+
+
+document.addEventListener('submit', (e) => {
+  const target = e.target;
+  if (!target.hasAttribute('data-action')) return;
+  e.preventDefault();
+  const action = target.getAttribute('data-action');
+  
+  const args = [];
+  let i = 0;
+  while (target.hasAttribute('data-arg' + i)) {
+    args.push(target.getAttribute('data-arg' + i));
+    i++;
+  }
+  
+  if (action === 'saveModal') args.unshift(e);
+  if (action === 'unlockApp') args.unshift(e);
+  
+  if (typeof window[action] === 'function') {
+    window[action](...args);
+  }
+});
