@@ -556,12 +556,12 @@ function itemRowHtml(it, k, kind, who, opts = {}) {
 
 // 0 auto-pay · 1 recurring (no end) · 2 installment (has end) · 3 one-time
 function itemCategory(it) {
-  if (!it.recurring) return 3;
-  if (dueDayFor(it) != null) return 0;
-  if (it.end) return 2;
-  return 1;
+  if (!it.recurring) return 0;
+  if (dueDayFor(it) != null) return 1;
+  if (it.end) return 3;
+  return 2;
 }
-const CATEGORY_LABELS = ["Auto-pay", "Recurring", "Installments", "One-time"];
+const CATEGORY_LABELS = ["One-time", "Auto-pay", "Recurring", "Installments"];
 const BANK_LABELS = { maribank: "Maribank", gcash: "GCash", bpi: "BPI", metrobank: "Metrobank", bdo: "BDO", unionbank: "UnionBank", securitybank: "Security Bank" };
 
 function sortItems(items) {
@@ -570,8 +570,8 @@ function sortItems(items) {
     .sort((a, b) => {
       const ca = itemCategory(a.it), cb = itemCategory(b.it);
       if (ca !== cb) return ca - cb;
-      if (ca === 0) return (dueDayFor(a.it) - dueDayFor(b.it)) || a.i - b.i; // auto-pay: earliest day first
-      if (ca === 2) return cmpKey(a.it.end, b.it.end) || a.i - b.i; // installments: closest to finish first
+      if (ca === 1) return (dueDayFor(a.it) - dueDayFor(b.it)) || a.i - b.i; // auto-pay: earliest day first
+        if (ca === 3) return cmpKey(a.it.end, b.it.end) || a.i - b.i; // installments: closest to finish first
       return a.i - b.i;
     })
     .map((x) => x.it);
