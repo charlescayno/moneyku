@@ -2487,16 +2487,65 @@ let touchStartX = 0;
 let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
+let isPulling = false;
 
 document.addEventListener('touchstart', e => {
   touchStartX = e.changedTouches[0].screenX;
   touchStartY = e.changedTouches[0].screenY;
+  isPulling = window.scrollY === 0;
+}, {passive: true});
+
+document.addEventListener('touchmove', e => {
+  if (!isPulling) return;
+  const currentY = e.changedTouches[0].screenY;
+  const diffY = currentY - touchStartY;
+  
+  if (diffY > 0) {
+    const ptr = document.getElementById('ptr-indicator');
+    const icon = document.getElementById('ptr-icon');
+    if (ptr && icon) {
+      const pullDist = Math.min(diffY * 0.4, 80);
+      ptr.style.transition = 'none';
+      ptr.style.transform = 	ranslateY(px);
+      icon.style.transform = 
+otate(deg);
+      
+      if (pullDist >= 60) {
+        icon.classList.add('text-emerald-400');
+        icon.classList.remove('text-slate-400');
+      } else {
+        icon.classList.add('text-slate-400');
+        icon.classList.remove('text-emerald-400');
+      }
+    }
+  }
 }, {passive: true});
 
 document.addEventListener('touchend', e => {
   touchEndX = e.changedTouches[0].screenX;
   touchEndY = e.changedTouches[0].screenY;
   handleSwipe();
+  
+  if (isPulling) {
+    const diffY = touchEndY - touchStartY;
+    const pullDist = Math.min(diffY * 0.4, 80);
+    const ptr = document.getElementById('ptr-indicator');
+    const icon = document.getElementById('ptr-icon');
+    
+    if (ptr && icon) {
+      ptr.style.transition = 'transform 0.3s ease-out';
+      if (pullDist >= 60) {
+        icon.classList.add('animate-spin');
+        ptr.style.transform = 'translateY(16px)';
+        setTimeout(() => {
+          location.reload(true);
+        }, 500);
+      } else {
+        ptr.style.transform = 'translateY(-100%)';
+      }
+    }
+    isPulling = false;
+  }
 }, {passive: true});
 
 function handleSwipe() {
