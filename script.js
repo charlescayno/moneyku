@@ -2478,3 +2478,56 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Reg failed:', err));
   });
 }
+
+
+// =============================
+// Swipe Gestures
+// =============================
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, {passive: true});
+
+document.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  touchEndY = e.changedTouches[0].screenY;
+  handleSwipe();
+}, {passive: true});
+
+function handleSwipe() {
+  const diffX = touchStartX - touchEndX;
+  const diffY = touchStartY - touchEndY;
+  
+  // Need primarily horizontal movement
+  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 60) {
+    // Check modals
+    const modalShell = document.getElementById('modal-shell');
+    const confirmModal = document.getElementById('confirm-modal');
+    if (modalShell && !modalShell.classList.contains('hidden')) return;
+    if (confirmModal && !confirmModal.classList.contains('hidden')) return;
+    
+    // Check if month picker is open
+    const mp = document.getElementById('month-picker');
+    if (mp && mp.classList.contains('open')) return;
+
+    // Only apply in budget view
+    if (activeView !== 'budget') return;
+
+    const tl = timeline();
+    const currentIdx = tl.indexOf(selectedKey);
+    if (currentIdx === -1) return;
+
+    if (diffX > 0) {
+      // Swiped left -> Next Month
+      if (currentIdx < tl.length - 1) window.selectMonth(tl[currentIdx + 1]);
+    } else {
+      // Swiped right -> Previous Month
+      if (currentIdx > 0) window.selectMonth(tl[currentIdx - 1]);
+    }
+  }
+}
