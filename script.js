@@ -2107,8 +2107,7 @@ window.saveModal = async function () {
 };
 
 window.togglePaidQuick = async function (event, id, kind) {
-  event.stopPropagation();
-  const btn = event.currentTarget;
+  const btn = event.target ? event.target.closest("[data-action]") : event;
   appData.paid[selectedKey] = appData.paid[selectedKey] || {};
   const nowSettled = appData.paid[selectedKey][id] !== true;
   appData.paid[selectedKey][id] = nowSettled; // explicit true/false so auto-complete won't re-check a manual uncheck
