@@ -60,6 +60,16 @@ let hideProjected = localStorage.getItem("hideProjected") !== "false";
 let hideInvestments = localStorage.getItem("hideInvestments") === null ? true : localStorage.getItem("hideInvestments") === "true";
 let overviewPage = 0;
 
+
+window.exportData = function() {
+  if (!appData) return;
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+  const dlAnchorElem = document.createElement('a');
+  dlAnchorElem.setAttribute("href",     dataStr     );
+  dlAnchorElem.setAttribute("download", "moneyku_backup_" + new Date().toISOString().split('T')[0] + ".json");
+  dlAnchorElem.click();
+}
+
 window.toggleProjected = function() {
   hideProjected = !hideProjected;
   localStorage.setItem("hideProjected", hideProjected);
@@ -331,6 +341,19 @@ function clampSelected() {
   const t = timeline();
   if (!selectedKey || !t.includes(selectedKey)) {
     selectedKey = t.includes(currentKey()) ? currentKey() : t[0];
+  }
+}
+
+
+function updateDOM(id, html) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (window.morphdom) {
+    const wrapper = el.cloneNode(false);
+    wrapper.innerHTML = html;
+    morphdom(el, wrapper);
+  } else {
+    el.innerHTML = html;
   }
 }
 
@@ -2415,6 +2438,7 @@ function boot() {
     // Skip re-render for the echo of our own writes (appData is already current locally).
     if (!firstLoad && pendingEchoes > 0) { pendingEchoes--; return; }
     const val = snap.val();
+    localStorage.setItem('moneyku_offline', JSON.stringify(val));
     appData = val ? normalize(val) : emptyData();
     if (reconcileAutoPaid()) syncSet();
     if (firstLoad) {
@@ -2446,3 +2470,11 @@ function boot() {
 
 boot();
 
+
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Reg failed:', err));
+  });
+}
