@@ -40,7 +40,28 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css?v=20260815_24" />
-  </head>
+  
+  <style>
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(15px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes slideOutRight {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(30px); }
+    }
+    .animate-in {
+      animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .animate-out {
+      animation: slideOutRight 0.2s ease-in forwards;
+    }
+    /* Add transition for standard changes */
+    .item-card {
+      transition: all 0.3s ease;
+    }
+  </style>
+</head>
   <body
     class="bg-slate-900 text-white overflow-hidden font-sans select-none"
   >
@@ -334,6 +355,6 @@
     </div>
 
     <!-- Main Script -->
-    <script type="module" src="script.js?v=20260820_Delegation"></script>
+    <script type="module" src="script.js?v=20260820_Animations"></script>
   </body>
 </html>

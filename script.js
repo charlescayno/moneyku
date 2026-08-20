@@ -351,7 +351,28 @@ function updateDOM(id, html) {
   if (window.morphdom) {
     const wrapper = el.cloneNode(false);
     wrapper.innerHTML = html;
-    morphdom(el, wrapper);
+    morphdom(el, wrapper, {
+    onBeforeNodeDiscarded: function(node) {
+      if (node.classList && node.classList.contains('item-card')) {
+        // Only animate out if it's currently on screen (prevents weird invisible animations)
+        const rect = node.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+          node.classList.add('animate-out');
+          setTimeout(() => {
+            if (node.parentNode) node.parentNode.removeChild(node);
+          }, 200);
+          return false;
+        }
+      }
+      return true;
+    },
+    onNodeAdded: function(node) {
+      if (node.classList && node.classList.contains('item-card')) {
+        node.classList.add('animate-in');
+      }
+      return node;
+    }
+  });
   } else {
     el.innerHTML = html;
   }
