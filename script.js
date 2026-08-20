@@ -747,13 +747,14 @@ function personSectionHtml(who) {
         </div>
         <div>
           <h3 class="text-sm font-black text-white uppercase tracking-wide">${o.label}</h3>
-          <p class="text-[10px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>
+          ${who === 'debt' ? '' : `<p class="text-[10px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
         </div>
       </div>
+      ${who === 'debt' ? '' : `
       <div class="text-right">
         <p class="text-[9px] font-bold uppercase text-white/60">in / out</p>
-        <p class="text-[11px] font-black text-white">${peso(incTot)} <span class="text-white/40">·</span> ${peso(expTot)}</p>
-      </div>
+        <p class="text-[11px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
+      </div>`}
     </div>
     <div class="p-3 space-y-3">
       <details class="group">
