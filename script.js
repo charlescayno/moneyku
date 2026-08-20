@@ -1168,6 +1168,23 @@ function renderBudget() {
         </button>
       </div>
       <div id="sum-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3">${statsGridHtml(t)}</div>
+      ${(t.debtToReceive !== 0 || t.debtToPay !== 0) ? `
+      <div id="debt-stats" class="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
+        <div class="bg-black/20 rounded-2xl px-4 py-3">
+          <div class="flex items-center gap-1.5">
+            <span class="material-icons text-indigo-300" style="font-size:13px">arrow_downward</span>
+            <p class="text-[9px] font-bold uppercase text-white/60">Owed To Me</p>
+          </div>
+          <p class="text-base font-black text-indigo-300 mt-1">${signedPeso(t.debtToReceive)}</p>
+        </div>
+        <div class="bg-black/20 rounded-2xl px-4 py-3">
+          <div class="flex items-center gap-1.5">
+            <span class="material-icons text-orange-300" style="font-size:13px">arrow_upward</span>
+            <p class="text-[9px] font-bold uppercase text-white/60">I Owe Others</p>
+          </div>
+          <p class="text-base font-black text-orange-300 mt-1">${signedPeso(-t.debtToPay)}</p>
+        </div>
+      </div>` : ''}
     </div>
   </section>`;
 
