@@ -734,8 +734,8 @@ function personSectionHtml(who) {
   const income = getItems(who, "income").filter((it) => itemActiveIn(it, k));
   const expenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k));
   const t = monthTotals(k);
-  const incTot = who === "charlie" ? t.cI : t.kI;
-  const expTot = who === "charlie" ? t.cE : t.kE;
+  const incTot = who === "charlie" ? t.cI : t.dI;
+  const expTot = who === "charlie" ? t.cE : t.dE;
   const net = incTot - expTot;
   const incHtml = groupedRowsHtml(income, k, "income", who);
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
@@ -761,7 +761,10 @@ function personSectionHtml(who) {
         <summary class="flex items-center justify-between px-3 mb-1 cursor-pointer list-none">
           <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-            <div class="flex items-baseline gap-2"><p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500"></p><span class="text-[10px] font-bold text-slate-400"></span></div>
+            <div class="flex items-baseline gap-2">
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
+              <span class="text-[10px] font-bold text-slate-400">${peso(incTot)}</span>
+            </div>
           </div>
           <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
         </summary>
@@ -769,7 +772,10 @@ function personSectionHtml(who) {
       </details>
       <div class="border-t border-white/[0.04] pt-3">
         <div class="flex items-center justify-between px-3 mb-1">
-          <div class="flex items-baseline gap-2"><p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500"></p><span class="text-[10px] font-bold text-slate-400"></span></div>
+          <div class="flex items-baseline gap-2">
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
+            <span class="text-[10px] font-bold text-slate-400">${peso(expTot)}</span>
+          </div>
           <button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
         </div>
         <div class="space-y-0.5">${expHtml}</div>
