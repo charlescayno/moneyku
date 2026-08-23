@@ -430,6 +430,16 @@ input[type="checkbox"]:checked::before {
   opacity: 1;
 }
 
+/* Calendar Modal */
+#calendar-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+#calendar-overlay.open #calendar-sheet {
+  transform: translateY(0);
+  opacity: 1;
+}
+
 /* Confirm Modal */
 #confirm-overlay.open {
   opacity: 1;

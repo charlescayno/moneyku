@@ -1,8 +1,16 @@
-﻿const CACHE_NAME = 'moneyku-cache-v2';
+const CACHE_NAME = 'moneyku-cache-v3';
 const urlsToCache = [
   './',
   './index.html',
-  './script.js',
+  './style.css',
+  './js/app.js',
+  './js/utils.js',
+  './js/state.js',
+  './js/firebase.js',
+  './js/charts.js',
+  './js/calendar.js',
+  './js/ui.js',
+  './js/events.js',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdn.jsdelivr.net/npm/morphdom@2.7.0/dist/morphdom-umd.min.js',
