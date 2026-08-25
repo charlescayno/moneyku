@@ -624,11 +624,11 @@ export function accountsCardHtml() {
 // =============================
 export function investmentsCardHtml() {
   const appData = getAppData();
-  const inv = appData?.investments || { customPowiPrice: null, customUsdPhp: null, cachedPowi: 0, cachedUsdPhp: 0 };
+  const inv = appData?.investments || { customPowiPrice: null, customUsdPhp: null, cachedPowi: 53.18, cachedUsdPhp: 58.20 };
   const shares = 99;
   const pendingShares = 36;
-  const price = parseFloat(inv.customPowiPrice) || parseFloat(inv.cachedPowi) || 0;
-  const rate = parseFloat(inv.customUsdPhp) || parseFloat(inv.cachedUsdPhp) || 0;
+  const price = parseFloat(inv.customPowiPrice) || parseFloat(inv.cachedPowi) || 53.18;
+  const rate = parseFloat(inv.customUsdPhp) || parseFloat(inv.cachedUsdPhp) || 58.20;
   const hideInvestments = getHideInvestments();
   
   let asOfDate = "";
@@ -710,33 +710,64 @@ export async function fetchInvestmentRates() {
   const appData = getAppData();
   if (!appData) return;
   if (!appData.investments) {
-    appData.investments = { customPowiPrice: null, customUsdPhp: null, cachedPowi: 0, cachedUsdPhp: 0, lastFetch: 0 };
+    appData.investments = { customPowiPrice: null, customUsdPhp: null, cachedPowi: 53.18, cachedUsdPhp: 58.20, lastFetch: 0 };
   }
   const now = Date.now();
-  if (now - (appData.investments.lastFetch || 0) < 3600000 && appData.investments.cachedPowi > 0) {
+  if (now - (appData.investments.lastFetch || 0) < 900000 && appData.investments.cachedPowi > 0) {
     return;
   }
   
   let changed = false;
-  try {
-    const powiRes = await fetch("https://corsproxy.io/?" + encodeURIComponent("https://query1.finance.yahoo.com/v8/finance/chart/POWI"));
-    const powiData = await powiRes.json();
-    const price = powiData.chart.result[0].meta.regularMarketPrice;
-    if (price && appData.investments.cachedPowi !== price) {
-      appData.investments.cachedPowi = price;
-      changed = true;
-    }
-  } catch (e) { console.error("POWI fetch error", e); }
   
-  try {
-    const rateRes = await fetch("https://open.er-api.com/v6/latest/USD");
-    const rateData = await rateRes.json();
-    const php = rateData.rates.PHP;
-    if (php && appData.investments.cachedUsdPhp !== php) {
-      appData.investments.cachedUsdPhp = php;
-      changed = true;
+  // 1. Fetch POWI Stock Price with fallback endpoints
+  const powiEndpoints = [
+    "https://query1.finance.yahoo.com/v8/finance/chart/POWI",
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://query1.finance.yahoo.com/v8/finance/chart/POWI"),
+    "https://corsproxy.io/?" + encodeURIComponent("https://query1.finance.yahoo.com/v8/finance/chart/POWI")
+  ];
+  
+  for (const url of powiEndpoints) {
+    try {
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      const price = meta?.regularMarketPrice || meta?.chartPreviousClose || meta?.previousClose;
+      if (price && typeof price === "number" && price > 0) {
+        if (appData.investments.cachedPowi !== price) {
+          appData.investments.cachedPowi = price;
+          changed = true;
+        }
+        break;
+      }
+    } catch (e) {
+      // try next endpoint
     }
-  } catch (e) { console.error("PHP rate fetch error", e); }
+  }
+  
+  // 2. Fetch USD to PHP Exchange Rate with fallbacks
+  const rateEndpoints = [
+    "https://open.er-api.com/v6/latest/USD",
+    "https://api.exchangerate-api.com/v4/latest/USD"
+  ];
+  
+  for (const url of rateEndpoints) {
+    try {
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const php = data?.rates?.PHP;
+      if (php && typeof php === "number" && php > 0) {
+        if (appData.investments.cachedUsdPhp !== php) {
+          appData.investments.cachedUsdPhp = php;
+          changed = true;
+        }
+        break;
+      }
+    } catch (e) {
+      // try next endpoint
+    }
+  }
   
   appData.investments.lastFetch = now;
   if (changed) {
@@ -998,6 +1029,7 @@ export function openMore() {
   setTimeout(() => {
     renderProjectionChart();
   }, 10);
+  fetchInvestmentRates();
 }
 
 export function closeMore() {
