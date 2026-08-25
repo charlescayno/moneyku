@@ -626,6 +626,7 @@ export function investmentsCardHtml() {
   const appData = getAppData();
   const inv = appData?.investments || { customPowiPrice: null, customUsdPhp: null, cachedPowi: 0, cachedUsdPhp: 0 };
   const shares = 99;
+  const pendingShares = 36;
   const price = parseFloat(inv.customPowiPrice) || parseFloat(inv.cachedPowi) || 0;
   const rate = parseFloat(inv.customUsdPhp) || parseFloat(inv.cachedUsdPhp) || 0;
   const hideInvestments = getHideInvestments();
@@ -637,6 +638,9 @@ export function investmentsCardHtml() {
   
   const totalUsd = shares * price;
   const totalPhp = totalUsd * rate;
+
+  const pendingUsd = pendingShares * price;
+  const pendingPhp = pendingUsd * rate;
   
   return `<details class="glass-card rounded-2xl overflow-hidden border border-amber-500/10 md:col-span-2 mt-4">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
@@ -660,14 +664,29 @@ export function investmentsCardHtml() {
       </div>
     </summary>
     <div class="p-4 pt-0 space-y-3">
-      <div class="bg-slate-900/40 rounded-xl p-3 flex justify-between items-center">
-        <div>
-          <p class="text-xs font-bold text-slate-300">POWI Shares</p>
-          <p class="text-[10px] text-slate-500">Power Integrations</p>
+      <div class="bg-slate-900/40 rounded-xl p-3 space-y-2.5">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-xs font-bold text-slate-300">Vested Holdings</p>
+            <p class="text-[10px] text-slate-500">Power Integrations (POWI)</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-black text-white">${shares} <span class="text-slate-500 text-xs font-semibold">shares</span></p>
+            <p class="text-[10px] text-slate-400 font-bold">${hideInvestments ? '••••••' : peso(totalPhp)} <span class="text-slate-500 font-normal">${hideInvestments ? '' : `($${totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})})`}</span></p>
+          </div>
         </div>
-        <div class="text-right">
-          <p class="text-sm font-black text-white">${shares}</p>
-          <p class="text-[9px] text-emerald-400 font-bold tracking-wider mt-0.5">+36 expected on Apr 2027</p>
+        <div class="pt-2 border-t border-white/5 flex justify-between items-center">
+          <div class="flex items-center gap-1.5">
+            <span class="material-icons text-emerald-400" style="font-size:15px">hourglass_top</span>
+            <div>
+              <p class="text-xs font-bold text-emerald-400">Expected Apr 2027</p>
+              <p class="text-[10px] text-slate-500">+${pendingShares} units vesting</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-black text-emerald-400">${hideInvestments ? '••••••' : peso(pendingPhp)}</p>
+            <p class="text-[10px] text-emerald-500/80 font-bold">${hideInvestments ? '••••••' : '$' + pendingUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+          </div>
         </div>
       </div>
       <div class="flex gap-2">
@@ -723,6 +742,9 @@ export async function fetchInvestmentRates() {
   if (changed) {
     await syncSet(appData);
     renderBudget();
+    if ($("more-overlay")?.classList.contains("open")) {
+      openMore();
+    }
   }
 }
 
@@ -1437,6 +1459,9 @@ export async function saveModal() {
     
     await syncSet(appData);
     closeModal(); renderAll(); toast("Saved");
+    if ($("more-overlay")?.classList.contains("open")) {
+      openMore();
+    }
     return;
   }
 
