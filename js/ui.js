@@ -251,7 +251,7 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
   const childRows = kids.map((c) => childRowHtml(it.id, c, k, who, kind)).join("");
   const kidsIds = kids.map(c => c.id).join(",");
   
-  return `<details class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
+  return `<details open class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
     <summary class="parent-summary flex items-center gap-4 p-5 cursor-pointer list-none ${allPaid ? "opacity-70" : ""}">
       <div class="acct-icon w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 shadow-lg">${iconInner}</div>
       <div class="flex-1 min-w-0">
@@ -491,7 +491,7 @@ export function personSectionHtml(who) {
 
     debtSectionHtml = `
       <div class="border-t border-white/[0.08] pt-3 mt-1">
-        <details class="group bg-slate-900/50 rounded-xl border border-rose-500/20 overflow-hidden">
+        <details open class="group bg-slate-900/50 rounded-xl border border-rose-500/20 overflow-hidden">
           <summary class="flex items-center justify-between px-4 py-3 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
             <div class="flex items-center gap-2.5">
               <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -510,7 +510,7 @@ export function personSectionHtml(who) {
             </div>
           </summary>
           <div class="p-3 pt-2 space-y-3 bg-slate-950/40 border-t border-white/[0.04]">
-            <details class="group">
+            <details open class="group">
               <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
                 <div class="flex items-center gap-1.5">
                   <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
@@ -561,7 +561,7 @@ export function personSectionHtml(who) {
       </div>`}
     </div>
     <div class="p-3 space-y-3">
-      <details class="group">
+      <details open class="group">
         <summary class="flex items-center justify-between px-3 mb-1 cursor-pointer list-none select-none">
           <div class="flex items-center gap-1.5">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
@@ -665,7 +665,7 @@ export function accountsCardHtml() {
   const rows = accts.length
     ? groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("")
     : `<p class="text-[11px] text-slate-600 px-3 py-2">No accounts yet — add your current balances.</p>`;
-  return `<details class="glass-card rounded-2xl overflow-hidden border border-emerald-500/10 md:col-span-2">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-emerald-500/10 md:col-span-2">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-600 flex items-center justify-center">
@@ -710,7 +710,7 @@ export function investmentsCardHtml() {
   const pendingUsd = pendingShares * price;
   const pendingPhp = pendingUsd * rate;
   
-  return `<details class="glass-card rounded-2xl overflow-hidden border border-amber-500/10 md:col-span-2 mt-4">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-amber-500/10 md:col-span-2 mt-4">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -1061,7 +1061,7 @@ export function installmentsCardHtml() {
       <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r ${o.grad} rounded-full" style="width:${pct}%"></div></div>
     </div>`;
   }).join("");
-  return `<details class="glass-card rounded-2xl overflow-hidden border border-fuchsia-500/15 md:col-span-2">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-fuchsia-500/15 md:col-span-2">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:18px">hourglass_top</span></div>
@@ -1094,7 +1094,7 @@ export function projectionInnerHtml() {
 
 export function projectionCardHtml() {
   const endBal = runningFundsAt(timeline()[HORIZON - 1]);
-  return `<details class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 md:col-span-2">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 md:col-span-2">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:18px">trending_up</span></div>
