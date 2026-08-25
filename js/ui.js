@@ -857,7 +857,7 @@ export function renderBudget() {
     <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-700"></div>
     <div class="ambient-glow" style="top:-30px;right:60px"></div>
     <div class="relative p-6 md:p-7 space-y-5">
-      <div class="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
+      <div class="flex items-center justify-between gap-3">
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
             <p class="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Projected · end of ${monthName(k)}</p>
@@ -866,12 +866,6 @@ export function renderBudget() {
             </button>
           </div>
           <p id="sum-projected" class="text-3xl sm:text-4xl md:text-5xl font-black text-white mt-1 leading-none truncate">${hideProjected ? '••••••' : peso(projected)}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
-            <span class="material-icons text-base text-rose-400">add_circle</span>
-            <span>+ Expense</span>
-          </button>
         </div>
       </div>
       <div id="sum-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3">${statsGridHtml(t)}</div>
