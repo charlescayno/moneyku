@@ -867,16 +867,8 @@ export function renderBudget() {
           </div>
           <p id="sum-projected" class="text-3xl sm:text-4xl md:text-5xl font-black text-white mt-1 leading-none truncate">${hideProjected ? '••••••' : peso(projected)}</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button data-action="openCalendarModal" class="px-3 py-2 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
-            <span class="material-icons text-base text-indigo-300">calendar_month</span>
-            <span class="hidden sm:inline">Due Calendar</span>
-          </button>
-          <button data-action="openMore" class="px-3 py-2 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
-            <span class="material-icons text-base text-amber-300">trending_up</span>
-            <span class="hidden sm:inline">Overview &amp; Stocks</span>
-          </button>
-          <button data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="px-3 py-2 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <button data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
             <span class="material-icons text-base text-rose-400">add_circle</span>
             <span>+ Expense</span>
           </button>
