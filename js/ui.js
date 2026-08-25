@@ -478,7 +478,72 @@ export function personSectionHtml(who) {
   const net = incTot - expTot;
   const incHtml = groupedRowsHtml(income, k, "income", who);
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
-  return `<div class="glass-card rounded-2xl overflow-hidden border ${o.ring}">
+
+  let debtSectionHtml = "";
+  if (who === "charlie") {
+    const debtIncome = getItems("debt", "income").filter((it) => itemActiveIn(it, k));
+    const debtExpenses = getItems("debt", "expenses").filter((it) => itemActiveIn(it, k));
+    const debtIncTot = t.dI;
+    const debtExpTot = t.dE;
+    const debtIncHtml = groupedRowsHtml(debtIncome, k, "income", "debt");
+    const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", "debt");
+    const dO = OWNERS.debt;
+
+    debtSectionHtml = `
+      <div class="border-t border-white/[0.08] pt-3 mt-1">
+        <details class="group bg-slate-900/50 rounded-xl border border-rose-500/20 overflow-hidden">
+          <summary class="flex items-center justify-between px-4 py-3 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                <span class="material-icons text-white" style="font-size:15px">handshake</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <h4 class="text-xs font-black uppercase tracking-wider text-white">Debt Tracker</h4>
+                  <span class="material-icons text-slate-500 transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span>
+                </div>
+                <p class="text-[9px] text-slate-400">Money owed to me &amp; I owe others</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-[11px] font-black text-rose-400">${peso(debtIncTot)} <span class="text-slate-500 font-normal">/</span> ${peso(debtExpTot)}</p>
+            </div>
+          </summary>
+          <div class="p-3 pt-2 space-y-3 bg-slate-950/40 border-t border-white/[0.04]">
+            <details class="group">
+              <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
+                <div class="flex items-center gap-1.5">
+                  <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
+                  <div class="flex items-baseline gap-2">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Money Owed To Me</p>
+                    <span class="text-xs font-bold text-emerald-400">${peso(debtIncTot)}</span>
+                  </div>
+                </div>
+                <button data-action="openItemModal" data-arg0="debt" data-arg1="income" class="text-[11px] font-bold ${dO.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+              </summary>
+              <div class="space-y-0.5 mt-2">${debtIncHtml}</div>
+            </details>
+            <div class="border-t border-white/[0.04] pt-2">
+              <details open class="group">
+                <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
+                    <div class="flex items-baseline gap-2">
+                      <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Money I Owe Others</p>
+                      <span class="text-xs font-bold text-rose-400">${peso(debtExpTot)}</span>
+                    </div>
+                  </div>
+                  <button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[11px] font-bold ${dO.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+                </summary>
+                <div class="space-y-0.5 mt-2">${debtExpHtml}</div>
+              </details>
+            </div>
+          </div>
+        </details>
+      </div>`;
+  }
+
+  return `<div class="glass-card rounded-2xl overflow-hidden border ${o.ring} md:col-span-2">
     <div class="flex items-center justify-between px-5 py-4 bg-gradient-to-r ${o.grad} bg-opacity-10">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br ${o.grad} ring-2 ring-white/25 flex-shrink-0 flex items-center justify-center">
@@ -524,6 +589,7 @@ export function personSectionHtml(who) {
           <div class="space-y-0.5 mt-2">${expHtml}</div>
         </details>
       </div>
+      ${debtSectionHtml}
     </div>
   </div>`;
 }
@@ -954,8 +1020,7 @@ export function renderBudget() {
     summary +
     upcomingWidget +
     accountsCardHtml() +
-    personSectionHtml("charlie") +
-    personSectionHtml("debt");
+    personSectionHtml("charlie");
 }
 
 export function renderAll() {
