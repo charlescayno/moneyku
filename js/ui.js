@@ -627,6 +627,8 @@ export function investmentsCardHtml() {
   const inv = appData?.investments || { customPowiPrice: null, customUsdPhp: null, cachedPowi: 53.18, cachedUsdPhp: 58.20 };
   const shares = 99;
   const pendingShares = 36;
+  const isCustomPrice = !!inv.customPowiPrice;
+  const isCustomRate = !!inv.customUsdPhp;
   const price = parseFloat(inv.customPowiPrice) || parseFloat(inv.cachedPowi) || 53.18;
   const rate = parseFloat(inv.customUsdPhp) || parseFloat(inv.cachedUsdPhp) || 58.20;
   const hideInvestments = getHideInvestments();
@@ -655,7 +657,7 @@ export function investmentsCardHtml() {
               <span class="material-icons" style="font-size: 14px">${hideInvestments ? 'visibility_off' : 'visibility'}</span>
             </button>
           </div>
-          <p class="text-[10px] text-slate-400">POWI Stock Holdings ${asOfDate ? `<span class="text-white/30 ml-1">· As of ${asOfDate}</span>` : ''}</p>
+          <p class="text-[10px] text-slate-400">POWI Stock Holdings ${asOfDate ? `<span class="text-emerald-400/90 ml-1 font-semibold">· Updated ${asOfDate}</span>` : ''}</p>
         </div>
       </div>
       <div class="text-right">
@@ -691,32 +693,48 @@ export function investmentsCardHtml() {
       </div>
       <div class="flex gap-2">
         <div class="flex-1 bg-slate-900/40 rounded-xl p-3">
-          <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-bold">Stock Price</p>
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Stock Price</p>
+            ${isCustomPrice ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-bold">Custom</span>' : '<span class="text-[9px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded font-bold">Live</span>'}
+          </div>
           <p class="text-sm font-black text-slate-200">$${price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
         </div>
         <div class="flex-1 bg-slate-900/40 rounded-xl p-3">
-          <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-bold">Exchange Rate</p>
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">USD to PHP</p>
+            ${isCustomRate ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-bold">Custom</span>' : '<span class="text-[9px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded font-bold">Live</span>'}
+          </div>
           <p class="text-sm font-black text-slate-200">₱${rate.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
         </div>
       </div>
-      <button data-action="openInvestmentModal" class="w-full mt-2 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl font-bold text-amber-400 text-[11px] flex items-center justify-center gap-1 transition-transform">
-        <span class="material-icons" style="font-size:16px">edit</span>Edit Rates
-      </button>
+      <div class="flex gap-2 mt-2">
+        <button data-action="refreshInvestmentRates" class="flex-1 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 rounded-xl font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1.5 transition-all active:scale-95">
+          <span class="material-icons" style="font-size:16px">sync</span>Update Now
+        </button>
+        <button data-action="openInvestmentModal" class="flex-1 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl font-bold text-amber-400 text-[11px] flex items-center justify-center gap-1.5 transition-all active:scale-95">
+          <span class="material-icons" style="font-size:16px">edit</span>Edit Rates
+        </button>
+      </div>
     </div>
   </details>`;
 }
 
-export async function fetchInvestmentRates() {
+let isFetchingRates = false;
+
+export async function fetchInvestmentRates(force = false) {
+  if (isFetchingRates) return;
   const appData = getAppData();
   if (!appData) return;
   if (!appData.investments) {
     appData.investments = { customPowiPrice: null, customUsdPhp: null, cachedPowi: 53.18, cachedUsdPhp: 58.20, lastFetch: 0 };
   }
   const now = Date.now();
-  if (now - (appData.investments.lastFetch || 0) < 900000 && appData.investments.cachedPowi > 0) {
+  // If not forced and updated in the last 30 seconds, debounce to prevent request spam
+  if (!force && now - (appData.investments.lastFetch || 0) < 30000 && appData.investments.cachedPowi > 0) {
     return;
   }
   
+  isFetchingRates = true;
   let changed = false;
   
   // 1. Fetch POWI Stock Price with fallback endpoints
@@ -770,13 +788,23 @@ export async function fetchInvestmentRates() {
   }
   
   appData.investments.lastFetch = now;
-  if (changed) {
-    await syncSet(appData);
-    renderBudget();
-    if ($("more-overlay")?.classList.contains("open")) {
-      openMore();
-    }
+  isFetchingRates = false;
+  
+  await syncSet(appData);
+  renderBudget();
+  if ($("more-overlay")?.classList.contains("open")) {
+    openMore();
   }
+}
+
+export async function refreshInvestmentRates() {
+  toast("Updating live market rates...", "info");
+  await fetchInvestmentRates(true);
+  const appData = getAppData();
+  const inv = appData?.investments || {};
+  const price = inv.cachedPowi ? `$${inv.cachedPowi.toFixed(2)}` : "";
+  const rate = inv.cachedUsdPhp ? `₱${inv.cachedUsdPhp.toFixed(2)}` : "";
+  toast(`Rates updated: ${price} · ${rate}`, "success");
 }
 
 // =============================

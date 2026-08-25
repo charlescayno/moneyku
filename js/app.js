@@ -62,6 +62,8 @@ import {
   nextOverviewPage,
   jumpOverviewYear,
   exportData,
+  fetchInvestmentRates,
+  refreshInvestmentRates,
 } from "./ui.js";
 
 import {
@@ -109,6 +111,8 @@ window.jumpOverviewYear = jumpOverviewYear;
 window.exportData = exportData;
 window.openCalendarModal = openCalendarModal;
 window.closeCalendarModal = closeCalendarModal;
+window.fetchInvestmentRates = fetchInvestmentRates;
+window.refreshInvestmentRates = refreshInvestmentRates;
 
 // =============================
 // Boot & Lifecycle
@@ -119,6 +123,11 @@ function boot() {
   runIntro();
   initGestures();
   initEventListeners();
+  
+  // Background live ticker: updates rates periodically
+  setInterval(() => {
+    fetchInvestmentRates(false);
+  }, 60000);
 
   // 1. Instant offline hydration
   const cached = getLocalCachedData();

@@ -182,4 +182,18 @@ export function initEventListeners() {
       });
     }
   });
+
+  // Auto-refresh market rates when switching back to tab
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      if (typeof window.fetchInvestmentRates === "function") {
+        window.fetchInvestmentRates(false);
+      }
+    }
+  });
+  window.addEventListener("focus", () => {
+    if (typeof window.fetchInvestmentRates === "function") {
+      window.fetchInvestmentRates(false);
+    }
+  });
 }
