@@ -178,9 +178,11 @@
           </button>
           <button
             data-action="openMore"
-            class="w-12 h-12 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-2xl transition-transform shadow-lg"
+            title="Overview & Investments"
+            class="h-12 px-3.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 rounded-2xl flex items-center gap-1.5 shadow-lg active:scale-95 transition-all font-black text-xs uppercase tracking-wider"
           >
-            <span class="material-icons text-indigo-400">insights</span>
+            <span class="material-icons text-lg text-amber-400">insights</span>
+            <span class="hidden sm:inline text-white">Overview</span>
           </button>
           <button
             data-action="toggleMonthPicker"
@@ -216,7 +218,7 @@
       </main>
     </div>
 
-    <!-- MORE SHEET (installments + projection) -->
+    <!-- MORE SHEET (overview + investments + installments + projection) -->
     <div
       id="more-overlay"
       class="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -225,14 +227,17 @@
         id="more-sheet"
         class="bg-slate-900 w-full max-w-2xl rounded-t-3xl sm:rounded-3xl border border-white/5 shadow-2xl flex flex-col max-h-[85vh] translate-y-full sm:translate-y-6 sm:opacity-0 transition-all duration-400 ease-out"
       >
-        <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
-          <h3 class="text-lg font-black uppercase tracking-wide text-white">Overview</h3>
+        <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0 border-b border-white/5">
+          <div class="flex items-center gap-2">
+            <span class="material-icons text-amber-400">insights</span>
+            <h3 class="text-lg font-black uppercase tracking-wide text-white">Overview &amp; Investments</h3>
+          </div>
           <button data-action="closeMore" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
             <span class="material-icons text-slate-400">close</span>
           </button>
         </div>
         <div id="more-body" class="px-6 pb-8 space-y-4 overflow-y-auto custom-scrollbar">
-          <!-- installments + projection injected -->
+          <!-- investments + overview to 2046 + installments + projection injected -->
         </div>
       </div>
     </div>
@@ -379,6 +384,6 @@
     </div>
 
     <!-- Main Script (Modular ES6 Architecture) -->
-    <script type="module" src="js/app.js?v=20260823_ModularV1"></script>
+    <script type="module" src="js/app.js?v=20260825_OverviewStocksButton"></script>
   </body>
 </html>

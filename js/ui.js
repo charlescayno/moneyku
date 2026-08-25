@@ -845,12 +845,16 @@ export function renderBudget() {
           </div>
           <p id="sum-projected" class="text-3xl sm:text-4xl md:text-5xl font-black text-white mt-1 leading-none truncate">${hideProjected ? '••••••' : peso(projected)}</p>
         </div>
-        <div class="flex items-center gap-2">
-          <button data-action="openCalendarModal" class="px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <button data-action="openCalendarModal" class="px-3 py-2 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
             <span class="material-icons text-base text-indigo-300">calendar_month</span>
             <span class="hidden sm:inline">Due Calendar</span>
           </button>
-          <button data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
+          <button data-action="openMore" class="px-3 py-2 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
+            <span class="material-icons text-base text-amber-300">trending_up</span>
+            <span class="hidden sm:inline">Overview &amp; Stocks</span>
+          </button>
+          <button data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="px-3 py-2 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-2xl flex items-center gap-1.5 text-white font-black text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-lg flex-shrink-0">
             <span class="material-icons text-base text-rose-400">add_circle</span>
             <span>+ Expense</span>
           </button>
@@ -884,11 +888,7 @@ export function renderBudget() {
     upcomingWidget +
     accountsCardHtml() +
     personSectionHtml("charlie") +
-    personSectionHtml("debt") +
-    `<div class="md:col-span-2 space-y-5">
-      ${investmentsCardHtml()}
-      ${monthOverviewCardHtml()}
-    </div>`;
+    personSectionHtml("debt");
 }
 
 export function renderAll() {
@@ -977,7 +977,12 @@ export function projectionCardHtml() {
 export function openMore() {
   const body = $("more-body");
   const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
-  body.innerHTML = inst + projectionCardHtml();
+  body.innerHTML = `
+    ${investmentsCardHtml()}
+    ${monthOverviewCardHtml()}
+    ${inst}
+    ${projectionCardHtml()}
+  `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
   const ov = $("more-overlay");
   ov.classList.add("open");
@@ -1777,6 +1782,9 @@ export function toggleProjected() {
 export function toggleInvestments() {
   setHideInvestments(!getHideInvestments());
   renderBudget();
+  if ($("more-overlay")?.classList.contains("open")) {
+    openMore();
+  }
 }
 
 export function prevOverviewPage() {
@@ -1784,6 +1792,9 @@ export function prevOverviewPage() {
   if (p > 0) {
     setOverviewPage(p - 1);
     renderBudget();
+    if ($("more-overlay")?.classList.contains("open")) {
+      openMore();
+    }
   }
 }
 
@@ -1793,6 +1804,9 @@ export function nextOverviewPage() {
   if (p < maxPage) {
     setOverviewPage(p + 1);
     renderBudget();
+    if ($("more-overlay")?.classList.contains("open")) {
+      openMore();
+    }
   }
 }
 
@@ -1804,6 +1818,9 @@ export function jumpOverviewYear(selectElem) {
   if (pageIndex >= 0) {
     setOverviewPage(pageIndex);
     renderBudget();
+    if ($("more-overlay")?.classList.contains("open")) {
+      openMore();
+    }
   }
 }
 
