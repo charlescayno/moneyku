@@ -54,11 +54,8 @@ const k = getSelectedKey();
     </div>
   </section>`;
 
-  const upcomingWidget = upcomingBillsWidgetHtml();
-
   $("budget-body").innerHTML =
     summary +
-    upcomingWidget +
     accountsCardHtml() +
     personSectionHtml("charlie");
 }
