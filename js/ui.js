@@ -2102,3 +2102,19 @@ if (!navigator.onLine) {
   const ind = document.getElementById('offline-indicator');
   if(ind) ind.classList.remove('hidden');
 }
+
+// Add Sortable JS dynamically for drag and drop
+const sortableScript = document.createElement('script');
+sortableScript.src = 'https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js';
+sortableScript.onload = () => {
+    // Make main sections sortable
+    const pContainer = document.getElementById('budget-body');
+    if(pContainer && window.Sortable) {
+        new Sortable(pContainer, {
+            animation: 150,
+            handle: 'summary',
+            ghostClass: 'bg-slate-800/50'
+        });
+    }
+};
+document.head.appendChild(sortableScript);
