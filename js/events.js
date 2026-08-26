@@ -7,7 +7,7 @@ import {
   getSelectedKey,
   getActiveView,
 } from "./state.js";
-import { selectMonth, unlockApp } from "./ui.js";
+import { selectMonth, unlockApp } from "./ui/index.js";
 
 // Touch state
 let touchStartX = 0;

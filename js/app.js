@@ -64,7 +64,7 @@ import {
   exportData,
   fetchInvestmentRates,
   refreshInvestmentRates,
-} from "./ui.js";
+} from "./ui/index.js";
 
 import {
   openCalendarModal,
