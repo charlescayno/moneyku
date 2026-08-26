@@ -351,28 +351,7 @@ function updateDOM(id, html) {
   if (window.morphdom) {
     const wrapper = el.cloneNode(false);
     wrapper.innerHTML = html;
-    morphdom(el, wrapper, {
-    onBeforeNodeDiscarded: function(node) {
-      if (node.classList && node.classList.contains('item-card')) {
-        // Only animate out if it's currently on screen (prevents weird invisible animations)
-        const rect = node.getBoundingClientRect();
-        if (rect.top < window.innerHeight && rect.bottom > 0) {
-          node.classList.add('animate-out');
-          setTimeout(() => {
-            if (node.parentNode) node.parentNode.removeChild(node);
-          }, 200);
-          return false;
-        }
-      }
-      return true;
-    },
-    onNodeAdded: function(node) {
-      if (node.classList && node.classList.contains('item-card')) {
-        node.classList.add('animate-in');
-      }
-      return node;
-    }
-  });
+    morphdom(el, wrapper);
   } else {
     el.innerHTML = html;
   }
@@ -734,8 +713,8 @@ function personSectionHtml(who) {
   const income = getItems(who, "income").filter((it) => itemActiveIn(it, k));
   const expenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k));
   const t = monthTotals(k);
-  const incTot = who === "charlie" ? t.cI : t.dI;
-  const expTot = who === "charlie" ? t.cE : t.dE;
+  const incTot = who === "charlie" ? t.cI : t.kI;
+  const expTot = who === "charlie" ? t.cE : t.kE;
   const net = incTot - expTot;
   const incHtml = groupedRowsHtml(income, k, "income", who);
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
@@ -747,43 +726,31 @@ function personSectionHtml(who) {
         </div>
         <div>
           <h3 class="text-sm font-black text-white uppercase tracking-wide">${o.label}</h3>
-          ${who === 'debt' ? '' : `<p class="text-[10px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
+          <p class="text-[10px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>
         </div>
       </div>
-      ${who === 'debt' ? '' : `
       <div class="text-right">
         <p class="text-[9px] font-bold uppercase text-white/60">in / out</p>
-        <p class="text-[11px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
-      </div>`}
+        <p class="text-[11px] font-black text-white">${peso(incTot)} <span class="text-white/40">·</span> ${peso(expTot)}</p>
+      </div>
     </div>
     <div class="p-3 space-y-3">
       <details class="group">
-        <summary class="flex items-center justify-between px-3 mb-1 cursor-pointer list-none select-none">
-          <div class="flex items-center gap-1.5">
+        <summary class="flex items-center justify-between px-3 mb-1 cursor-pointer list-none">
+          <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-            <div class="flex items-baseline gap-2">
-              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
-              <span class="text-xs font-bold text-emerald-400">${peso(incTot)}</span>
-            </div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
           </div>
           <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
         </summary>
         <div class="space-y-0.5 mt-2">${incHtml}</div>
       </details>
       <div class="border-t border-white/[0.04] pt-3">
-        <details open class="group">
-          <summary class="flex items-center justify-between px-3 mb-1 cursor-pointer list-none select-none">
-            <div class="flex items-center gap-1.5">
-              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-              <div class="flex items-baseline gap-2">
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
-                <span class="text-xs font-bold text-rose-400">${peso(expTot)}</span>
-              </div>
-            </div>
-            <button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
-          </summary>
-          <div class="space-y-0.5 mt-2">${expHtml}</div>
-        </details>
+        <div class="flex items-center justify-between px-3 mb-1">
+          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
+          <button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+        </div>
+        <div class="space-y-0.5">${expHtml}</div>
       </div>
     </div>
   </div>`;
@@ -1180,23 +1147,6 @@ function renderBudget() {
         </button>
       </div>
       <div id="sum-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3">${statsGridHtml(t)}</div>
-      ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `
-      <div id="debt-stats" class="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
-        <div class="bg-black/20 rounded-2xl px-4 py-3">
-          <div class="flex items-center gap-1.5">
-            <span class="material-icons text-indigo-300" style="font-size:13px">arrow_downward</span>
-            <p class="text-[9px] font-bold uppercase text-white/60">Owed To Me</p>
-          </div>
-          <p class="text-base font-black text-indigo-300 mt-1">${signedPeso(t.debtToReceive)}</p>
-        </div>
-        <div class="bg-black/20 rounded-2xl px-4 py-3">
-          <div class="flex items-center gap-1.5">
-            <span class="material-icons text-orange-300" style="font-size:13px">arrow_upward</span>
-            <p class="text-[9px] font-bold uppercase text-white/60">I Owe Others</p>
-          </div>
-          <p class="text-base font-black text-orange-300 mt-1">${signedPeso(-t.debtToPay)}</p>
-        </div>
-      </div>` : ''}
     </div>
   </section>`;
 
@@ -2119,7 +2069,8 @@ window.saveModal = async function () {
 };
 
 window.togglePaidQuick = async function (event, id, kind) {
-  const btn = event.target ? event.target.closest("[data-action]") : event;
+  event.stopPropagation();
+  const btn = event.currentTarget;
   appData.paid[selectedKey] = appData.paid[selectedKey] || {};
   const nowSettled = appData.paid[selectedKey][id] !== true;
   appData.paid[selectedKey][id] = nowSettled; // explicit true/false so auto-complete won't re-check a manual uncheck

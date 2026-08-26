@@ -11,28 +11,28 @@
     <meta name="theme-color" content="#0f172a" />
     <script>
       window.onerror = function(msg, url, line, col, error) {
-        var splash = document.getElementById("intro-screen");
+        var splash = document.getElementById("intro-splash");
         if (splash) {
           splash.style.opacity = "1";
           splash.innerHTML = "<div style='padding:20px; color:red; font-size:12px; font-family:monospace; background:#222; height:100vh; overflow:auto;'><b>ERROR:</b><br>" + msg + "<br><br><b>Line:</b> " + line + ":" + col + "<br><br><b>Stack:</b><br>" + (error ? error.stack : '') + "</div>";
         }
       };
       window.addEventListener("unhandledrejection", function(event) {
-        var splash = document.getElementById("intro-screen");
+        var splash = document.getElementById("intro-splash");
         if (splash) {
           splash.style.opacity = "1";
           splash.innerHTML = "<div style='padding:20px; color:orange; font-size:12px; font-family:monospace; background:#222; height:100vh; overflow:auto;'><b>PROMISE REJECTION:</b><br>" + event.reason + "</div>";
         }
       });
     </script>
-    <!-- Ã°Å¸â€™Â¸ money-with-wings favicon -->
+    <!-- ðŸ’¸ money-with-wings favicon -->
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%B8%3C/text%3E%3C/svg%3E"
     />
     <link rel="apple-touch-icon" href="assets/money-icon.png" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/morphdom@2.7.0/dist/morphdom-umd.min.js"></script>
     
     <link
@@ -40,55 +40,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css?v=20260815_24" />
-  
-  <style>
-    @keyframes slideInUp {
-      from { opacity: 0; transform: translateY(15px) scale(0.98); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    @keyframes slideOutRight {
-      from { opacity: 1; transform: translateX(0); }
-      to { opacity: 0; transform: translateX(30px); }
-    }
-    .animate-in {
-      animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-    .animate-out {
-      animation: slideOutRight 0.2s ease-in forwards;
-    }
-    /* Add transition for standard changes */
-    .item-card {
-      transition: all 0.3s ease;
-    }
-  </style>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'spider-blue': '#222842',
-            'spider-light': '#2c3353',
-            'spider-dark': '#15192b'
-          },
-          fontFamily: {
-            sans: ['"Inter"', 'sans-serif'],
-          },
-          animation: {
-            'float': 'float 6s ease-in-out infinite',
-            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          },
-          keyframes: {
-            float: {
-              '0%, 100%': { transform: 'translateY(0)' },
-              '50%': { transform: 'translateY(-10px)' },
-            }
-          }
-        },
-      },
-    }
-  </script>
-</head>
+  </head>
   <body
     class="bg-slate-900 text-white overflow-hidden font-sans select-none"
   >
@@ -138,7 +90,7 @@
             type="password" 
             id="lock-password" 
             class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl py-4 pl-5 pr-14 text-center text-xl font-bold tracking-widest text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            placeholder="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢"
+            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
             autocomplete="current-password"
           />
           <button id="lock-toggle-btn" data-action="toggleLockPassword" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer" type="button">
@@ -181,9 +133,6 @@
       <header
         class="px-6 md:px-8 pt-6 pb-3 flex justify-between items-end bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex-shrink-0"
       >
-    <div id="offline-indicator" class="hidden px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 mx-auto max-w-fit mt-2">
-      <span class="material-icons" style="font-size:12px">cloud_off</span> Offline
-    </div>
         <div>
           <h1
             id="current-month-display"
@@ -208,11 +157,9 @@
           </button>
           <button
             data-action="openMore"
-            title="Overview & Investments"
-            class="h-12 px-3.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 rounded-2xl flex items-center gap-1.5 shadow-lg active:scale-95 transition-all font-black text-xs uppercase tracking-wider"
+            class="w-12 h-12 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-2xl transition-transform shadow-lg"
           >
-            <span class="material-icons text-lg text-amber-400">insights</span>
-            <span class="hidden sm:inline text-white">Overview</span>
+            <span class="material-icons text-indigo-400">insights</span>
           </button>
           <button
             data-action="toggleMonthPicker"
@@ -248,7 +195,7 @@
       </main>
     </div>
 
-    <!-- MORE SHEET (overview + investments + installments + projection) -->
+    <!-- MORE SHEET (installments + projection) -->
     <div
       id="more-overlay"
       class="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -257,41 +204,14 @@
         id="more-sheet"
         class="bg-slate-900 w-full max-w-2xl rounded-t-3xl sm:rounded-3xl border border-white/5 shadow-2xl flex flex-col max-h-[85vh] translate-y-full sm:translate-y-6 sm:opacity-0 transition-all duration-400 ease-out"
       >
-        <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0 border-b border-white/5">
-          <div class="flex items-center gap-2">
-            <span class="material-icons text-amber-400">insights</span>
-            <h3 class="text-lg font-black uppercase tracking-wide text-white">Overview &amp; Investments</h3>
-          </div>
+        <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
+          <h3 class="text-lg font-black uppercase tracking-wide text-white">Overview</h3>
           <button data-action="closeMore" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
             <span class="material-icons text-slate-400">close</span>
           </button>
         </div>
         <div id="more-body" class="px-6 pb-8 space-y-4 overflow-y-auto custom-scrollbar">
-          <!-- investments + overview to 2046 + installments + projection injected -->
-        </div>
-      </div>
-    </div>
-
-    <!-- CALENDAR MODAL (Bill Timeline & Schedule) -->
-    <div
-      id="calendar-overlay"
-      class="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4"
-    >
-      <div
-        id="calendar-sheet"
-        class="bg-slate-900 w-full max-w-2xl rounded-t-3xl sm:rounded-3xl border border-white/5 shadow-2xl flex flex-col max-h-[88vh] translate-y-full sm:translate-y-6 sm:opacity-0 transition-all duration-400 ease-out"
-      >
-        <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0 border-b border-white/5">
-          <div class="flex items-center gap-2">
-            <span class="material-icons text-indigo-400">calendar_month</span>
-            <h3 id="calendar-title" class="text-lg font-black uppercase tracking-wide text-white">Bill Calendar</h3>
-          </div>
-          <button data-action="closeCalendarModal" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
-            <span class="material-icons text-slate-400">close</span>
-          </button>
-        </div>
-        <div id="calendar-body" class="p-6 overflow-y-auto custom-scrollbar">
-          <!-- calendar grid & day breakdowns injected -->
+          <!-- installments + projection injected -->
         </div>
       </div>
     </div>
@@ -413,8 +333,7 @@
       <span id="toast-text" class="text-sm font-bold text-white">Done!</span>
     </div>
 
-    <!-- Main Script (Modular ES6 Architecture) -->
-    <script type="module" src="js/app.js?v=20260826_ExpandAllByDefault"></script>
+    <!-- Main Script -->
+    <script type="module" src="js/app.js?v=modular"></script>
   </body>
 </html>
-
