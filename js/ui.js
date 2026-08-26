@@ -1130,13 +1130,25 @@ export function closeMore() {
 }
 
 export function selectMonth(k) {
-  setSelectedKey(k);
-  updateHeader();
-  renderMonthStrip();
-  renderBudget();
-  scrollChipIntoView();
-  if ($("month-picker").classList.contains("open")) toggleMonthPicker();
+  if (document.startViewTransition) {
+    document.startViewTransition(() => {
+      setSelectedKey(k);
+      updateHeader();
+      renderMonthStrip();
+      renderBudget();
+      scrollChipIntoView();
+      if ($("month-picker").classList.contains("open")) toggleMonthPicker();
+    });
+  } else {
+    setSelectedKey(k);
+    updateHeader();
+    renderMonthStrip();
+    renderBudget();
+    scrollChipIntoView();
+    if ($("month-picker").classList.contains("open")) toggleMonthPicker();
+  }
 }
+
 
 export function toggleMonthPicker() {
   const mp = $("month-picker");
