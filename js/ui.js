@@ -973,7 +973,11 @@ export function statsGridHtml(t) {
 // Dashboard Main Renderer
 // =============================
 export function renderBudget() {
-  const k = getSelectedKey();
+    const pb = document.getElementById("budget-body");
+  if (pb && window.Sortable && !pb.sortableInst) {
+    pb.sortableInst = new Sortable(pb, { animation: 150, handle: "summary", ghostClass: "bg-slate-800/50" });
+  }
+const k = getSelectedKey();
   const t = monthTotals(k);
   const projected = runningFundsAt(k);
   const hideProjected = getHideProjected();
