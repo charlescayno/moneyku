@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .ambient-glow {
+    position: absolute; width: 8rem; height: 8rem; border-radius: 9999px; filter: blur(40px); opacity: 0.4; mix-blend-mode: screen; pointer-events: none;
+    background: radial-gradient(circle, rgba(139,92,246,0.4) 0%, rgba(59,130,246,0) 70%);
+  }
+  
+  .glass-card {
+    background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+}
