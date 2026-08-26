@@ -23,6 +23,7 @@ import { toast } from './core.js';
 import { spendSectionHtml, toggleField, saveChildAndAddAnother, saveModal } from './components.js';
 import { renderAll } from './layout.js';
 
+
 // =============================
 // Modals — Inputs & Forms
 // =============================
@@ -421,4 +422,3 @@ export async function doDelete(scope = "all") {
   await syncSet(appData);
   closeConfirm(); closeModal(); renderAll(); toast("Deleted");
 }
-

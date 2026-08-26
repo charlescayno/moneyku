@@ -22,6 +22,9 @@ import { renderProjectionChart } from "../charts.js";
 import { personSectionHtml, accountsCardHtml, fetchInvestmentRates, statsGridHtml } from './components.js';
 import { updateHeader, renderMonthStrip, toggleProjected } from './actions.js';
 
+import { personSectionHtml, accountsCardHtml, fetchInvestmentRates, statsGridHtml } from './components.js';
+import { updateHeader, renderMonthStrip, toggleProjected } from './actions.js';
+
 // =============================
 // Dashboard Main Renderer
 // =============================
@@ -89,4 +92,3 @@ export function renderAll() {
   renderBudget();
   fetchInvestmentRates();
 }
-

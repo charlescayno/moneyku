@@ -22,6 +22,9 @@ import { renderProjectionChart } from "../charts.js";
 import { statsGridHtml, projectionInnerHtml, openMore, selectMonth } from './components.js';
 import { renderBudget, renderAll } from './layout.js';
 
+import { statsGridHtml, projectionInnerHtml, openMore, selectMonth } from './components.js';
+import { renderBudget, renderAll } from './layout.js';
+
 // =============================
 // Navigation & Month Header
 // =============================
@@ -272,4 +275,3 @@ export function exportData() {
   dlAnchorElem.setAttribute("download", "moneyku_backup_" + new Date().toISOString().split('T')[0] + ".json");
   dlAnchorElem.click();
 }
-

@@ -24,85 +24,18 @@ import { closeModal, openItemModal, openChildModal, openInvestmentModal, openAcc
 import { updateHeader, renderMonthStrip, scrollChipIntoView, togglePaidQuick, togglePaidGroup, toggleInvestments, prevOverviewPage, nextOverviewPage, jumpOverviewYear } from './actions.js';
 import { renderBudget, renderAll } from './layout.js';
 
+
 // =============================
 // UI Components & View Renderers
 // =============================
 
-import {
-  HORIZON,
-  MONTHS,
-  MONTHS_SHORT,
-  OWNERS,
-  CATEGORY_LABELS,
-  BANK_LABELS,
-  PM_LABELS,
-  BRAND_DOMAINS,
-  BANK_DOMAINS,
-  generateId,
-  $,
-  peso,
-  signedPeso,
-  ordinal,
-  parseDueDay,
-  dueDayFor,
-  escapeHtml,
-  parseMathAmount,
-  mkKey,
-  keyParts,
-  addMonths,
-  cmpKey,
-  monthName,
-  monthShort,
-  currentKey,
-  monthsInclusive,
-  bankIconFor,
-  brandIconFor,
-  iconFor,
-  categoryIcon,
-} from "./utils.js";
 
-import {
-  getAppData,
-  setAppData,
-  getSelectedKey,
-  setSelectedKey,
-  getActiveEdit,
-  setActiveEdit,
-  getHideProjected,
-  setHideProjected,
-  getHideInvestments,
-  setHideInvestments,
-  getOverviewPage,
-  setOverviewPage,
-  timeline,
-  clampSelected,
-  getItems,
-  itemActiveIn,
-  amountIn,
-  hasOverride,
-  isPaid,
-  accountsTotal,
-  getKids,
-  getSpendList,
-  spentIn,
-  childFinal,
-  itemFinal,
-  itemTotal,
-  itemAmts,
-  monthTotals,
-  runningFundsAt,
-  currentMoneyAt,
-  allInstallments,
-  monthsPaidCount,
-  sortItems,
-  itemCategory,
-  findItemById,
-  findItemOrChildById,
-} from "./state.js";
 
-import { syncSet } from "./firebase.js";
-import { renderProjectionChart } from "./charts.js";
-import { upcomingBillsWidgetHtml, openCalendarModal, closeCalendarModal } from "./calendar.js";
+
+
+
+
+
 
 // =============================
 // Row Icons & Components
@@ -1242,4 +1175,3 @@ export async function saveModal() {
   await syncSet(appData);
   closeModal(); renderAll(); toast("Saved");
 }
-
