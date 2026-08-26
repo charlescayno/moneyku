@@ -2087,3 +2087,18 @@ export function runIntro() {
   const tag = $("intro-tag");
   setTimeout(() => { if (tag) tag.style.opacity = "1"; }, 1150);
 }
+
+// Network Status Listeners
+window.addEventListener('online', () => {
+  const ind = document.getElementById('offline-indicator');
+  if(ind) ind.classList.add('hidden');
+});
+window.addEventListener('offline', () => {
+  const ind = document.getElementById('offline-indicator');
+  if(ind) ind.classList.remove('hidden');
+});
+// Check initial state
+if (!navigator.onLine) {
+  const ind = document.getElementById('offline-indicator');
+  if(ind) ind.classList.remove('hidden');
+}
