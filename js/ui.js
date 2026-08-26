@@ -1,4 +1,4 @@
-// =============================
+﻿// =============================
 // UI Components & View Renderers
 // =============================
 
@@ -305,9 +305,9 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
   const tags = [];
   if (!opts.hidePaymentTag) {
     if (it.paymentMethod === "bpi_platinum") {
-      tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
+      tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">ðŸ’³ BPI Platinum</span>`);
     } else if (it.paymentMethod === "cc_other") {
-      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 Credit Card</span>`);
+      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">ðŸ’³ Credit Card</span>`);
     }
   }
   
@@ -315,7 +315,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event</span>${it.txDate}</span>`);
   }
   
-  if (installment) tags.push(`<span class="text-[9px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
+  if (installment) tags.push(`<span class="text-[9px] font-bold text-amber-400/80">â†’ ${monthShort(it.end)}</span>`);
   else if (it.recurring && dd != null) tags.push(`<span class="text-[9px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
   else if (it.recurring) tags.push(`<span class="text-[9px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
   
@@ -394,7 +394,7 @@ export function paymentMethodGroupHtml(pm, list, k, kind, who) {
       <div class="flex items-center gap-2">
         <span class="material-icons text-[14px] text-indigo-400 transition-transform group-open:rotate-90">chevron_right</span>
         <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-          <span class="text-[14px]">💳</span>
+          <span class="text-[14px]">ðŸ’³</span>
         </div>
         <p class="text-sm font-black text-indigo-300 flex-1 min-w-0 truncate">${label}</p>
       </div>
@@ -664,7 +664,7 @@ export function accountsCardHtml() {
   }
   const rows = accts.length
     ? groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("")
-    : `<p class="text-[11px] text-slate-600 px-3 py-2">No accounts yet — add your current balances.</p>`;
+    : `<p class="text-[11px] text-slate-600 px-3 py-2">No accounts yet â€” add your current balances.</p>`;
   return `<details open class="glass-card rounded-2xl overflow-hidden border border-emerald-500/10 md:col-span-2">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
@@ -723,12 +723,12 @@ export function investmentsCardHtml() {
               <span class="material-icons" style="font-size: 14px">${hideInvestments ? 'visibility_off' : 'visibility'}</span>
             </button>
           </div>
-          <p class="text-[10px] text-slate-400">POWI Stock Holdings ${asOfDate ? `<span class="text-emerald-400/90 ml-1 font-semibold">· Updated ${asOfDate}</span>` : ''}</p>
+          <p class="text-[10px] text-slate-400">POWI Stock Holdings ${asOfDate ? `<span class="text-emerald-400/90 ml-1 font-semibold">Â· Updated ${asOfDate}</span>` : ''}</p>
         </div>
       </div>
       <div class="text-right">
-        <p class="text-base font-black text-amber-400">${hideInvestments ? '••••••' : peso(totalPhp)}</p>
-        <p class="text-[10px] text-slate-500 font-bold">${hideInvestments ? '••••••' : '$' + totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+        <p class="text-base font-black text-amber-400">${hideInvestments ? 'â€¢â€¢â€¢â€¢â€¢â€¢' : peso(totalPhp)}</p>
+        <p class="text-[10px] text-slate-500 font-bold">${hideInvestments ? 'â€¢â€¢â€¢â€¢â€¢â€¢' : '$' + totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
       </div>
     </summary>
     <div class="p-4 pt-0 space-y-3">
@@ -740,7 +740,7 @@ export function investmentsCardHtml() {
           </div>
           <div class="text-right">
             <p class="text-sm font-black text-white">${shares} <span class="text-slate-500 text-xs font-semibold">shares</span></p>
-            <p class="text-[10px] text-slate-400 font-bold">${hideInvestments ? '••••••' : peso(totalPhp)} <span class="text-slate-500 font-normal">${hideInvestments ? '' : `($${totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})})`}</span></p>
+            <p class="text-[10px] text-slate-400 font-bold">${hideInvestments ? 'â€¢â€¢â€¢â€¢â€¢â€¢' : peso(totalPhp)} <span class="text-slate-500 font-normal">${hideInvestments ? '' : `($${totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})})`}</span></p>
           </div>
         </div>
         <div class="pt-2 border-t border-white/5 flex justify-between items-center">
@@ -752,8 +752,8 @@ export function investmentsCardHtml() {
             </div>
           </div>
           <div class="text-right">
-            <p class="text-sm font-black text-emerald-400">${hideInvestments ? '••••••' : peso(pendingPhp)}</p>
-            <p class="text-[10px] text-emerald-500/80 font-bold">${hideInvestments ? '••••••' : '$' + pendingUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+            <p class="text-sm font-black text-emerald-400">${hideInvestments ? 'â€¢â€¢â€¢â€¢â€¢â€¢' : peso(pendingPhp)}</p>
+            <p class="text-[10px] text-emerald-500/80 font-bold">${hideInvestments ? 'â€¢â€¢â€¢â€¢â€¢â€¢' : '$' + pendingUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
           </div>
         </div>
       </div>
@@ -770,7 +770,7 @@ export function investmentsCardHtml() {
             <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">USD to PHP</p>
             ${isCustomRate ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-bold">Custom</span>' : '<span class="text-[9px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded font-bold">Live</span>'}
           </div>
-          <p class="text-sm font-black text-slate-200">₱${rate.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+          <p class="text-sm font-black text-slate-200">â‚±${rate.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
         </div>
       </div>
       <div class="flex gap-2 mt-2">
@@ -869,8 +869,8 @@ export async function refreshInvestmentRates() {
   const appData = getAppData();
   const inv = appData?.investments || {};
   const price = inv.cachedPowi ? `$${inv.cachedPowi.toFixed(2)}` : "";
-  const rate = inv.cachedUsdPhp ? `₱${inv.cachedUsdPhp.toFixed(2)}` : "";
-  toast(`Rates updated: ${price} · ${rate}`, "success");
+  const rate = inv.cachedUsdPhp ? `â‚±${inv.cachedUsdPhp.toFixed(2)}` : "";
+  toast(`Rates updated: ${price} Â· ${rate}`, "success");
 }
 
 // =============================
@@ -989,12 +989,12 @@ const k = getSelectedKey();
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
-            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Projected · end of ${monthName(k)}</p>
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Projected Â· end of ${monthName(k)}</p>
             <button data-action="toggleProjected" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
               <span class="material-icons" style="font-size: 14px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
             </button>
           </div>
-          <p id="sum-projected" class="text-3xl sm:text-4xl md:text-5xl font-black text-white mt-1 leading-none truncate">${hideProjected ? '••••••' : peso(projected)}</p>
+          <p id="sum-projected" class="text-3xl sm:text-4xl md:text-5xl font-black text-white mt-1 leading-none truncate">${hideProjected ? 'â€¢â€¢â€¢â€¢â€¢â€¢' : peso(projected)}</p>
         </div>
       </div>
       <div id="sum-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3">${statsGridHtml(t)}</div>
@@ -1058,7 +1058,7 @@ export function installmentsCardHtml() {
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0">
           <div class="flex items-center gap-2"><p class="text-sm font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p><span class="text-[9px] font-bold uppercase ${o.text}">${o.label}</span></div>
-          <p class="text-[10px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left</p>
+          <p class="text-[10px] text-slate-500">${monthShort(it.start)} â†’ ${monthShort(it.end)} Â· ${peso(monthly)}/mo Â· ${peso(remaining)} left</p>
         </div>
         <span class="text-[10px] font-black px-2.5 py-1 rounded-lg ${urgency} uppercase flex-shrink-0">${monthsLeft === 0 ? "Done" : monthsLeft + " mo left"}</span>
       </div>
@@ -1069,7 +1069,7 @@ export function installmentsCardHtml() {
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:18px">hourglass_top</span></div>
-        <div><h3 class="text-sm font-black text-white uppercase tracking-wide">Installments</h3><p class="text-[10px] text-slate-400">${insts.length} running · ${peso(grandMonthly)}/mo</p></div>
+        <div><h3 class="text-sm font-black text-white uppercase tracking-wide">Installments</h3><p class="text-[10px] text-slate-400">${insts.length} running Â· ${peso(grandMonthly)}/mo</p></div>
       </div>
       <p class="text-base font-black text-fuchsia-300">${peso(grandRemaining)}</p>
     </summary>
@@ -1112,7 +1112,7 @@ export function projectionCardHtml() {
 
 export function openMore() {
   const body = $("more-body");
-  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
+  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet â€” add an expense with a "runs until" month.</div>`;
   body.innerHTML = `
     ${investmentsCardHtml()}
     ${monthOverviewCardHtml()}
@@ -1174,7 +1174,7 @@ export function toggleMonthPicker() {
 }
 
 // =============================
-// Modals — Inputs & Forms
+// Modals â€” Inputs & Forms
 // =============================
 export function inputBlock(label, id, value, type = "text", extra = "") {
   return `<div class="space-y-1">
@@ -1238,7 +1238,7 @@ export function updateBpiCcMonth(isExistingInit = false) {
   if (hintEl) {
     const cutMonth = MONTHS_SHORT[cutoffDate.getMonth()];
     const dueMonth = MONTHS[dueDate.getMonth()];
-    hintEl.innerHTML = `💡 Charge on ${MONTHS_SHORT[m]} ${ordinal(txDay)} → Statement Cut-off ${cutMonth} ${ordinal(cutoff)} → <b>Placed in ${dueMonth} ${dueDate.getFullYear()} budget</b> (Due on ${MONTHS_SHORT[dueDate.getMonth()]} ${ordinal(dueDate.getDate())}).`;
+    hintEl.innerHTML = `ðŸ’¡ Charge on ${MONTHS_SHORT[m]} ${ordinal(txDay)} â†’ Statement Cut-off ${cutMonth} ${ordinal(cutoff)} â†’ <b>Placed in ${dueMonth} ${dueDate.getFullYear()} budget</b> (Due on ${MONTHS_SHORT[dueDate.getMonth()]} ${ordinal(dueDate.getDate())}).`;
   }
 }
 
@@ -1279,10 +1279,10 @@ export function openItemModal(who, kind, id) {
   let body = "";
   body += inputBlock(kind === "income" ? "Source" : (who === "debt" ? "Name" : "Name"), "f-name", name, "text", 'placeholder="e.g. Rent"');
   if (kids.length) {
-    body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (₱)</label>
-      <div class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-black text-slate-300">${peso(itemTotal(it, selectedKey))} <span class="text-[11px] font-bold text-slate-500">· sum of ${kids.length} sub-expenses</span></div></div>`;
+    body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (â‚±)</label>
+      <div class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-black text-slate-300">${peso(itemTotal(it, selectedKey))} <span class="text-[11px] font-bold text-slate-500">Â· sum of ${kids.length} sub-expenses</span></div></div>`;
   } else {
-    body += inputBlock("Amount (₱)", "f-amount", amount, "text", 'inputmode="text" placeholder="0"');
+    body += inputBlock("Amount (â‚±)", "f-amount", amount, "text", 'inputmode="text" placeholder="0"');
   }
 
   body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
@@ -1301,8 +1301,8 @@ export function openItemModal(who, kind, id) {
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Payment Method / Category</label>
       <select id="f-paymethod" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">
         <option value="cash" ${payMethod === "cash" ? "selected" : ""}>Cash / Bank / E-Wallet</option>
-        <option value="bpi_platinum" ${payMethod === "bpi_platinum" ? "selected" : ""}>💳 BPI Platinum Rewards Mastercard</option>
-        <option value="cc_other" ${payMethod === "cc_other" ? "selected" : ""}>💳 Other Credit Card</option>
+        <option value="bpi_platinum" ${payMethod === "bpi_platinum" ? "selected" : ""}>ðŸ’³ BPI Platinum Rewards Mastercard</option>
+        <option value="cc_other" ${payMethod === "cc_other" ? "selected" : ""}>ðŸ’³ Other Credit Card</option>
       </select>
     </div>`;
 
@@ -1395,7 +1395,7 @@ export function openChildModal(who, parentId, childId) {
   const settledNow = c ? isPaid(c.id, selectedKey) : false;
   let body = `<p class="text-[11px] text-slate-500 mb-1">Under <span class="font-bold text-slate-300">${escapeHtml(parent.name)}</span></p>`;
   body += inputBlock("Name", "f-name", c ? c.name : "", "text", 'placeholder="e.g. Electricity"');
-  body += inputBlock("Estimate (₱)", "f-amount", c ? c.amount : "", "text", 'inputmode="text" placeholder="0"');
+  body += inputBlock("Estimate (â‚±)", "f-amount", c ? c.amount : "", "text", 'inputmode="text" placeholder="0"');
   if (!isNew) {
     body += `<div id="spend-section">${spendSectionHtml(c)}</div>`;
     body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
@@ -1445,7 +1445,7 @@ export function openAccountModal(id) {
 
   let body = "";
   body += inputBlock("Account name", "f-name", a ? a.name : "", "text", 'placeholder="e.g. BPI"');
-  body += inputBlock("Balance (₱)", "f-amount", a ? a.amount : "", "text", 'inputmode="text" placeholder="0"');
+  body += inputBlock("Balance (â‚±)", "f-amount", a ? a.amount : "", "text", 'inputmode="text" placeholder="0"');
   $("modal-body").innerHTML = body;
 
   const delBtn = $("delete-btn");
@@ -1494,7 +1494,7 @@ export function spendSectionHtml(it) {
     </div>
     ${rows ? `<div class="space-y-1.5">${rows}</div>` : `<p class="text-[11px] text-slate-600 text-center py-1">No spending logged yet.</p>`}
     <div class="spend-add flex items-center gap-2">
-      <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Add spending  ₱0" class="spend-amt bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" />
+      <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Add spending  â‚±0" class="spend-amt bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" />
       <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 flex items-center justify-center active:scale-95 transition-transform"><span class="material-icons" style="font-size:22px">add</span></button>
     </div>
   </div>`;
@@ -1809,7 +1809,7 @@ export function refreshRealized() {
   const t = monthTotals(selectedKey);
   const proj = $("sum-projected");
   const hideProjected = getHideProjected();
-  if (proj) proj.textContent = hideProjected ? '••••••' : peso(runningFundsAt(selectedKey));
+  if (proj) proj.textContent = hideProjected ? 'â€¢â€¢â€¢â€¢â€¢â€¢' : peso(runningFundsAt(selectedKey));
   const stats = $("sum-stats");
   if (stats) stats.innerHTML = statsGridHtml(t);
   const pi = $("projection-inner");
@@ -1996,7 +1996,7 @@ export function celebrate() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   canvas.style.opacity = "1";
-  const emojis = ["💸", "💵", "🪙"];
+  const emojis = ["ðŸ’¸", "ðŸ’µ", "ðŸª™"];
   const bills = Array.from({ length: 18 }, () => ({
     x: Math.random() * canvas.width,
     y: -40 - Math.random() * 200,
