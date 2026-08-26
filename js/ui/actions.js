@@ -1,3 +1,6 @@
+import { HORIZON, peso, keyParts, monthName, monthShort, currentKey, monthsInclusive } from '../utils.js';
+import { getAppData, getSelectedKey, getHideProjected, setHideProjected, getHideInvestments, setHideInvestments, getOverviewPage, setOverviewPage, timeline, getItems, amountIn, isPaid, getKids, itemFinal, monthTotals, runningFundsAt, monthsPaidCount, findItemById, findItemOrChildById } from '../state.js';
+import { syncSet } from '../firebase.js';
 import {
   HORIZON, MONTHS, MONTHS_SHORT, OWNERS, CATEGORY_LABELS, BANK_LABELS, PM_LABELS,
   BRAND_DOMAINS, BANK_DOMAINS, generateId, $, peso, signedPeso, ordinal,
@@ -24,6 +27,7 @@ import { renderBudget, renderAll } from './layout.js';
 
 import { statsGridHtml, projectionInnerHtml, openMore, selectMonth } from './components.js';
 import { renderBudget, renderAll } from './layout.js';
+import { statsGridHtml, projectionInnerHtml, openMore, selectMonth } from './components.js';
 
 // =============================
 // Navigation & Month Header

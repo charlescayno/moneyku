@@ -1,3 +1,7 @@
+import { HORIZON, MONTHS_SHORT, OWNERS, CATEGORY_LABELS, BANK_LABELS, PM_LABELS, BRAND_DOMAINS, BANK_DOMAINS, generateId, peso, signedPeso, ordinal, dueDayFor, escapeHtml, parseMathAmount, keyParts, addMonths, cmpKey, monthShort, monthsInclusive, bankIconFor, iconFor, categoryIcon } from '../utils.js';
+import { getAppData, getSelectedKey, setSelectedKey, getActiveEdit, getHideInvestments, getOverviewPage, timeline, getItems, itemActiveIn, amountIn, isPaid, accountsTotal, getKids, getSpendList, spentIn, childFinal, itemFinal, itemTotal, monthTotals, runningFundsAt, currentMoneyAt, allInstallments, monthsPaidCount, sortItems, itemCategory, findItemOrChildById } from '../state.js';
+import { syncSet } from '../firebase.js';
+import { renderProjectionChart } from '../charts.js';
 import {
   HORIZON, MONTHS, MONTHS_SHORT, OWNERS, CATEGORY_LABELS, BANK_LABELS, PM_LABELS,
   BRAND_DOMAINS, BANK_DOMAINS, generateId, $, peso, signedPeso, ordinal,
@@ -24,6 +28,10 @@ import { closeModal, openItemModal, openChildModal, openInvestmentModal, openAcc
 import { updateHeader, renderMonthStrip, scrollChipIntoView, togglePaidQuick, togglePaidGroup, toggleInvestments, prevOverviewPage, nextOverviewPage, jumpOverviewYear } from './actions.js';
 import { renderBudget, renderAll } from './layout.js';
 
+import { toast } from './core.js';
+import { closeModal, openItemModal, openChildModal, openInvestmentModal, openAccountModal } from './modals.js';
+import { updateHeader, renderMonthStrip, scrollChipIntoView, togglePaidQuick, togglePaidGroup, toggleInvestments, prevOverviewPage, nextOverviewPage, jumpOverviewYear } from './actions.js';
+import { renderBudget, renderAll } from './layout.js';
 
 // =============================
 // UI Components & View Renderers

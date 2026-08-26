@@ -1,3 +1,5 @@
+import { peso, signedPeso, monthName } from '../utils.js';
+import { getAppData, getSelectedKey, getHideProjected, clampSelected, monthTotals, runningFundsAt } from '../state.js';
 import {
   HORIZON, MONTHS, MONTHS_SHORT, OWNERS, CATEGORY_LABELS, BANK_LABELS, PM_LABELS,
   BRAND_DOMAINS, BANK_DOMAINS, generateId, $, peso, signedPeso, ordinal,
@@ -24,6 +26,7 @@ import { updateHeader, renderMonthStrip, toggleProjected } from './actions.js';
 
 import { personSectionHtml, accountsCardHtml, fetchInvestmentRates, statsGridHtml } from './components.js';
 import { updateHeader, renderMonthStrip, toggleProjected } from './actions.js';
+import { personSectionHtml, accountsCardHtml, fetchInvestmentRates, statsGridHtml } from './components.js';
 
 // =============================
 // Dashboard Main Renderer

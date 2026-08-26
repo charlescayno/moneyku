@@ -1,3 +1,6 @@
+import { MONTHS, MONTHS_SHORT, OWNERS, peso, ordinal, dueDayFor, escapeHtml, mkKey, keyParts, addMonths, cmpKey, monthName, monthShort, currentKey } from '../utils.js';
+import { getAppData, getSelectedKey, getActiveEdit, setActiveEdit, timeline, getItems, amountIn, hasOverride, isPaid, getKids, getSpendList, itemTotal } from '../state.js';
+import { syncSet } from '../firebase.js';
 import {
   HORIZON, MONTHS, MONTHS_SHORT, OWNERS, CATEGORY_LABELS, BANK_LABELS, PM_LABELS,
   BRAND_DOMAINS, BANK_DOMAINS, generateId, $, peso, signedPeso, ordinal,
@@ -23,6 +26,9 @@ import { toast } from './core.js';
 import { spendSectionHtml, toggleField, saveChildAndAddAnother, saveModal } from './components.js';
 import { renderAll } from './layout.js';
 
+import { toast } from './core.js';
+import { spendSectionHtml, toggleField, saveChildAndAddAnother, saveModal } from './components.js';
+import { renderAll } from './layout.js';
 
 // =============================
 // Modals — Inputs & Forms
