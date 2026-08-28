@@ -75,7 +75,7 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
   const pct = kids.length ? Math.round((paidCount / kids.length) * 100) : 0;
   const icon = opts.hideIcon ? null : iconFor(it.name);
   const iconInner = icon
-    ? `<img src="assets/banks/${icon}.png" alt="" class="w-full h-full object-cover" />`
+    ? `<img src="https://www.google.com/s2/favicons?domain=&sz=128" alt="" class="w-full h-full object-cover" />`
     : `<span class="material-icons text-white" style="font-size:24px">home_work</span>`;
   const iconBg = icon ? "bg-slate-800" : "bg-gradient-to-br from-fuchsia-500 to-purple-600";
   const childRows = kids.map((c) => childRowHtml(it.id, c, k, who, kind)).join("");
@@ -244,7 +244,7 @@ export function bankGroupHtml(bank, list, k, kind, who) {
   const subs = sortItems(list).map((it) => itemRowHtml(it, k, kind, who, { hideIcon: true })).join("");
   return `<div class="py-1">
     <div class="flex items-center gap-3 px-3 py-2">
-      <div class="acct-icon flex-shrink-0"><img src="assets/banks/${bank}.png" alt="" class="w-full h-full object-cover" /></div>
+      <div class="acct-icon flex-shrink-0"><img src="https://www.google.com/s2/favicons?domain=&sz=128" alt="" class="w-full h-full object-cover" /></div>
       <p class="text-sm font-black text-white flex-1 min-w-0 truncate">${BANK_LABELS[bank] || bank}</p>
       <p class="text-sm font-black text-white flex-shrink-0">${peso(total)}</p>
     </div>
@@ -459,7 +459,7 @@ export function acctGroupHtml(g) {
   const bank = bankIconFor(g.name);
   const letter = escapeHtml((g.name || "?").trim().charAt(0).toUpperCase() || "?");
   const inner = bank
-    ? `<img src="assets/banks/${bank}.png" alt="" class="w-full h-full object-cover" />`
+    ? `<img src="https://www.google.com/s2/favicons?domain=&sz=128" alt="" class="w-full h-full object-cover" />`
     : `<span class="text-lg font-black text-white">${letter}</span>`;
   const bg = bank ? "" : "bg-gradient-to-br from-indigo-500 to-violet-600";
   const subs = g.items.map((a) => {
