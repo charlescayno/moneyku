@@ -1,10 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap");
 
-body {
+html, body {
   font-family: "Inter", sans-serif;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  touch-action: pan-y;
+  /* Lock the viewport entirely to act like a native app */
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  overscroll-behavior-y: none;
+  background-color: #0f172a; /* slate-900 */
 }
 
 /* Scrollbar Removal */
@@ -17,6 +24,7 @@ body {
   -ms-overflow-style: none;
   scroll-behavior: smooth;
   cursor: grab;
+  overscroll-behavior-y: contain; /* Prevents scroll chaining/bouncing */
 }
 
 #budget-view:active {
