@@ -297,7 +297,69 @@ export function groupedRowsHtml(items, k, kind, who) {
   return html;
 }
 
-export function personSectionHtml(who) {
+export function debtTrackerCardHtml() {
+  const k = getSelectedKey();
+  const t = monthTotals(k);
+  const debtIncome = getItems("debt", "income").filter((it) => itemActiveIn(it, k));
+  const debtExpenses = getItems("debt", "expenses").filter((it) => itemActiveIn(it, k));
+  const debtIncTot = t.dI;
+  const debtExpTot = t.dE;
+  const debtIncHtml = groupedRowsHtml(debtIncome, k, "income", "debt");
+  const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", "debt");
+  const dO = OWNERS.debt;
+
+  return `
+    <details open class="glass-card rounded-2xl border border-rose-500/20 overflow-hidden w-full flex-shrink-0">
+      <summary class="flex items-center justify-between px-4 py-3 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span class="material-icons text-white" style="font-size:16px">handshake</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h4 class="text-xs font-black uppercase tracking-wider text-white">Debt Tracker</h4>
+            </div>
+            <p class="text-[9px] text-slate-400">Money owed to me &amp; I owe others</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="text-[11px] font-black text-rose-400">${peso(debtIncTot)} <span class="text-slate-500 font-normal">/</span> ${peso(debtExpTot)}</p>
+        </div>
+      </summary>
+      <div class="p-3 pt-2 space-y-3 bg-slate-950/40 border-t border-white/[0.04] max-h-60 overflow-y-auto no-scrollbar">
+        <details open class="group">
+          <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
+            <div class="flex items-center gap-1.5">
+              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
+              <div class="flex items-baseline gap-2">
+                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Money Owed To Me</p>
+                <span class="text-xs font-bold text-emerald-400">${peso(debtIncTot)}</span>
+              </div>
+            </div>
+            <button data-action="openItemModal" data-arg0="debt" data-arg1="income" class="text-[11px] font-bold ${dO.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+          </summary>
+          <div class="space-y-0.5 mt-2">${debtIncHtml}</div>
+        </details>
+        <div class="border-t border-white/[0.04] pt-2">
+          <details open class="group">
+            <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
+              <div class="flex items-center gap-1.5">
+                <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
+                <div class="flex items-baseline gap-2">
+                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Money I Owe Others</p>
+                  <span class="text-xs font-bold text-rose-400">${peso(debtExpTot)}</span>
+                </div>
+              </div>
+              <button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[11px] font-bold ${dO.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+            </summary>
+            <div class="space-y-0.5 mt-2">${debtExpHtml}</div>
+          </details>
+        </div>
+      </div>
+    </details>`;
+}
+
+export function personSectionHtml(who, includeDebt = true) {
   const o = OWNERS[who];
   const k = getSelectedKey();
   const income = getItems(who, "income").filter((it) => itemActiveIn(it, k));
@@ -310,89 +372,30 @@ export function personSectionHtml(who) {
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
 
   let debtSectionHtml = "";
-  if (who === "charlie") {
-    const debtIncome = getItems("debt", "income").filter((it) => itemActiveIn(it, k));
-    const debtExpenses = getItems("debt", "expenses").filter((it) => itemActiveIn(it, k));
-    const debtIncTot = t.dI;
-    const debtExpTot = t.dE;
-    const debtIncHtml = groupedRowsHtml(debtIncome, k, "income", "debt");
-    const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", "debt");
-    const dO = OWNERS.debt;
-
-    debtSectionHtml = `
-      <div class="border-t border-white/[0.08] pt-3 mt-1">
-        <details open class="group bg-slate-900/50 rounded-xl border border-rose-500/20 overflow-hidden">
-          <summary class="flex items-center justify-between px-4 py-3 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
-            <div class="flex items-center gap-2.5">
-              <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <span class="material-icons text-white" style="font-size:15px">handshake</span>
-              </div>
-              <div>
-                <div class="flex items-center gap-1.5">
-                  <h4 class="text-xs font-black uppercase tracking-wider text-white">Debt Tracker</h4>
-                  <span class="material-icons text-slate-500 transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span>
-                </div>
-                <p class="text-[9px] text-slate-400">Money owed to me &amp; I owe others</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <p class="text-[11px] font-black text-rose-400">${peso(debtIncTot)} <span class="text-slate-500 font-normal">/</span> ${peso(debtExpTot)}</p>
-            </div>
-          </summary>
-          <div class="p-3 pt-2 space-y-3 bg-slate-950/40 border-t border-white/[0.04]">
-            <details open class="group">
-              <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
-                <div class="flex items-center gap-1.5">
-                  <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-                  <div class="flex items-baseline gap-2">
-                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Money Owed To Me</p>
-                    <span class="text-xs font-bold text-emerald-400">${peso(debtIncTot)}</span>
-                  </div>
-                </div>
-                <button data-action="openItemModal" data-arg0="debt" data-arg1="income" class="text-[11px] font-bold ${dO.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
-              </summary>
-              <div class="space-y-0.5 mt-2">${debtIncHtml}</div>
-            </details>
-            <div class="border-t border-white/[0.04] pt-2">
-              <details open class="group">
-                <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
-                  <div class="flex items-center gap-1.5">
-                    <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-                    <div class="flex items-baseline gap-2">
-                      <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Money I Owe Others</p>
-                      <span class="text-xs font-bold text-rose-400">${peso(debtExpTot)}</span>
-                    </div>
-                  </div>
-                  <button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[11px] font-bold ${dO.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
-                </summary>
-                <div class="space-y-0.5 mt-2">${debtExpHtml}</div>
-              </details>
-            </div>
-          </div>
-        </details>
-      </div>`;
+  if (who === "charlie" && includeDebt) {
+    debtSectionHtml = `<div class="border-t border-white/[0.08] pt-3 mt-1">${debtTrackerCardHtml()}</div>`;
   }
 
-  return `<div class="glass-card rounded-2xl overflow-hidden border ${o.ring} w-full">
-    <div class="flex items-center justify-between px-5 py-4 bg-gradient-to-r ${o.grad} bg-opacity-10">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br ${o.grad} ring-2 ring-white/25 flex-shrink-0 flex items-center justify-center">
+  return `<div class="glass-card rounded-2xl overflow-hidden border ${o.ring} w-full flex flex-col h-full min-h-0">
+    <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r ${o.grad} bg-opacity-10 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br ${o.grad} ring-2 ring-white/25 flex-shrink-0 flex items-center justify-center">
           <span class="text-sm font-black text-white">${o.label.charAt(0)}</span>
         </div>
         <div>
-          <h3 class="text-sm font-black text-white uppercase tracking-wide">${o.label}</h3>
-          ${who === 'debt' ? '' : `<p class="text-[10px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
+          <h3 class="text-xs font-black text-white uppercase tracking-wide">${o.label}</h3>
+          ${who === 'debt' ? '' : `<p class="text-[9px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
         </div>
       </div>
       ${who === 'debt' ? '' : `
       <div class="text-right">
-        <p class="text-[9px] font-bold uppercase text-white/60">in / out</p>
-        <p class="text-[11px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
+        <p class="text-[8px] font-bold uppercase text-white/60">in / out</p>
+        <p class="text-[10px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
       </div>`}
     </div>
-    <div class="p-3 space-y-3">
+    <div class="p-3 space-y-3 flex-1 min-h-0 overflow-y-auto no-scrollbar">
       <details open class="group">
-        <summary class="flex items-center justify-between px-3 mb-1 cursor-pointer list-none select-none">
+        <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
           <div class="flex items-center gap-1.5">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
             <div class="flex items-baseline gap-2">
@@ -404,9 +407,9 @@ export function personSectionHtml(who) {
         </summary>
         <div class="space-y-0.5 mt-2">${incHtml}</div>
       </details>
-      <div class="border-t border-white/[0.04] pt-3">
+      <div class="border-t border-white/[0.04] pt-2">
         <details open class="group">
-          <summary class="flex items-center justify-between px-3 mb-1 cursor-pointer list-none select-none">
+          <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
             <div class="flex items-center gap-1.5">
               <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
               <div class="flex items-baseline gap-2">
@@ -784,12 +787,12 @@ export function statsGridHtml(t) {
   const current = currentMoneyAt();
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
   const cell = (icon, iconColor, label, valColor, val) =>
-    `<div class="bg-black/20 rounded-2xl px-4 py-3">
+    `<div class="bg-black/20 rounded-xl px-3 py-2">
       <div class="flex items-center gap-1.5">
-        <span class="material-icons ${iconColor}" style="font-size:13px">${icon}</span>
-        <p class="text-[9px] font-bold uppercase text-white/60">${label}</p>
+        <span class="material-icons ${iconColor}" style="font-size:12px">${icon}</span>
+        <p class="text-[8px] sm:text-[9px] font-bold uppercase text-white/60 truncate">${label}</p>
       </div>
-      <p class="text-base font-black ${valColor} mt-1">${val}</p>
+      <p class="text-xs sm:text-sm md:text-base font-black ${valColor} mt-0.5 truncate">${val}</p>
     </div>`;
   return (
     cell("account_balance_wallet", "text-white/70", "Current Money", "text-white", peso(current)) +
@@ -846,15 +849,15 @@ export function projectionInnerHtml() {
   const years = {};
   series.forEach((s) => { const y = keyParts(s.k).y; years[y] = years[y] || { income: 0, savings: 0, endBal: s.bal }; years[y].income += s.income; years[y].savings += s.savings; years[y].endBal = s.bal; });
   const yearCards = Object.entries(years).map(([y, v]) => `
-    <div class="bg-slate-900/40 rounded-xl p-3 flex items-center justify-between">
-      <div><p class="text-sm font-black text-white">${y}</p><p class="text-[10px] text-slate-500">end ${peso(v.endBal)}</p></div>
-      <div class="text-right"><p class="text-[9px] uppercase text-slate-500 font-bold">Saved</p><p class="text-xs font-black ${v.savings >= 0 ? "text-emerald-400" : "text-amber-400"}">${v.savings >= 0 ? "+" : ""}${peso(v.savings)}</p></div>
+    <div class="bg-slate-900/50 rounded-lg p-2 flex items-center justify-between border border-white/[0.04]">
+      <div><p class="text-xs font-black text-white">${y}</p><p class="text-[9px] text-slate-500">end ${peso(v.endBal)}</p></div>
+      <div class="text-right"><p class="text-[8px] uppercase text-slate-500 font-bold">Saved</p><p class="text-[10px] font-black ${v.savings >= 0 ? "text-emerald-400" : "text-amber-400"}">${v.savings >= 0 ? "+" : ""}${peso(v.savings)}</p></div>
     </div>`).join("");
   return `
-    <div class="h-48 mb-4">
+    <div class="h-36 mb-2.5">
       <canvas id="projectionChart" class="projection-chart-canvas w-full h-full"></canvas>
     </div>
-    <div class="space-y-2">${yearCards}</div>
+    <div class="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto no-scrollbar">${yearCards}</div>
   `;
 }
 

@@ -19,6 +19,7 @@ export {
   bankGroupHtml,
   groupedRowsHtml,
   personSectionHtml,
+  debtTrackerCardHtml,
   acctIconHtml,
   acctRowHtml,
   acctGroupHtml,
