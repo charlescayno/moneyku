@@ -1013,7 +1013,7 @@ body[data-density="compact"] #budget-body {
 }
 
 /* Zero-Scroll Cockpit Dashboard Deck */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   #budget-view {
     overflow: hidden !important;
   }

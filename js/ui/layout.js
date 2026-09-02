@@ -2,7 +2,7 @@ import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, 
 import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { renderProjectionChart } from '../charts.js';
-import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, statsGridHtml } from './components.js';
+import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, recurringPaymentsCardHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 
 // =============================
@@ -69,26 +69,27 @@ export function renderBudget() {
   $("budget-body").innerHTML = `
     <div class="w-full h-full min-h-0 flex flex-col gap-2 overflow-hidden">
       ${kpiBar}
-      <div class="w-full flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5 items-stretch overflow-y-auto xl:overflow-hidden no-scrollbar">
-        <!-- Col 1: Accounts & Debt -->
-        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[260px] xl:min-w-0">
+      <div class="w-full flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 items-stretch overflow-y-auto lg:overflow-hidden no-scrollbar">
+        <!-- Col 1: Liquid Accounts & Debt -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-0">
           ${accountsCardHtml()}
           ${debtTrackerCardHtml()}
         </div>
 
-        <!-- Col 2: Charlie's Budget -->
-        <div class="h-full min-h-0 flex flex-col overflow-hidden flex-shrink-0 min-w-[280px] xl:min-w-0">
+        <!-- Col 2: Charlie's Monthly Budget -->
+        <div class="h-full min-h-0 flex flex-col overflow-hidden flex-shrink-0 min-w-0">
           ${personSectionHtml("charlie", false)}
         </div>
 
-        <!-- Col 3: Investments & Installments -->
-        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[260px] xl:min-w-0">
-          ${investmentsCardHtml()}
+        <!-- Col 3: Recurring Payments & Active Installments -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-0">
           ${instCard ? instCard : ''}
+          ${recurringPaymentsCardHtml()}
         </div>
 
-        <!-- Col 4: Projection & Overview Forecast -->
-        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[260px] xl:min-w-0">
+        <!-- Col 4: Investments, Projections & Multi-Year Forecast -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-0">
+          ${investmentsCardHtml()}
           ${projectionCardHtml()}
           ${monthOverviewCardHtml()}
         </div>

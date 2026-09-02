@@ -1,5 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
-import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { renderProjectionChart } from '../charts.js';
 import { toast } from './core.js';
@@ -817,7 +817,54 @@ export function installmentsCardHtml() {
       </div>
       <p class="text-xs font-black text-fuchsia-300">${peso(grandRemaining)}</p>
     </summary>
-    <div class="p-2.5 pt-0 space-y-1 max-h-36 overflow-y-auto no-scrollbar">${rows}</div>
+    <div class="p-2.5 pt-0 space-y-1 max-h-40 overflow-y-auto no-scrollbar">${rows}</div>
+  </details>`;
+}
+
+export function recurringPaymentsCardHtml() {
+  const k = getSelectedKey();
+  const recurring = allRecurring(k);
+  let totalMonthly = 0;
+  
+  const rows = recurring.map((it) => {
+    const amt = itemTotal(it, k);
+    const settled = isPaid(it.id, k);
+    const isInc = it.kind === "income";
+    if (!isInc) totalMonthly += amt;
+    const dd = dueDayFor(it);
+    const o = OWNERS[it.who] || OWNERS.charlie;
+
+    return `
+      <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/30 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          ${rowIconHtml(it.name, 22, it.kind)}
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <p class="text-xs font-bold ${settled ? 'text-slate-400 line-through' : 'text-slate-200'} truncate">${escapeHtml(it.name)}</p>
+              ${dd != null ? `<span class="text-[8px] font-bold text-sky-400 px-1 py-0.2 bg-sky-500/10 rounded">${ordinal(dd)}</span>` : ''}
+            </div>
+            <p class="text-[9px] text-slate-500">${isInc ? 'Income' : 'Monthly Bill'} · <span class="${o.text}">${o.label}</span></p>
+          </div>
+        </div>
+        <div class="text-right flex-shrink-0 flex items-center gap-2">
+          <p class="text-xs font-black ${isInc ? 'text-emerald-400' : 'text-slate-200'}">${isInc ? '+' : ''}${peso(amt)}</p>
+          <button data-action="togglePaidQuick" data-arg0="${it.id}" class="w-5 h-5 rounded-md flex items-center justify-center transition-colors ${settled ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500 hover:text-white'}">
+            <span class="material-icons" style="font-size:13px">${settled ? 'check_circle' : 'radio_button_unchecked'}</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `<details open class="glass-card rounded-xl overflow-hidden border border-teal-500/15 w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">autorenew</span></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">Recurring Bills</h3><p class="text-[8px] text-slate-400">${recurring.length} items · ${peso(totalMonthly)}/mo</p></div>
+      </div>
+      <p class="text-xs font-black text-teal-300">${peso(totalMonthly)}</p>
+    </summary>
+    <div class="p-2.5 pt-0 space-y-1 max-h-48 overflow-y-auto no-scrollbar">${rows || `<div class="text-center py-2 text-[10px] text-slate-500">No recurring payments for this month</div>`}</div>
   </details>`;
 }
 

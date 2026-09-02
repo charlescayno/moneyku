@@ -30,6 +30,7 @@ export {
   monthOverviewCardHtml,
   statsGridHtml,
   installmentsCardHtml,
+  recurringPaymentsCardHtml,
   projectionInnerHtml,
   projectionCardHtml,
   openMore,
