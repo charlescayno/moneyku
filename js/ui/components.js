@@ -309,50 +309,48 @@ export function debtTrackerCardHtml() {
   const dO = OWNERS.debt;
 
   return `
-    <details open class="glass-card rounded-2xl border border-rose-500/20 overflow-hidden w-full flex-shrink-0">
-      <summary class="flex items-center justify-between px-4 py-3 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-            <span class="material-icons text-white" style="font-size:16px">handshake</span>
+    <details open class="glass-card rounded-xl border border-rose-500/20 overflow-hidden w-full flex-shrink-0">
+      <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span class="material-icons text-white" style="font-size:14px">handshake</span>
           </div>
           <div>
-            <div class="flex items-center gap-1.5">
-              <h4 class="text-xs font-black uppercase tracking-wider text-white">Debt Tracker</h4>
-            </div>
-            <p class="text-[9px] text-slate-400">Money owed to me &amp; I owe others</p>
+            <h4 class="text-xs font-black uppercase tracking-wider text-white">Debt Tracker</h4>
+            <p class="text-[8px] text-slate-400">Owed to me &amp; owe others</p>
           </div>
         </div>
         <div class="text-right">
-          <p class="text-[11px] font-black text-rose-400">${peso(debtIncTot)} <span class="text-slate-500 font-normal">/</span> ${peso(debtExpTot)}</p>
+          <p class="text-[10px] font-black text-rose-400">${peso(debtIncTot)} <span class="text-slate-500 font-normal">/</span> ${peso(debtExpTot)}</p>
         </div>
       </summary>
-      <div class="p-3 pt-2 space-y-3 bg-slate-950/40 border-t border-white/[0.04] max-h-60 overflow-y-auto no-scrollbar">
+      <div class="p-2.5 pt-1 space-y-2 bg-slate-950/40 border-t border-white/[0.04] max-h-48 overflow-y-auto no-scrollbar">
         <details open class="group">
-          <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
-            <div class="flex items-center gap-1.5">
-              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-              <div class="flex items-baseline gap-2">
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Money Owed To Me</p>
-                <span class="text-xs font-bold text-emerald-400">${peso(debtIncTot)}</span>
+          <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+            <div class="flex items-center gap-1">
+              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
+              <div class="flex items-baseline gap-1.5">
+                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">Owed To Me</p>
+                <span class="text-[11px] font-bold text-emerald-400">${peso(debtIncTot)}</span>
               </div>
             </div>
-            <button data-action="openItemModal" data-arg0="debt" data-arg1="income" class="text-[11px] font-bold ${dO.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+            <button data-action="openItemModal" data-arg0="debt" data-arg1="income" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
           </summary>
-          <div class="space-y-0.5 mt-2">${debtIncHtml}</div>
+          <div class="space-y-0.5 mt-1">${debtIncHtml}</div>
         </details>
-        <div class="border-t border-white/[0.04] pt-2">
+        <div class="border-t border-white/[0.04] pt-1.5">
           <details open class="group">
-            <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
-              <div class="flex items-center gap-1.5">
-                <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-                <div class="flex items-baseline gap-2">
-                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Money I Owe Others</p>
-                  <span class="text-xs font-bold text-rose-400">${peso(debtExpTot)}</span>
+            <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+              <div class="flex items-center gap-1">
+                <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
+                <div class="flex items-baseline gap-1.5">
+                  <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">I Owe</p>
+                  <span class="text-[11px] font-bold text-rose-400">${peso(debtExpTot)}</span>
                 </div>
               </div>
-              <button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[11px] font-bold ${dO.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+              <button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
             </summary>
-            <div class="space-y-0.5 mt-2">${debtExpHtml}</div>
+            <div class="space-y-0.5 mt-1">${debtExpHtml}</div>
           </details>
         </div>
       </div>
@@ -373,53 +371,53 @@ export function personSectionHtml(who, includeDebt = true) {
 
   let debtSectionHtml = "";
   if (who === "charlie" && includeDebt) {
-    debtSectionHtml = `<div class="border-t border-white/[0.08] pt-3 mt-1">${debtTrackerCardHtml()}</div>`;
+    debtSectionHtml = `<div class="border-t border-white/[0.08] pt-2 mt-1">${debtTrackerCardHtml()}</div>`;
   }
 
-  return `<div class="glass-card rounded-2xl overflow-hidden border ${o.ring} w-full flex flex-col h-full min-h-0">
-    <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r ${o.grad} bg-opacity-10 flex-shrink-0">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-xl bg-gradient-to-br ${o.grad} ring-2 ring-white/25 flex-shrink-0 flex items-center justify-center">
-          <span class="text-sm font-black text-white">${o.label.charAt(0)}</span>
+  return `<div class="glass-card rounded-xl overflow-hidden border ${o.ring} w-full flex flex-col h-full min-h-0">
+    <div class="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r ${o.grad} bg-opacity-10 flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${o.grad} ring-1 ring-white/25 flex-shrink-0 flex items-center justify-center">
+          <span class="text-xs font-black text-white">${o.label.charAt(0)}</span>
         </div>
         <div>
           <h3 class="text-xs font-black text-white uppercase tracking-wide">${o.label}</h3>
-          ${who === 'debt' ? '' : `<p class="text-[9px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
+          ${who === 'debt' ? '' : `<p class="text-[8px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
         </div>
       </div>
       ${who === 'debt' ? '' : `
       <div class="text-right">
-        <p class="text-[8px] font-bold uppercase text-white/60">in / out</p>
-        <p class="text-[10px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
+        <p class="text-[7px] font-bold uppercase text-white/60">in / out</p>
+        <p class="text-[9px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
       </div>`}
     </div>
-    <div class="p-3 space-y-3 flex-1 min-h-0 overflow-y-auto no-scrollbar">
+    <div class="p-2.5 space-y-2 flex-1 min-h-0 overflow-y-auto no-scrollbar">
       <details open class="group">
-        <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
-          <div class="flex items-center gap-1.5">
-            <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-            <div class="flex items-baseline gap-2">
-              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
-              <span class="text-xs font-bold text-emerald-400">${peso(incTot)}</span>
+        <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+          <div class="flex items-center gap-1">
+            <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
+            <div class="flex items-baseline gap-1.5">
+              <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
+              <span class="text-[11px] font-bold text-emerald-400">${peso(incTot)}</span>
             </div>
           </div>
-          <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+          <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
         </summary>
-        <div class="space-y-0.5 mt-2">${incHtml}</div>
+        <div class="space-y-0.5 mt-1">${incHtml}</div>
       </details>
       <div class="border-t border-white/[0.04] pt-2">
         <details open class="group">
-          <summary class="flex items-center justify-between px-2 mb-1 cursor-pointer list-none select-none">
-            <div class="flex items-center gap-1.5">
-              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
-              <div class="flex items-baseline gap-2">
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
-                <span class="text-xs font-bold text-rose-400">${peso(expTot)}</span>
+          <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+            <div class="flex items-center gap-1">
+              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
+              <div class="flex items-baseline gap-1.5">
+                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
+                <span class="text-[11px] font-bold text-rose-400">${peso(expTot)}</span>
               </div>
             </div>
-            <button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[11px] font-bold ${o.text} flex items-center gap-1 transition-transform"><span class="material-icons" style="font-size:14px">add</span>Add</button>
+            <button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
           </summary>
-          <div class="space-y-0.5 mt-2">${expHtml}</div>
+          <div class="space-y-0.5 mt-1">${expHtml}</div>
         </details>
       </div>
       ${debtSectionHtml}
@@ -431,57 +429,44 @@ export function personSectionHtml(who, includeDebt = true) {
 // Accounts Card & Renderers
 // =============================
 export function acctIconHtml(a) {
-  const bank = bankIconFor(a.name);
-  const ownerKey = "charlie";
-  const o = OWNERS[ownerKey] || OWNERS.charlie;
-  const letter = escapeHtml((a.name || "?").trim().charAt(0).toUpperCase() || "?");
-  const inner = bank
-    ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[bank]}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
-    : `<span class="text-lg font-black text-white">${letter}</span>`;
-  const bg = bank ? "" : "bg-gradient-to-br from-indigo-500 to-violet-600";
-  return `<div class="acct-icon-wrap">
-    <div class="acct-icon ${bg}">${inner}</div>
-    <div class="acct-owner-badge flex items-center justify-center bg-gradient-to-br ${o.grad} text-[8px] font-black text-white">${o.label.charAt(0)}</div>
-  </div>`;
+  const icon = bankIconFor(a.name);
+  if (icon) {
+    return `<img src="${icon}" alt="${escapeHtml(a.name)}" class="w-full h-full object-contain rounded-md" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="material-icons text-white hidden" style="font-size:14px">account_balance</span>`;
+  }
+  return `<span class="material-icons text-white" style="font-size:14px">account_balance</span>`;
 }
 
 export function acctRowHtml(a) {
-  const o = OWNERS[a.owner] || OWNERS.charlie;
-  return `<div data-action="openAccountModal" data-arg0="${a.id}" class="item-row flex items-center gap-3 py-2.5 px-3 rounded-xl cursor-pointer">
-    ${acctIconHtml(a)}
-    <div class="flex-1 min-w-0">
-      <p class="text-sm font-bold text-slate-200 truncate">${escapeHtml(a.name)}</p>
-      <span class="text-[9px] font-bold uppercase ${o.text}">${o.label}</span>
+  return `<div class="item-row flex items-center justify-between px-2.5 py-1.5 rounded-lg group">
+    <div class="flex items-center gap-2 min-w-0 flex-1">
+      <div class="w-6 h-6 rounded-md bg-slate-800/80 border border-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        ${acctIconHtml(a)}
+      </div>
+      <p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(a.name)}</p>
     </div>
-    <p class="text-sm font-black text-white flex-shrink-0">${peso(a.amount)}</p>
+    <div class="flex items-center gap-1.5 flex-shrink-0">
+      <p class="text-xs font-black text-white">${peso(a.balance)}</p>
+      <button data-action="openAccountModal" data-arg0="${a.id}" class="text-slate-400 hover:text-white transition-opacity p-0.5"><span class="material-icons" style="font-size:13px">edit</span></button>
+    </div>
   </div>`;
 }
 
-export function acctGroupHtml(g) {
-  const total = g.items.reduce((s, a) => s + (Number(a.amount) || 0), 0);
-  const bank = bankIconFor(g.name);
-  const letter = escapeHtml((g.name || "?").trim().charAt(0).toUpperCase() || "?");
-  const inner = bank
-    ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[bank] || ''}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
-    : `<span class="text-lg font-black text-white">${letter}</span>`;
-  const bg = bank ? "" : "bg-gradient-to-br from-indigo-500 to-violet-600";
-  const subs = g.items.map((a) => {
-    const o = OWNERS.charlie;
-    return `<div data-action="openAccountModal" data-arg0="${a.id}" class="item-row flex items-center gap-2 py-1.5 pl-2 rounded-lg cursor-pointer">
-      <div class="w-5 h-5 rounded-full bg-gradient-to-br ${o.grad} flex items-center justify-center flex-shrink-0 ring-1 ring-white/20">
-        <span class="text-[10px] font-black text-white">${o.label.charAt(0)}</span>
+export function acctGroupHtml(group) {
+  const tot = group.items.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+  const subs = group.items.map((a) => acctRowHtml(a)).join("");
+  const first = group.items[0];
+  return `<div class="rounded-lg bg-slate-900/30 border border-white/[0.04] p-1.5 space-y-1">
+    <div class="flex items-center justify-between px-1.5 py-0.5">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <div class="w-5 h-5 rounded-md bg-slate-800 border border-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+          ${acctIconHtml(first)}
+        </div>
+        <p class="text-[11px] font-black text-slate-300 truncate uppercase tracking-wider">${escapeHtml(group.name)}</p>
       </div>
-      <span class="text-[10px] font-bold uppercase ${o.text} flex-1">${o.label}</span>
-      <span class="text-sm font-black text-white flex-shrink-0">${peso(a.amount)}</span>
-    </div>`;
-  }).join("");
-  return `<div class="px-3 pt-2.5 pb-1.5 rounded-xl">
-    <div class="flex items-center gap-3">
-      <div class="acct-icon ${bg} flex-shrink-0">${inner}</div>
-      <p class="text-sm font-bold text-slate-200 flex-1 min-w-0 truncate">${escapeHtml(g.name)}</p>
-      <p class="text-sm font-black text-white flex-shrink-0">${peso(total)}</p>
+      <p class="text-xs font-black text-emerald-400">${peso(tot)}</p>
     </div>
-    <div class="mt-1 ml-4 pl-3 border-l border-slate-700/60 space-y-0.5">${subs}</div>
+    <div class="space-y-0.5">${subs}</div>
   </div>`;
 }
 
@@ -497,23 +482,23 @@ export function accountsCardHtml() {
   }
   const rows = accts.length
     ? groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("")
-    : `<p class="text-[11px] text-slate-600 px-3 py-2">No accounts yet — add your current balances.</p>`;
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-emerald-500/10 w-full">
-    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-600 flex items-center justify-center">
-          <span class="material-icons text-white" style="font-size:18px">account_balance</span>
+    : `<p class="text-[10px] text-slate-600 px-2 py-1.5">No accounts yet.</p>`;
+  return `<details open class="glass-card rounded-xl overflow-hidden border border-emerald-500/10 w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+          <span class="material-icons text-white" style="font-size:14px">account_balance</span>
         </div>
         <div>
-          <h3 class="text-sm font-black text-white uppercase tracking-wide">Accounts</h3>
-          <p class="text-[10px] text-slate-400">Starting balances on hand</p>
+          <h3 class="text-xs font-black text-white uppercase tracking-wide">Accounts</h3>
+          <p class="text-[8px] text-slate-400">Balances on hand</p>
         </div>
       </div>
-      <p class="text-base font-black text-emerald-400">${peso(accountsTotal())}</p>
+      <p class="text-xs font-black text-emerald-400">${peso(accountsTotal())}</p>
     </summary>
-    <div class="p-3 pt-0 space-y-0.5">
+    <div class="p-2.5 pt-0 space-y-1 max-h-48 overflow-y-auto no-scrollbar">
       ${rows}
-      <button data-action="openAccountModal" class="w-full mt-2 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1 transition-transform"><span class="material-icons" style="font-size:16px">add</span>Add account</button>
+      <button data-action="openAccountModal" class="w-full mt-1.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[10px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:13px">add</span>Add account</button>
     </div>
   </details>`;
 }
@@ -543,67 +528,61 @@ export function investmentsCardHtml() {
   const pendingUsd = pendingShares * price;
   const pendingPhp = pendingUsd * rate;
   
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-amber-500/10 w-full">
-    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-          <span class="material-icons text-white" style="font-size:18px">trending_up</span>
+  return `<details open class="glass-card rounded-xl overflow-hidden border border-amber-500/10 w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0">
+          <span class="material-icons text-white" style="font-size:14px">trending_up</span>
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h3 class="text-sm font-black text-white uppercase tracking-wide">Investments</h3>
-            <button data-action="toggleInvestments" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
-              <span class="material-icons" style="font-size: 14px">${hideInvestments ? 'visibility_off' : 'visibility'}</span>
+          <div class="flex items-center gap-1.5">
+            <h3 class="text-xs font-black text-white uppercase tracking-wide">Investments</h3>
+            <button data-action="toggleInvestments" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center">
+              <span class="material-icons" style="font-size: 11px">${hideInvestments ? 'visibility_off' : 'visibility'}</span>
             </button>
           </div>
-          <p class="text-[10px] text-slate-400">POWI Stock Holdings ${asOfDate ? `<span class="text-emerald-400/90 ml-1 font-semibold">· Updated ${asOfDate}</span>` : ''}</p>
+          <p class="text-[8px] text-slate-400">POWI Stock Holdings</p>
         </div>
       </div>
       <div class="text-right">
-        <p class="text-base font-black text-amber-400">${hideInvestments ? '••••••' : peso(totalPhp)}</p>
-        <p class="text-[10px] text-slate-500 font-bold">${hideInvestments ? '••••••' : '$' + totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+        <p class="text-xs font-black text-amber-400">${hideInvestments ? '••••••' : peso(totalPhp)}</p>
+        <p class="text-[8px] text-slate-500 font-bold">${hideInvestments ? '••••••' : '$' + totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
       </div>
     </summary>
-    <div class="p-4 pt-0 space-y-3">
-      <div class="bg-slate-900/40 rounded-xl p-3 space-y-2.5">
+    <div class="p-2.5 pt-0 space-y-2">
+      <div class="bg-slate-900/40 rounded-lg p-2 space-y-1.5">
         <div class="flex justify-between items-center">
           <div>
-            <p class="text-xs font-bold text-slate-300">Vested Holdings</p>
-            <p class="text-[10px] text-slate-500">Power Integrations (POWI)</p>
+            <p class="text-[11px] font-bold text-slate-300">Vested</p>
+            <p class="text-[8px] text-slate-500">Power Integrations (${shares} shs)</p>
           </div>
           <div class="text-right">
-            <p class="text-sm font-black text-white">${shares} <span class="text-slate-500 text-xs font-semibold">shares</span></p>
-            <p class="text-[10px] text-slate-400 font-bold">${hideInvestments ? '••••••' : peso(totalPhp)} <span class="text-slate-500 font-normal">${hideInvestments ? '' : `($${totalUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})})`}</span></p>
+            <p class="text-xs font-black text-white">${hideInvestments ? '••••••' : peso(totalPhp)}</p>
+            <p class="text-[8px] text-slate-400 font-bold">${hideInvestments ? '••••••' : `($${totalUsd.toFixed(2)})`}</p>
           </div>
         </div>
-        <div class="pt-2 border-t border-white/5 flex justify-between items-center">
-          <div class="flex items-center gap-1.5">
-            <span class="material-icons text-emerald-400" style="font-size:15px">hourglass_top</span>
-            <div>
-              <p class="text-xs font-bold text-emerald-400">Expected Apr 2027</p>
-              <p class="text-[10px] text-slate-500">+${pendingShares} units vesting</p>
-            </div>
+        <div class="pt-1.5 border-t border-white/5 flex justify-between items-center">
+          <div class="flex items-center gap-1">
+            <span class="material-icons text-emerald-400" style="font-size:11px">hourglass_top</span>
+            <p class="text-[10px] font-bold text-emerald-400">Apr 2027 (+${pendingShares})</p>
           </div>
-          <div class="text-right">
-            <p class="text-sm font-black text-emerald-400">${hideInvestments ? '••••••' : peso(pendingPhp)}</p>
-            <p class="text-[10px] text-emerald-500/80 font-bold">${hideInvestments ? '••••••' : '$' + pendingUsd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
-          </div>
+          <p class="text-[11px] font-black text-emerald-400">${hideInvestments ? '••••••' : peso(pendingPhp)}</p>
         </div>
       </div>
-      <div class="flex gap-2">
-        <div class="flex-1 bg-slate-900/40 rounded-xl p-3">
-          <div class="flex items-center justify-between mb-1">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Stock Price</p>
-            ${isCustomPrice ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-bold">Custom</span>' : '<span class="text-[9px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded font-bold">Live</span>'}
+      <div class="grid grid-cols-2 gap-1.5">
+        <div class="bg-slate-900/40 rounded-lg p-1.5">
+          <div class="flex items-center justify-between mb-0.5">
+            <p class="text-[8px] text-slate-500 uppercase font-bold">POWI Price</p>
+            ${isCustomPrice ? '<span class="text-[7px] px-1 bg-amber-500/20 text-amber-300 rounded font-bold">Custom</span>' : '<span class="text-[7px] px-1 bg-emerald-500/20 text-emerald-400 rounded font-bold">Live</span>'}
           </div>
-          <p class="text-sm font-black text-slate-200">$${price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+          <p class="text-xs font-black text-slate-200">$${price.toFixed(2)}</p>
         </div>
-        <div class="flex-1 bg-slate-900/40 rounded-xl p-3">
-          <div class="flex items-center justify-between mb-1">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">USD to PHP</p>
-            ${isCustomRate ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-bold">Custom</span>' : '<span class="text-[9px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded font-bold">Live</span>'}
+        <div class="bg-slate-900/40 rounded-lg p-1.5">
+          <div class="flex items-center justify-between mb-0.5">
+            <p class="text-[8px] text-slate-500 uppercase font-bold">USD/PHP</p>
+            ${isCustomRate ? '<span class="text-[7px] px-1 bg-amber-500/20 text-amber-300 rounded font-bold">Custom</span>' : '<span class="text-[7px] px-1 bg-emerald-500/20 text-emerald-400 rounded font-bold">Live</span>'}
           </div>
-          <p class="text-sm font-black text-slate-200">₱${rate.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+          <p class="text-xs font-black text-slate-200">₱${rate.toFixed(2)}</p>
         </div>
       </div>
       <div class="flex gap-2 mt-2">
@@ -760,23 +739,23 @@ export function monthOverviewCardHtml() {
         </div>
       </div>
     </summary>
-    <div class="p-4 pt-0">
-      <div class="bg-slate-900/40 rounded-xl p-3 mb-3">
+    <div class="p-2.5 pt-0">
+      <div class="bg-slate-900/40 rounded-lg p-2 mb-2 max-h-32 overflow-y-auto no-scrollbar">
         ${rowsHtml}
       </div>
       
-      <div class="flex items-center justify-between px-2">
-        <button data-action="prevOverviewPage" class="text-xs font-bold ${safePage > 0 ? 'text-emerald-400' : 'text-slate-600'} flex items-center" ${safePage === 0 ? 'disabled' : ''}>
-          <span class="material-icons" style="font-size:14px">chevron_left</span> Prev
+      <div class="flex items-center justify-between px-1">
+        <button data-action="prevOverviewPage" class="text-[11px] font-bold ${safePage > 0 ? 'text-emerald-400' : 'text-slate-600'} flex items-center" ${safePage === 0 ? 'disabled' : ''}>
+          <span class="material-icons" style="font-size:12px">chevron_left</span> Prev
         </button>
         
         <div class="flex items-center gap-1">
-          <span class="text-[10px] text-slate-500 uppercase font-bold">Year</span>
+          <span class="text-[9px] text-slate-500 uppercase font-bold">Year</span>
           ${yearSelectHtml}
         </div>
         
-        <button data-action="nextOverviewPage" class="text-xs font-bold ${safePage < maxPage ? 'text-emerald-400' : 'text-slate-600'} flex items-center" ${safePage === maxPage ? 'disabled' : ''}>
-          Next <span class="material-icons" style="font-size:14px">chevron_right</span>
+        <button data-action="nextOverviewPage" class="text-[11px] font-bold ${safePage < maxPage ? 'text-emerald-400' : 'text-slate-600'} flex items-center" ${safePage === maxPage ? 'disabled' : ''}>
+          Next <span class="material-icons" style="font-size:12px">chevron_right</span>
         </button>
       </div>
     </div>
@@ -787,12 +766,12 @@ export function statsGridHtml(t) {
   const current = currentMoneyAt();
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
   const cell = (icon, iconColor, label, valColor, val) =>
-    `<div class="bg-black/20 rounded-xl px-3 py-2">
-      <div class="flex items-center gap-1.5">
-        <span class="material-icons ${iconColor}" style="font-size:12px">${icon}</span>
-        <p class="text-[8px] sm:text-[9px] font-bold uppercase text-white/60 truncate">${label}</p>
+    `<div class="bg-black/20 rounded-lg px-2.5 py-1.5">
+      <div class="flex items-center gap-1">
+        <span class="material-icons ${iconColor}" style="font-size:11px">${icon}</span>
+        <p class="text-[8px] font-bold uppercase text-white/60 truncate">${label}</p>
       </div>
-      <p class="text-xs sm:text-sm md:text-base font-black ${valColor} mt-0.5 truncate">${val}</p>
+      <p class="text-xs font-black ${valColor} mt-0.5 truncate">${val}</p>
     </div>`;
   return (
     cell("account_balance_wallet", "text-white/70", "Current Money", "text-white", peso(current)) +
@@ -819,26 +798,26 @@ export function installmentsCardHtml() {
     const pct = total ? Math.round((monthsPaid / total) * 100) : 0;
     grandRemaining += remaining; if (monthsLeft > 0) grandMonthly += monthly;
     const urgency = monthsLeft === 0 ? "text-emerald-400 bg-emerald-500/15" : monthsLeft <= 6 ? "text-rose-400 bg-rose-500/15" : monthsLeft <= 12 ? "text-amber-400 bg-amber-500/15" : "text-slate-400 bg-slate-500/15";
-    return `<div class="px-3 py-2.5 rounded-xl space-y-2">
-      <div class="flex items-center justify-between gap-3">
+    return `<div class="px-2.5 py-1.5 rounded-lg space-y-1 bg-slate-900/30">
+      <div class="flex items-center justify-between gap-2">
         <div class="min-w-0">
-          <div class="flex items-center gap-2"><p class="text-sm font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p><span class="text-[9px] font-bold uppercase ${o.text}">${o.label}</span></div>
-          <p class="text-[10px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left</p>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p><span class="text-[8px] font-bold uppercase ${o.text}">${o.label}</span></div>
+          <p class="text-[9px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left</p>
         </div>
-        <span class="text-[10px] font-black px-2.5 py-1 rounded-lg ${urgency} uppercase flex-shrink-0">${monthsLeft === 0 ? "Done" : monthsLeft + " mo left"}</span>
+        <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${urgency} uppercase flex-shrink-0">${monthsLeft === 0 ? "Done" : monthsLeft + " mo left"}</span>
       </div>
-      <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r ${o.grad} rounded-full" style="width:${pct}%"></div></div>
+      <div class="h-1.5 bg-slate-900/60 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r ${o.grad} rounded-full" style="width:${pct}%"></div></div>
     </div>`;
   }).join("");
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-fuchsia-500/15 w-full">
-    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:18px">hourglass_top</span></div>
-        <div><h3 class="text-sm font-black text-white uppercase tracking-wide">Installments</h3><p class="text-[10px] text-slate-400">${insts.length} running · ${peso(grandMonthly)}/mo</p></div>
+  return `<details open class="glass-card rounded-xl overflow-hidden border border-fuchsia-500/15 w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">hourglass_top</span></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">Installments</h3><p class="text-[8px] text-slate-400">${insts.length} running · ${peso(grandMonthly)}/mo</p></div>
       </div>
-      <p class="text-base font-black text-fuchsia-300">${peso(grandRemaining)}</p>
+      <p class="text-xs font-black text-fuchsia-300">${peso(grandRemaining)}</p>
     </summary>
-    <div class="p-3 pt-0 space-y-1">${rows}</div>
+    <div class="p-2.5 pt-0 space-y-1 max-h-36 overflow-y-auto no-scrollbar">${rows}</div>
   </details>`;
 }
 
@@ -849,29 +828,29 @@ export function projectionInnerHtml() {
   const years = {};
   series.forEach((s) => { const y = keyParts(s.k).y; years[y] = years[y] || { income: 0, savings: 0, endBal: s.bal }; years[y].income += s.income; years[y].savings += s.savings; years[y].endBal = s.bal; });
   const yearCards = Object.entries(years).map(([y, v]) => `
-    <div class="bg-slate-900/50 rounded-lg p-2 flex items-center justify-between border border-white/[0.04]">
-      <div><p class="text-xs font-black text-white">${y}</p><p class="text-[9px] text-slate-500">end ${peso(v.endBal)}</p></div>
-      <div class="text-right"><p class="text-[8px] uppercase text-slate-500 font-bold">Saved</p><p class="text-[10px] font-black ${v.savings >= 0 ? "text-emerald-400" : "text-amber-400"}">${v.savings >= 0 ? "+" : ""}${peso(v.savings)}</p></div>
+    <div class="bg-slate-900/50 rounded-lg p-1.5 flex items-center justify-between border border-white/[0.04]">
+      <div><p class="text-[11px] font-black text-white">${y}</p><p class="text-[8px] text-slate-500">end ${peso(v.endBal)}</p></div>
+      <div class="text-right"><p class="text-[7px] uppercase text-slate-500 font-bold">Saved</p><p class="text-[9px] font-black ${v.savings >= 0 ? "text-emerald-400" : "text-amber-400"}">${v.savings >= 0 ? "+" : ""}${peso(v.savings)}</p></div>
     </div>`).join("");
   return `
-    <div class="h-36 mb-2.5">
+    <div class="h-28 mb-1.5">
       <canvas id="projectionChart" class="projection-chart-canvas w-full h-full"></canvas>
     </div>
-    <div class="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto no-scrollbar">${yearCards}</div>
+    <div class="grid grid-cols-2 gap-1 max-h-28 overflow-y-auto no-scrollbar">${yearCards}</div>
   `;
 }
 
 export function projectionCardHtml() {
   const endBal = runningFundsAt(timeline()[HORIZON - 1]);
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 w-full">
-    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:18px">trending_up</span></div>
-        <div><h3 class="text-sm font-black text-white uppercase tracking-wide">5-Year Projection</h3><p class="text-[10px] text-slate-400">Running balance + yearly savings</p></div>
+  return `<details open class="glass-card rounded-xl overflow-hidden border border-indigo-500/10 w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">trending_up</span></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">5-Year Projection</h3><p class="text-[8px] text-slate-400">Balance &amp; savings</p></div>
       </div>
-      <p class="text-base font-black text-indigo-300">${peso(endBal)}</p>
+      <p class="text-xs font-black text-indigo-300">${peso(endBal)}</p>
     </summary>
-    <div id="projection-inner" class="p-4 pt-0 space-y-4">${projectionInnerHtml()}</div>
+    <div id="projection-inner" class="p-2.5 pt-0 space-y-2">${projectionInnerHtml()}</div>
   </details>`;
 }
 

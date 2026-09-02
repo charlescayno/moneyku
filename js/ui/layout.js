@@ -17,69 +17,81 @@ export function renderBudget() {
   const t = monthTotals(k);
   const projected = runningFundsAt(k);
   const hideProjected = getHideProjected();
-
-  const summary = `<section class="rounded-2xl overflow-hidden relative shadow-lg w-full flex-shrink-0">
-    <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-700"></div>
-    <div class="ambient-glow" style="top:-20px;right:40px"></div>
-    <div class="relative p-4 md:p-5 space-y-3">
-      <div class="flex items-center justify-between gap-2">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2">
-            <p class="text-[9px] font-black uppercase tracking-[0.25em] text-white/70">Projected · end of ${monthName(k)}</p>
-            <button data-action="toggleProjected" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
-              <span class="material-icons" style="font-size: 13px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
-            </button>
-          </div>
-          <p id="sum-projected" class="text-2xl sm:text-3xl font-black text-white mt-0.5 leading-none truncate">${hideProjected ? '••••••' : peso(projected)}</p>
-        </div>
-      </div>
-      <div id="sum-stats" class="grid grid-cols-2 gap-2">${statsGridHtml(t)}</div>
-      ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `
-      <div id="debt-stats" class="grid grid-cols-2 gap-2 pt-2.5 border-t border-white/10">
-        <div class="bg-black/20 rounded-xl px-2.5 py-1.5">
-          <div class="flex items-center gap-1">
-            <span class="material-icons text-indigo-300" style="font-size:11px">arrow_downward</span>
-            <p class="text-[8px] font-bold uppercase text-white/60">Owed To Me</p>
-          </div>
-          <p class="text-xs font-black text-indigo-300 mt-0.5">${signedPeso(t.debtToReceive)}</p>
-        </div>
-        <div class="bg-black/20 rounded-xl px-2.5 py-1.5">
-          <div class="flex items-center gap-1">
-            <span class="material-icons text-orange-300" style="font-size:11px">arrow_upward</span>
-            <p class="text-[8px] font-bold uppercase text-white/60">I Owe</p>
-          </div>
-          <p class="text-xs font-black text-orange-300 mt-0.5">${signedPeso(-t.debtToPay)}</p>
-        </div>
-      </div>` : ''}
-    </div>
-  </section>`;
-
+  const current = currentMoneyAt();
+  const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
   const instCard = installmentsCardHtml();
 
+  const kpiBar = `
+    <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between gap-3 shadow-md flex-shrink-0">
+      <!-- Projected Hero Stat -->
+      <div class="flex items-center gap-2 pr-3 border-r border-white/10 flex-shrink-0">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
+          <span class="material-icons" style="font-size:14px">account_balance</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-1">
+            <span class="text-[8px] font-black uppercase tracking-wider text-indigo-300">Projected (${monthShort(k)})</span>
+            <button data-action="toggleProjected" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center">
+              <span class="material-icons" style="font-size: 11px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
+            </button>
+          </div>
+          <p id="sum-projected" class="text-sm sm:text-base font-black text-white leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Grid -->
+      <div class="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-1.5 items-center">
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
+          <span class="text-[8px] font-bold uppercase text-slate-400">Current</span>
+          <span class="text-xs font-black text-white">${peso(current)}</span>
+        </div>
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
+          <span class="text-[8px] font-bold uppercase text-slate-400">Savings</span>
+          <span class="text-xs font-black ${savColor}">${signedPeso(t.savings)}</span>
+        </div>
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
+          <span class="text-[8px] font-bold uppercase text-slate-400">To Receive</span>
+          <span class="text-xs font-black text-emerald-400">${signedPeso(t.toReceive)}</span>
+        </div>
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
+          <span class="text-[8px] font-bold uppercase text-slate-400">To Pay</span>
+          <span class="text-xs font-black text-rose-400">${signedPeso(-t.toPay)}</span>
+        </div>
+        ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between col-span-2 sm:col-span-4 lg:col-span-1">
+          <span class="text-[8px] font-bold uppercase text-slate-400">Debt Net</span>
+          <span class="text-xs font-black ${(t.debtToReceive - t.debtToPay) >= 0 ? 'text-indigo-300' : 'text-orange-300'}">${signedPeso(t.debtToReceive - t.debtToPay)}</span>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+
   $("budget-body").innerHTML = `
-    <div class="w-full h-full min-h-0 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5 items-stretch overflow-x-auto xl:overflow-hidden no-scrollbar">
-      <!-- Col 1: Overview & Balances -->
-      <div class="h-full min-h-0 flex flex-col gap-3 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[280px] xl:min-w-0">
-        ${summary}
-        ${accountsCardHtml()}
-      </div>
+    <div class="w-full h-full min-h-0 flex flex-col gap-2 overflow-hidden">
+      ${kpiBar}
+      <div class="w-full flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5 items-stretch overflow-y-auto xl:overflow-hidden no-scrollbar">
+        <!-- Col 1: Accounts & Debt -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[260px] xl:min-w-0">
+          ${accountsCardHtml()}
+          ${debtTrackerCardHtml()}
+        </div>
 
-      <!-- Col 2: Charlie's Budget -->
-      <div class="h-full min-h-0 flex flex-col overflow-hidden flex-shrink-0 min-w-[300px] xl:min-w-0">
-        ${personSectionHtml("charlie", false)}
-      </div>
+        <!-- Col 2: Charlie's Budget -->
+        <div class="h-full min-h-0 flex flex-col overflow-hidden flex-shrink-0 min-w-[280px] xl:min-w-0">
+          ${personSectionHtml("charlie", false)}
+        </div>
 
-      <!-- Col 3: Investments & Liabilities -->
-      <div class="h-full min-h-0 flex flex-col gap-3 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[280px] xl:min-w-0">
-        ${investmentsCardHtml()}
-        ${instCard ? instCard : ''}
-        ${debtTrackerCardHtml()}
-      </div>
+        <!-- Col 3: Investments & Installments -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[260px] xl:min-w-0">
+          ${investmentsCardHtml()}
+          ${instCard ? instCard : ''}
+        </div>
 
-      <!-- Col 4: Forecast & Intelligence -->
-      <div class="h-full min-h-0 flex flex-col gap-3 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[280px] xl:min-w-0">
-        ${projectionCardHtml()}
-        ${monthOverviewCardHtml()}
+        <!-- Col 4: Projection & Overview Forecast -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-[260px] xl:min-w-0">
+          ${projectionCardHtml()}
+          ${monthOverviewCardHtml()}
+        </div>
       </div>
     </div>
   `;
