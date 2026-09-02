@@ -865,3 +865,151 @@ details.item-parent[open] > summary .parent-caret { transform: rotate(90deg); }
   box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
 }
 
+/* ========================================================
+   DENSE / COMPACT UI MODE
+   ======================================================== */
+body[data-density="compact"] header {
+  padding-top: 0.875rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+body[data-density="compact"] header h1 {
+  font-size: 1.5rem !important; /* 24px */
+}
+
+body[data-density="compact"] header button {
+  height: 2.5rem !important;
+  border-radius: 0.875rem !important;
+}
+
+body[data-density="compact"] header button.w-12 {
+  width: 2.5rem !important;
+}
+
+body[data-density="compact"] #month-strip {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.5rem !important;
+  gap: 0.375rem !important;
+}
+
+body[data-density="compact"] .month-chip {
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.6875rem !important;
+  border-radius: 0.75rem !important;
+}
+
+body[data-density="compact"] .glass-card {
+  border-radius: 1rem !important;
+}
+
+body[data-density="compact"] .glass-card > summary {
+  padding: 0.75rem 1rem !important;
+}
+
+body[data-density="compact"] .glass-card > div {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+body[data-density="compact"] section.rounded-3xl {
+  border-radius: 1.25rem !important;
+}
+
+body[data-density="compact"] section.rounded-3xl > div.relative {
+  padding: 1rem 1.25rem !important;
+  gap: 0.75rem !important;
+}
+
+body[data-density="compact"] #sum-projected {
+  font-size: 2rem !important;
+}
+
+body[data-density="compact"] #sum-stats {
+  gap: 0.5rem !important;
+}
+
+body[data-density="compact"] #sum-stats > div,
+body[data-density="compact"] #debt-stats > div {
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 0.75rem !important;
+}
+
+body[data-density="compact"] #sum-stats p.text-base,
+body[data-density="compact"] #debt-stats p.text-base {
+  font-size: 0.9375rem !important;
+  margin-top: 0.125rem !important;
+}
+
+body[data-density="compact"] .item-row {
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+  gap: 0.5rem !important;
+  border-radius: 0.5rem !important;
+}
+
+body[data-density="compact"] .item-row .item-name {
+  font-size: 0.8125rem !important;
+  line-height: 1.15rem !important;
+}
+
+body[data-density="compact"] .item-row p,
+body[data-density="compact"] .item-row span.child-amt {
+  font-size: 0.8125rem !important;
+}
+
+body[data-density="compact"] .paid-check {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  border-radius: 0.375rem !important;
+}
+
+body[data-density="compact"] .paid-check .check-icon {
+  font-size: 13px !important;
+}
+
+body[data-density="compact"] .acct-icon-wrap,
+body[data-density="compact"] .acct-icon {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 7px !important;
+}
+
+body[data-density="compact"] .acct-icon span {
+  font-size: 14px !important;
+}
+
+body[data-density="compact"] .acct-owner-badge {
+  width: 14px !important;
+  height: 14px !important;
+  font-size: 7px !important;
+}
+
+body[data-density="compact"] details.item-parent {
+  border-radius: 0.875rem !important;
+  margin-top: 0.375rem !important;
+  margin-bottom: 0.375rem !important;
+}
+
+body[data-density="compact"] details.item-parent .parent-summary {
+  padding: 0.625rem 0.875rem !important;
+  gap: 0.625rem !important;
+}
+
+body[data-density="compact"] details.item-parent .acct-icon {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+}
+
+body[data-density="compact"] details.item-parent .item-name {
+  font-size: 0.875rem !important;
+}
+
+body[data-density="compact"] #budget-body {
+  gap: 0.875rem !important;
+}
+
+

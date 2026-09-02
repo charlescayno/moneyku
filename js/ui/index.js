@@ -77,7 +77,10 @@ export {
   prevOverviewPage,
   nextOverviewPage,
   jumpOverviewYear,
-  exportData
+  exportData,
+  getDensityMode,
+  applyDensityMode,
+  toggleDensityMode
 } from "./actions.js";
 
 export {

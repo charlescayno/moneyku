@@ -373,7 +373,7 @@ export function personSectionHtml(who) {
       </div>`;
   }
 
-  return `<div class="glass-card rounded-2xl overflow-hidden border ${o.ring} md:col-span-2">
+  return `<div class="glass-card rounded-2xl overflow-hidden border ${o.ring} w-full">
     <div class="flex items-center justify-between px-5 py-4 bg-gradient-to-r ${o.grad} bg-opacity-10">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br ${o.grad} ring-2 ring-white/25 flex-shrink-0 flex items-center justify-center">
@@ -495,7 +495,7 @@ export function accountsCardHtml() {
   const rows = accts.length
     ? groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("")
     : `<p class="text-[11px] text-slate-600 px-3 py-2">No accounts yet — add your current balances.</p>`;
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-emerald-500/10 md:col-span-2">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-emerald-500/10 w-full">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-600 flex items-center justify-center">
@@ -540,7 +540,7 @@ export function investmentsCardHtml() {
   const pendingUsd = pendingShares * price;
   const pendingPhp = pendingUsd * rate;
   
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-amber-500/10 md:col-span-2 mt-4">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-amber-500/10 w-full">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -745,7 +745,7 @@ export function monthOverviewCardHtml() {
   }
   yearSelectHtml += `</select>`;
 
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-spider-blue/10 md:col-span-2 mt-4">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 w-full">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-600 flex items-center justify-center">
@@ -827,7 +827,7 @@ export function installmentsCardHtml() {
       <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r ${o.grad} rounded-full" style="width:${pct}%"></div></div>
     </div>`;
   }).join("");
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-fuchsia-500/15 md:col-span-2">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-fuchsia-500/15 w-full">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:18px">hourglass_top</span></div>
@@ -852,7 +852,7 @@ export function projectionInnerHtml() {
     </div>`).join("");
   return `
     <div class="h-48 mb-4">
-      <canvas id="projectionChart"></canvas>
+      <canvas id="projectionChart" class="projection-chart-canvas w-full h-full"></canvas>
     </div>
     <div class="space-y-2">${yearCards}</div>
   `;
@@ -860,7 +860,7 @@ export function projectionInnerHtml() {
 
 export function projectionCardHtml() {
   const endBal = runningFundsAt(timeline()[HORIZON - 1]);
-  return `<details open class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 md:col-span-2">
+  return `<details open class="glass-card rounded-2xl overflow-hidden border border-indigo-500/10 w-full">
     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:18px">trending_up</span></div>
