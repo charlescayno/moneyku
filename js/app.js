@@ -64,7 +64,6 @@ import {
   exportData,
   fetchInvestmentRates,
   refreshInvestmentRates,
-  refreshInvestmentRates,
   initChat,
   toggleDensityMode,
   applyDensityMode,
