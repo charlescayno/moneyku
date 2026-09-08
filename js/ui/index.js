@@ -19,6 +19,7 @@ export {
   bankGroupHtml,
   groupedRowsHtml,
   personSectionHtml,
+  debtTrackerCardHtml,
   acctIconHtml,
   acctRowHtml,
   acctGroupHtml,
@@ -29,6 +30,7 @@ export {
   monthOverviewCardHtml,
   statsGridHtml,
   installmentsCardHtml,
+  recurringPaymentsCardHtml,
   projectionInnerHtml,
   projectionCardHtml,
   openMore,
@@ -77,7 +79,10 @@ export {
   prevOverviewPage,
   nextOverviewPage,
   jumpOverviewYear,
-  exportData
+  exportData,
+  getDensityMode,
+  applyDensityMode,
+  toggleDensityMode
 } from "./actions.js";
 
 export {

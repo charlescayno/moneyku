@@ -166,9 +166,12 @@ export function renderBarChart(currentK) {
   });
 }
 
+let projectionChartInstances = [];
+
 export function renderProjectionChart() {
-  const ctx = document.getElementById('projectionChart');
-  if (!ctx || !window.Chart) return;
+  if (!window.Chart) return;
+  const canvases = document.querySelectorAll('.projection-chart-canvas, #projectionChart');
+  if (!canvases.length) return;
   
   const keys = timeline();
   let bal = accountsTotal();
@@ -186,69 +189,79 @@ export function renderProjectionChart() {
   const endBals = labels.map(y => years[y].endBal);
   const savings = labels.map(y => years[y].savings);
   
-  if (projectionChartInstance) projectionChartInstance.destroy();
+  projectionChartInstances.forEach(inst => {
+    try { inst.destroy(); } catch (e) {}
+  });
+  projectionChartInstances = [];
   
-  projectionChartInstance = new Chart(ctx, {
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          type: 'line',
-          label: 'End Balance',
-          data: endBals,
-          borderColor: '#8b5cf6', // violet-500
-          backgroundColor: '#8b5cf6',
-          borderWidth: 2,
-          tension: 0.3,
-          pointRadius: 3,
+  canvases.forEach(ctx => {
+    try {
+      const inst = new Chart(ctx, {
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              type: 'line',
+              label: 'End Balance',
+              data: endBals,
+              borderColor: '#8b5cf6', // violet-500
+              backgroundColor: '#8b5cf6',
+              borderWidth: 2,
+              tension: 0.3,
+              pointRadius: 3,
+            },
+            {
+              type: 'bar',
+              label: 'Yearly Savings',
+              data: savings,
+              backgroundColor: savings.map(s => s >= 0 ? '#34d399' : '#f43f5e'), // emerald-400 or rose-500
+              borderRadius: 4,
+            }
+          ]
         },
-        {
-          type: 'bar',
-          label: 'Yearly Savings',
-          data: savings,
-          backgroundColor: savings.map(s => s >= 0 ? '#34d399' : '#f43f5e'), // emerald-400 or rose-500
-          borderRadius: 4,
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: { usePointStyle: true, boxWidth: 6 }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.9)',
-          titleFont: { size: 11, weight: 'bold' },
-          bodyFont: { size: 13, weight: '900' },
-          padding: 10,
-          cornerRadius: 8,
-          callbacks: {
-            label: function(context) {
-              let label = context.dataset.label || '';
-              if (label) { label += ': '; }
-              if (context.parsed.y !== null) {
-                label += peso(context.parsed.y);
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { usePointStyle: true, boxWidth: 6 }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleFont: { size: 11, weight: 'bold' },
+              bodyFont: { size: 13, weight: '900' },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) { label += ': '; }
+                  if (context.parsed.y !== null) {
+                    label += peso(context.parsed.y);
+                  }
+                  return label;
+                }
               }
-              return label;
+            }
+          },
+          scales: {
+            x: { grid: { display: false, color: '#334155' }, ticks: { font: { size: 10 } } },
+            y: { 
+              grid: { color: '#334155', borderDash: [4, 4] }, 
+              border: { display: false }, 
+              ticks: { 
+                font: { size: 10 }, 
+                callback: function(value) { return '₱' + (value / 1000) + 'k'; } 
+              } 
             }
           }
         }
-      },
-      scales: {
-        x: { grid: { display: false, color: '#334155' }, ticks: { font: { size: 10 } } },
-        y: { 
-          grid: { color: '#334155', borderDash: [4, 4] }, 
-          border: { display: false }, 
-          ticks: { 
-            font: { size: 10 }, 
-            callback: function(value) { return '₱' + (value / 1000) + 'k'; } 
-          } 
-        }
-      }
+      });
+      projectionChartInstances.push(inst);
+    } catch (err) {
+      console.warn("Projection chart mount error:", err);
     }
   });
 }

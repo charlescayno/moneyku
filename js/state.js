@@ -226,6 +226,20 @@ export function allInstallments() {
   return out;
 }
 
+export function allRecurring(k) {
+  const out = [];
+  for (const who of ["charlie", "debt"]) {
+    for (const kind of ["expenses", "income"]) {
+      for (const it of getItems(who, kind)) {
+        if (it.recurring && !it.end && (k ? itemActiveIn(it, k) : true)) {
+          out.push({ ...it, who, kind });
+        }
+      }
+    }
+  }
+  return out;
+}
+
 export function monthsPaidCount(it) {
   let count = 0, k = it.start;
   while (cmpKey(k, it.end) <= 0) {

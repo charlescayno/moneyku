@@ -4,6 +4,7 @@ import { syncSet } from '../firebase.js';
 import { renderProjectionChart } from '../charts.js';
 import { openMore, projectionInnerHtml, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
+import { toast } from './core.js';
 
 // =============================
 // Navigation & Month Header
@@ -12,6 +13,7 @@ export function updateHeader() {
   const selectedKey = getSelectedKey();
   $("current-month-display").textContent = monthName(selectedKey).toUpperCase();
   $("current-year-display").textContent = keyParts(selectedKey).y;
+  applyDensityMode();
 }
 
 export function renderMonthStrip() {
@@ -255,3 +257,31 @@ export function exportData() {
   dlAnchorElem.setAttribute("download", "moneyku_backup_" + new Date().toISOString().split('T')[0] + ".json");
   dlAnchorElem.click();
 }
+
+// =============================
+// Density Mode Helpers
+// =============================
+export function getDensityMode() {
+  return localStorage.getItem("moneyku_density") || "comfortable";
+}
+
+export function applyDensityMode(mode) {
+  const density = mode || getDensityMode();
+  document.body.setAttribute("data-density", density);
+  const icon = document.getElementById("density-icon");
+  const btn = document.getElementById("density-toggle-btn");
+  if (icon) {
+    icon.textContent = density === "compact" ? "view_cozy" : "view_compact";
+  }
+  if (btn) {
+    btn.title = density === "compact" ? "Density: Compact (click for Comfortable)" : "Density: Comfortable (click for Compact)";
+  }
+}
+
+export function toggleDensityMode() {
+  const current = getDensityMode();
+  const next = current === "compact" ? "comfortable" : "compact";
+  localStorage.setItem("moneyku_density", next);
+  applyDensityMode(next);
+  toast(`Switched to ${next.charAt(0).toUpperCase() + next.slice(1)} Mode`, "info");
+}

@@ -2,62 +2,107 @@ import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, 
 import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { renderProjectionChart } from '../charts.js';
-import { accountsCardHtml, fetchInvestmentRates, personSectionHtml, statsGridHtml } from './components.js';
+import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, recurringPaymentsCardHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 
 // =============================
 // Dashboard Main Renderer
 // =============================
 export function renderBudget() {
-    const pb = document.getElementById("budget-body");
+  const pb = document.getElementById("budget-body");
   if (pb && window.Sortable && !pb.sortableInst) {
     pb.sortableInst = new Sortable(pb, { animation: 150, handle: "summary", ghostClass: "bg-slate-800/50" });
   }
-const k = getSelectedKey();
+  const k = getSelectedKey();
   const t = monthTotals(k);
   const projected = runningFundsAt(k);
   const hideProjected = getHideProjected();
+  const current = currentMoneyAt();
+  const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
+  const instCard = installmentsCardHtml();
 
-  const summary = `<section class="md:col-span-2 rounded-3xl overflow-hidden relative shadow-xl">
-    <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-700"></div>
-    <div class="ambient-glow" style="top:-30px;right:60px"></div>
-    <div class="relative p-6 md:p-7 space-y-5">
-      <div class="flex items-center justify-between gap-3">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2">
-            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Projected · end of ${monthName(k)}</p>
-            <button data-action="toggleProjected" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center justify-center">
-              <span class="material-icons" style="font-size: 14px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
+  const kpiBar = `
+    <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between gap-3 shadow-md flex-shrink-0">
+      <!-- Projected Hero Stat -->
+      <div class="flex items-center gap-2 pr-3 border-r border-white/10 flex-shrink-0">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
+          <span class="material-icons" style="font-size:14px">account_balance</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-1">
+            <span class="text-[8px] font-black uppercase tracking-wider text-indigo-300">Projected (${monthShort(k)})</span>
+            <button data-action="toggleProjected" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center">
+              <span class="material-icons" style="font-size: 11px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
             </button>
           </div>
-          <p id="sum-projected" class="text-3xl sm:text-4xl md:text-5xl font-black text-white mt-1 leading-none truncate">${hideProjected ? '••••••' : peso(projected)}</p>
+          <p id="sum-projected" class="text-sm sm:text-base font-black text-white leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
         </div>
       </div>
-      <div id="sum-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3">${statsGridHtml(t)}</div>
-      ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `
-      <div id="debt-stats" class="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
-        <div class="bg-black/20 rounded-2xl px-4 py-3">
-          <div class="flex items-center gap-1.5">
-            <span class="material-icons text-indigo-300" style="font-size:13px">arrow_downward</span>
-            <p class="text-[9px] font-bold uppercase text-white/60">Owed To Me</p>
-          </div>
-          <p class="text-base font-black text-indigo-300 mt-1">${signedPeso(t.debtToReceive)}</p>
-        </div>
-        <div class="bg-black/20 rounded-2xl px-4 py-3">
-          <div class="flex items-center gap-1.5">
-            <span class="material-icons text-orange-300" style="font-size:13px">arrow_upward</span>
-            <p class="text-[9px] font-bold uppercase text-white/60">I Owe Others</p>
-          </div>
-          <p class="text-base font-black text-orange-300 mt-1">${signedPeso(-t.debtToPay)}</p>
-        </div>
-      </div>` : ''}
-    </div>
-  </section>`;
 
-  $("budget-body").innerHTML =
-    summary +
-    accountsCardHtml() +
-    personSectionHtml("charlie");
+      <!-- KPI Metrics Grid -->
+      <div class="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-1.5 items-center">
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
+          <span class="text-[8px] font-bold uppercase text-slate-400">Current</span>
+          <span class="text-xs font-black text-white">${peso(current)}</span>
+        </div>
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
+          <span class="text-[8px] font-bold uppercase text-slate-400">Savings</span>
+          <span class="text-xs font-black ${savColor}">${signedPeso(t.savings)}</span>
+        </div>
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
+          <span class="text-[8px] font-bold uppercase text-slate-400">To Receive</span>
+          <span class="text-xs font-black text-emerald-400">${signedPeso(t.toReceive)}</span>
+        </div>
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
+          <span class="text-[8px] font-bold uppercase text-slate-400">To Pay</span>
+          <span class="text-xs font-black text-rose-400">${signedPeso(-t.toPay)}</span>
+        </div>
+        ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between col-span-2 sm:col-span-4 lg:col-span-1">
+          <span class="text-[8px] font-bold uppercase text-slate-400">Debt Net</span>
+          <span class="text-xs font-black ${(t.debtToReceive - t.debtToPay) >= 0 ? 'text-indigo-300' : 'text-orange-300'}">${signedPeso(t.debtToReceive - t.debtToPay)}</span>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+
+  $("budget-body").innerHTML = `
+    <div class="w-full h-full min-h-0 flex flex-col gap-2 overflow-hidden">
+      ${kpiBar}
+      <div class="w-full flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 items-stretch overflow-y-auto lg:overflow-hidden no-scrollbar">
+        <!-- Col 1: Liquid Accounts & Debt -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-0">
+          ${accountsCardHtml()}
+          ${debtTrackerCardHtml()}
+        </div>
+
+        <!-- Col 2: Charlie's Monthly Budget -->
+        <div class="h-full min-h-0 flex flex-col overflow-hidden flex-shrink-0 min-w-0">
+          ${personSectionHtml("charlie", false)}
+        </div>
+
+        <!-- Col 3: Recurring Payments & Active Installments -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-0">
+          ${instCard ? instCard : ''}
+          ${recurringPaymentsCardHtml()}
+        </div>
+
+        <!-- Col 4: Investments, Projections & Multi-Year Forecast -->
+        <div class="h-full min-h-0 flex flex-col gap-2 overflow-y-auto no-scrollbar flex-shrink-0 min-w-0">
+          ${investmentsCardHtml()}
+          ${projectionCardHtml()}
+          ${monthOverviewCardHtml()}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Render projection chart
+  setTimeout(() => {
+    if (typeof renderProjectionChart === "function") {
+      renderProjectionChart();
+    }
+  }, 20);
 }
 
 export function renderAll() {

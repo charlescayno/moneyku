@@ -64,7 +64,10 @@ import {
   exportData,
   fetchInvestmentRates,
   refreshInvestmentRates,
-  initChat
+  refreshInvestmentRates,
+  initChat,
+  toggleDensityMode,
+  applyDensityMode,
 } from "./ui/index.js";
 
 import {
@@ -114,6 +117,7 @@ window.openCalendarModal = openCalendarModal;
 window.closeCalendarModal = closeCalendarModal;
 window.fetchInvestmentRates = fetchInvestmentRates;
 window.refreshInvestmentRates = refreshInvestmentRates;
+window.toggleDensityMode = toggleDensityMode;
 
 // =============================
 // Boot & Lifecycle
@@ -121,6 +125,7 @@ window.refreshInvestmentRates = refreshInvestmentRates;
 let firstLoad = true;
 
 function boot() {
+  applyDensityMode();
   runIntro();
   initGestures();
   initChat();
