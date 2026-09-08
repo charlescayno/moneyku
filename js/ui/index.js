@@ -85,3 +85,5 @@ export {
   renderAll
 } from "./layout.js";
 
+
+export { initChat } from './chat.js';

@@ -191,7 +191,26 @@
             <!-- month detail injected -->
           </div>
         </div>
-
+        
+        <!-- NLP CHAT UI -->
+        <div id="nlp-response" class="absolute bottom-20 left-4 right-4 bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl z-50 transform translate-y-[150%] opacity-0 transition-all duration-300 pointer-events-none">
+        </div>
+        
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent z-40">
+          <div class="relative max-w-2xl mx-auto">
+            <!-- Smart Preview Popover -->
+            <div id="nlp-preview" class="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200">
+            </div>
+            
+            <div class="relative flex items-center bg-slate-800/80 backdrop-blur border border-slate-700 rounded-full shadow-lg overflow-hidden">
+              <span class="material-icons text-slate-400 pl-4">auto_awesome</span>
+              <input type="text" id="chat-input" placeholder="e.g. Paid PC, Add Netflix for 500" class="w-full bg-transparent text-white placeholder-slate-500 py-3 px-3 outline-none focus:ring-0 text-sm">
+              <button class="pr-4 pl-2 text-blue-400 hover:text-blue-300 transition-colors">
+                <span class="material-icons text-lg">send</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
 

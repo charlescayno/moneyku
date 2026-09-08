@@ -64,6 +64,7 @@ import {
   exportData,
   fetchInvestmentRates,
   refreshInvestmentRates,
+  initChat
 } from "./ui/index.js";
 
 import {
@@ -122,6 +123,7 @@ let firstLoad = true;
 function boot() {
   runIntro();
   initGestures();
+  initChat();
   initEventListeners();
   
   // Background live ticker: updates rates periodically
