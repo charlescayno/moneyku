@@ -41,29 +41,29 @@ function renderPreview(parsed) {
   
   switch(parsed.intent) {
     case 'MARK_PAID':
-      html = \<div class="text-xs text-slate-400 font-bold mb-1">MARK PAID</div>\;
+      html = `<div class="text-xs text-slate-400 font-bold mb-1">MARK PAID</div>`;
       if (parsed.matchingItems.length === 0) {
-        html += \<div class="text-white">No matching bills found for "\"</div>\;
+        html += `<div class="text-white">No matching bills found for "\"</div>`;
       } else if (parsed.matchingItems.length === 1) {
-        html += \<div class="text-emerald-400 font-medium">?? \</div>\;
+        html += `<div class="text-emerald-400 font-medium">?? `</div>`;
       } else {
-        html += \<div class="text-white">Multiple matches. (Selection UI coming soon)</div>\;
+        html += `<div class="text-white">Multiple matches. (Selection UI coming soon)</div>`;
       }
       break;
     case 'ADD_RECURRING':
-      html = \<div class="text-xs text-slate-400 font-bold mb-1">ADD RECURRING BILL</div>\;
-      html += \<div class="text-blue-400 font-medium">? \ \</div>\;
+      html = `<div class="text-xs text-slate-400 font-bold mb-1">ADD RECURRING BILL</div>`;
+      html += `<div class="text-blue-400 font-medium">? \ `</div>`;
       break;
     case 'ADD_ONEOFF':
-      html = \<div class="text-xs text-slate-400 font-bold mb-1">ADD PROJECTED EXPENSE</div>\;
-      html += \<div class="text-indigo-400 font-medium">? \ \</div>\;
+      html = `<div class="text-xs text-slate-400 font-bold mb-1">ADD PROJECTED EXPENSE</div>`;
+      html += `<div class="text-indigo-400 font-medium">? \ `</div>`;
       break;
     case 'QUERY':
-      html = \<div class="text-xs text-slate-400 font-bold mb-1">ASK AI</div>\;
-      html += \<div class="text-white font-medium">?? \</div>\;
+      html = `<div class="text-xs text-slate-400 font-bold mb-1">ASK AI</div>`;
+      html += `<div class="text-white font-medium">?? `</div>`;
       break;
     default:
-      html = \<div class="text-white">\</div>\;
+      html = `<div class="text-white">`</div>`;
   }
 
   previewBox.innerHTML = html;
@@ -118,7 +118,7 @@ function clearChat() {
 function showAIResponse(text) {
   const card = nlp-response;
   if (!card) return;
-  card.innerHTML = \<div class="flex items-center gap-2"><span class="material-icons text-blue-400">auto_awesome</span><span>\</span></div>\;
+  card.innerHTML = `<div class="flex items-center gap-2"><span class="material-icons text-blue-400">auto_awesome</span><span>`</span></div>`;
   card.classList.remove('translate-y-[150%]', 'opacity-0');
   
   setTimeout(() => {
