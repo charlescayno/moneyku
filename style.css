@@ -23,7 +23,6 @@ html, body {
   scrollbar-width: none;
   -ms-overflow-style: none;
   scroll-behavior: smooth;
-  cursor: grab;
   overscroll-behavior-y: contain; /* Prevents scroll chaining/bouncing */
 }
 
@@ -345,7 +344,7 @@ input:focus-visible {
   /* Budget view: single-pane, no horizontal scroll */
   #budget-view {
     /* Keep Tailwind's flex-col layout; cards scroll inside the cockpit columns */
-    overflow: hidden !important;
+    overflow-y: auto !important;
     scroll-snap-type: none !important;
   }
 
@@ -1040,7 +1039,7 @@ body[data-density="compact"] #budget-body {
 }
 
 /* Zero-Scroll Cockpit Dashboard Deck */
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   #budget-view {
     overflow: hidden !important;
   }
@@ -1071,3 +1070,11 @@ body[data-density="compact"] #budget-body {
 .cockpit-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Cockpit: lock the budget view only on wide screens; phones/tablets scroll */
+@media (min-width: 1280px) {
+  #budget-view { overflow: hidden !important; }
+}
+
+/* Phone safe areas (PWA standalone) */
+header { padding-top: max(1.5rem, env(safe-area-inset-top)); }

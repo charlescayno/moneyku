@@ -381,7 +381,7 @@ export function personSectionHtml(who, includeDebt = true) {
     debtSectionHtml = `<div class="border-t border-white/[0.08] pt-2 mt-1">${debtTrackerCardHtml()}</div>`;
   }
 
-  return `<div class="glass-card rounded-xl overflow-hidden border ${o.ring} w-full flex flex-col h-full min-h-0">
+  return `<div class="glass-card rounded-xl overflow-hidden border ${o.ring} w-full flex flex-col xl:h-full xl:min-h-0">
     <div class="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r ${o.grad} bg-opacity-10 flex-shrink-0">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${o.grad} ring-1 ring-white/25 flex-shrink-0 flex items-center justify-center">
@@ -398,7 +398,7 @@ export function personSectionHtml(who, includeDebt = true) {
         <p class="text-[9px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
       </div>`}
     </div>
-    <div class="p-2.5 space-y-2 flex-1 min-h-0 overflow-y-auto no-scrollbar">
+    <div class="p-2.5 space-y-2 xl:flex-1 xl:min-h-0 xl:overflow-y-auto no-scrollbar">
       <details open class="group">
         <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
           <div class="flex items-center gap-1">

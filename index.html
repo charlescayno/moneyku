@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>Charles | Money</title>
     <link rel="manifest" href="manifest.json" />
@@ -197,7 +197,7 @@
         <!-- BUDGET VIEW -->
         <div
           id="budget-view"
-          class="absolute inset-0 flex flex-col min-h-0 overflow-hidden"
+          class="absolute inset-0 flex flex-col overflow-y-auto overflow-x-hidden xl:min-h-0 xl:overflow-hidden"
         >
           <!-- Month strip -->
           <div
@@ -209,7 +209,7 @@
 
           <div id="month-banner" class="px-5 sm:px-6 md:px-8 pb-2 empty:hidden flex-shrink-0"></div>
 
-          <div class="flex-1 min-h-0 px-5 sm:px-6 md:px-8 pb-4 stagger-in flex flex-col overflow-hidden" id="budget-body">
+          <div class="flex-1 min-h-0 px-5 sm:px-6 md:px-8 pb-4 stagger-in flex flex-col flex-shrink-0 xl:flex-shrink xl:flex-1 xl:min-h-0 xl:overflow-hidden" id="budget-body">
             <!-- Skeleton shown until the first render replaces it -->
             <div class="w-full h-full flex flex-col gap-3 animate-pulse" aria-hidden="true">
               <div class="h-14 rounded-xl bg-slate-800/70"></div>
