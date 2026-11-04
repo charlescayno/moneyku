@@ -22,7 +22,7 @@ export function renderBudget() {
   const instCard = installmentsCardHtml();
 
   const kpiBar = `
-    <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-2 xl:py-1.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 md:gap-3 shadow-md flex-shrink-0">
+    <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-2 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 md:gap-3 shadow-md flex-shrink-0">
       <!-- Projected Hero Stat -->
       <div class="flex items-center gap-2 md:pr-3 md:border-r border-white/10 flex-shrink-0">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
@@ -67,32 +67,32 @@ export function renderBudget() {
   `;
 
   $("budget-body").innerHTML = `
-    <div class="w-full flex flex-col gap-2 pb-[calc(6rem+env(safe-area-inset-bottom))] xl:pb-0 xl:h-full xl:min-h-0 xl:overflow-hidden">
+    <div class="w-full flex flex-col gap-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       ${kpiBar}
-      <!-- Below xl: one scrolling column (columns dissolve via contents, cards use order-N). xl+: 4-column cockpit. -->
-      <div class="w-full grid grid-cols-1 xl:grid-cols-4 gap-2.5 items-stretch xl:flex-1 xl:min-h-0 xl:overflow-hidden">
+      <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->
+      <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->
-        <div class="contents xl:flex xl:flex-col xl:gap-2 xl:h-full xl:min-h-0 xl:overflow-y-auto no-scrollbar min-w-0">
-          <div class="order-1 xl:order-none">${accountsCardHtml()}</div>
-          <div class="order-[6] xl:order-none">${debtTrackerCardHtml()}</div>
+        <div class="contents">
+          <div class="order-1">${accountsCardHtml()}</div>
+          <div class="order-[6]">${debtTrackerCardHtml()}</div>
         </div>
 
         <!-- Col 2: Charlie's Monthly Budget -->
-        <div class="order-2 xl:order-none xl:h-full xl:min-h-0 flex flex-col xl:overflow-hidden min-w-0">
+        <div class="order-2 flex flex-col min-w-0">
           ${personSectionHtml("charlie", false)}
         </div>
 
         <!-- Col 3: Recurring Payments & Active Installments -->
-        <div class="contents xl:flex xl:flex-col xl:gap-2 xl:h-full xl:min-h-0 xl:overflow-y-auto no-scrollbar min-w-0">
-          <div class="order-4 xl:order-none">${instCard ? instCard : ''}</div>
-          <div class="order-5 xl:order-none">${recurringPaymentsCardHtml()}</div>
+        <div class="contents">
+          <div class="order-4">${instCard ? instCard : ''}</div>
+          <div class="order-5">${recurringPaymentsCardHtml()}</div>
         </div>
 
         <!-- Col 4: Investments, Projections & Multi-Year Forecast -->
-        <div class="contents xl:flex xl:flex-col xl:gap-2 xl:h-full xl:min-h-0 xl:overflow-y-auto no-scrollbar min-w-0">
-          <div class="order-3 xl:order-none">${investmentsCardHtml()}</div>
-          <div class="order-7 xl:order-none">${projectionCardHtml()}</div>
-          <div class="order-8 xl:order-none">${monthOverviewCardHtml()}</div>
+        <div class="contents">
+          <div class="order-3">${investmentsCardHtml()}</div>
+          <div class="order-7">${projectionCardHtml()}</div>
+          <div class="order-8">${monthOverviewCardHtml()}</div>
         </div>
       </div>
     </div>

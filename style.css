@@ -1039,14 +1039,7 @@ body[data-density="compact"] #budget-body {
 }
 
 /* Zero-Scroll Cockpit Dashboard Deck */
-@media (min-width: 1280px) {
-  #budget-view {
-    overflow: hidden !important;
-  }
-  #budget-body {
-    overflow: hidden !important;
-  }
-}
+
 
 /* Custom subtle scrollbars for internal card containers */
 .no-scrollbar::-webkit-scrollbar {
@@ -1071,10 +1064,7 @@ body[data-density="compact"] #budget-body {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Cockpit: lock the budget view only on wide screens; phones/tablets scroll */
-@media (min-width: 1280px) {
-  #budget-view { overflow: hidden !important; }
-}
+
 
 /* Phone safe areas (PWA standalone) */
 header { padding-top: max(1.5rem, env(safe-area-inset-top)); }
