@@ -19,12 +19,11 @@ export function renderBudget() {
   const hideProjected = getHideProjected();
   const current = currentMoneyAt();
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
-  const instCard = installmentsCardHtml();
 
   const kpiBar = `
-    <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-2 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 md:gap-3 shadow-md flex-shrink-0">
+    <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-2 flex flex-col items-stretch gap-2 shadow-md flex-shrink-0">
       <!-- Projected Hero Stat -->
-      <div class="flex items-center gap-2 md:pr-3 md:border-r border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-2 flex-shrink-0">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
           <span class="material-icons" style="font-size:14px">account_balance</span>
         </div>
@@ -40,7 +39,7 @@ export function renderBudget() {
       </div>
 
       <!-- KPI Metrics Grid -->
-      <div class="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-1.5 items-center">
+      <div class="flex-1 min-w-0 grid grid-cols-2 gap-1.5 items-center">
         <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
           <span class="text-[8px] font-bold uppercase text-slate-400">Current</span>
           <span class="text-xs font-black text-white">${peso(current)}</span>
@@ -58,7 +57,7 @@ export function renderBudget() {
           <span class="text-xs font-black text-rose-400">${signedPeso(-t.toPay)}</span>
         </div>
         ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `
-        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between col-span-2 sm:col-span-4 lg:col-span-1">
+        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between col-span-2">
           <span class="text-[8px] font-bold uppercase text-slate-400">Debt Net</span>
           <span class="text-xs font-black ${(t.debtToReceive - t.debtToPay) >= 0 ? 'text-indigo-300' : 'text-orange-300'}">${signedPeso(t.debtToReceive - t.debtToPay)}</span>
         </div>` : ''}
@@ -82,28 +81,13 @@ export function renderBudget() {
           ${personSectionHtml("charlie", false)}
         </div>
 
-        <!-- Col 3: Recurring Payments & Active Installments -->
+        <!-- Col 3: Recurring payments (installments, investments, forecast and overview live in the Overview sheet) -->
         <div class="contents">
-          <div class="order-4">${instCard ? instCard : ''}</div>
           <div class="order-5">${recurringPaymentsCardHtml()}</div>
-        </div>
-
-        <!-- Col 4: Investments, Projections & Multi-Year Forecast -->
-        <div class="contents">
-          <div class="order-3">${investmentsCardHtml()}</div>
-          <div class="order-7">${projectionCardHtml()}</div>
-          <div class="order-8">${monthOverviewCardHtml()}</div>
         </div>
       </div>
     </div>
   `;
-
-  // Render projection chart
-  setTimeout(() => {
-    if (typeof renderProjectionChart === "function") {
-      renderProjectionChart();
-    }
-  }, 20);
 }
 
 export function renderAll() {

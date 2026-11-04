@@ -22,7 +22,6 @@ html, body {
 #budget-view {
   scrollbar-width: none;
   -ms-overflow-style: none;
-  scroll-behavior: smooth;
   overscroll-behavior-y: contain; /* Prevents scroll chaining/bouncing */
 }
 
@@ -40,10 +39,9 @@ html, body {
 
 /* Component Styles */
 .glass-card {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
+  background: rgba(30, 41, 59, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
 }
 
 .glass-card:active {
@@ -1068,3 +1066,11 @@ body[data-density="compact"] #budget-body {
 
 /* Phone safe areas (PWA standalone) */
 header { padding-top: max(1.5rem, env(safe-area-inset-top)); }
+
+/* Scroll performance: no live blur on the sticky header / summary, isolate scroller */
+header, #budget-body [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+header { background-color: rgba(15, 23, 42, 0.97) !important; }
+#budget-view { -webkit-overflow-scrolling: touch; will-change: scroll-position; }
