@@ -17,6 +17,14 @@ let touchEndY = 0;
 let isPulling = false;
 let startedInStrip = false;
 
+// True when the touch begins inside something that scrolls sideways (e.g. the accounts cards)
+function inHorizontalScroller(el) {
+  for (; el && el !== document.body; el = el.parentElement) {
+    if (el.scrollWidth > el.clientWidth + 2 && /(auto|scroll)/.test(getComputedStyle(el).overflowX)) return true;
+  }
+  return false;
+}
+
 export function initGestures() {
   document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
@@ -24,7 +32,7 @@ export function initGestures() {
     // Pull-to-refresh only when the page is at the very top, nothing is open on top of it,
     // and the touch isn't on the month strip
     const overlayOpen = !!document.querySelector('#modal-overlay.open, #confirm-overlay.open, #calendar-overlay.open, #more-overlay.open, #month-picker.open');
-    startedInStrip = !!e.target.closest?.('#month-strip');
+    startedInStrip = !!e.target.closest?.('#month-strip') || !!e.target.closest?.('.snap-x') || inHorizontalScroller(e.target);
     isPulling = window.scrollY <= 0 && !overlayOpen && !startedInStrip;
   }, { passive: true });
 
