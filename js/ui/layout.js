@@ -3,7 +3,7 @@ import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, cu
 import { syncSet } from '../firebase.js';
 import { activityCalendarCardHtml } from '../calendar.js';
 import { renderProjectionChart } from '../charts.js';
-import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, recurringPaymentsCardHtml, statsGridHtml } from './components.js';
+import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 
 // =============================
@@ -81,7 +81,6 @@ export function renderBudget() {
 
         <!-- Col 3: Recurring payments (installments, investments, forecast and overview live in the Overview sheet) -->
         <div class="contents">
-          <div class="order-5">${recurringPaymentsCardHtml()}</div>
           <div class="order-[4]">${activityCalendarCardHtml()}</div>
         </div>
       </div>

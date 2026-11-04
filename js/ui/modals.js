@@ -87,7 +87,7 @@ export function closeModal() {
   setActiveEdit(null);
 }
 
-export function openItemModal(who, kind, id) {
+export function openItemModal(who, kind, id, presetDay) {
   const list = getItems(who, kind);
   const it = id ? list.find((x) => x.id === id) : null;
   const isNew = !it;
@@ -172,7 +172,8 @@ export function openItemModal(who, kind, id) {
   more += `<div class="space-y-0.5" id="f-end-wrap"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Runs until</label>
     <select id="f-end" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">${monthSelect("f-end", end, true, start)}</select></div></div>`;
 
-  const ddVal = it ? (dueDayFor(it) ?? "") : "";
+  const pd = parseInt(presetDay, 10);
+  const ddVal = it ? (dueDayFor(it) ?? "") : (pd >= 1 && pd <= 31 ? pd : "");
   more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Auto-completes on day <span class="text-slate-600">(1-31, optional)</span></label>
     <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" /></div>`;
 
@@ -207,7 +208,7 @@ export function openItemModal(who, kind, id) {
   }
 
   if (more) {
-    const openMoreByDefault = payMethod === "bpi_platinum";
+    const openMoreByDefault = payMethod === "bpi_platinum" || (isNew && pd >= 1);
     body += `<details id="f-more" ${openMoreByDefault ? "open" : ""} class="group">
       <summary class="flex items-center justify-between cursor-pointer select-none text-xs font-bold text-slate-400 py-1 px-1 list-none">
         <span>More options</span><span class="material-icons text-base transition-transform group-open:rotate-180">expand_more</span>

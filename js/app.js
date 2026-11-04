@@ -90,6 +90,7 @@ import {
   openCalendarModal,
   closeCalendarModal,
   calSetFilter,
+  calAdd,
   calSelectDay,
   calGoto,
 } from "./calendar.js";
@@ -172,6 +173,7 @@ window.exportData = exportData;
 window.openCalendarModal = openCalendarModal;
 window.closeCalendarModal = closeCalendarModal;
 window.calSetFilter = calSetFilter;
+window.calAdd = calAdd;
 window.calSelectDay = calSelectDay;
 window.calGoto = calGoto;
 window.fetchInvestmentRates = fetchInvestmentRates;

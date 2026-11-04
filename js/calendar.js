@@ -429,6 +429,7 @@ function activityCalInnerHtml() {
     <div class="flex gap-1.5 overflow-x-auto no-scrollbar mt-2.5">${chip("all", "All")}${chip("exp", "Expenses")}${chip("inc", "Income")}${chip("oth", "Other")}</div>
     <div class="mt-2.5 space-y-1.5">
       <div class="flex items-center justify-between px-0.5"><p class="text-[10px] font-black uppercase tracking-wider text-slate-400">${heading}</p>${calSelDay ? `<button type="button" data-action="calSelectDay" data-arg0="${calSelDay}" class="text-[10px] font-bold text-indigo-300">Show all</button>` : ""}</div>
+      <div class="flex gap-2"><button type="button" data-action="calAdd" data-arg0="income" class="flex-1 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Income${calSelDay ? ` · ${ordinal(calSelDay)}` : ""}</button><button type="button" data-action="calAdd" data-arg0="expenses" class="flex-1 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px] font-bold flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Expense${calSelDay ? ` · ${ordinal(calSelDay)}` : ""}</button></div>
       ${rows}
     </div>`;
 }
@@ -453,3 +454,4 @@ function refreshActivityCal() {
 export function calSetFilter(f) { calFilter = f; calSelDay = null; refreshActivityCal(); }
 export function calSelectDay(d) { const n = parseInt(d, 10); calSelDay = calSelDay === n ? null : n; refreshActivityCal(); }
 export function calGoto(k) { calSelDay = null; if (typeof window.selectMonth === "function") window.selectMonth(k); }
+export function calAdd(kind) { if (typeof window.openItemModal === "function") window.openItemModal("charlie", kind, "", calSelDay || ""); }
