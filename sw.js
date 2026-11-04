@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneyku-cache-v35';
+const CACHE_NAME = 'moneyku-cache-v36';
 const urlsToCache = [
   './',
   './index.html',
@@ -11,6 +11,12 @@ const urlsToCache = [
   './js/charts.js',
   './js/calendar.js',
   './js/events.js',
+  './js/insights.js',
+  './js/categories.js',
+  './js/tabs.js',
+  './js/gemini.js',
+  './js/itemOps.js',
+  './js/ui/quicklog.js',
   './js/ui/index.js',
   './js/ui/core.js',
   './js/ui/components.js',
@@ -48,7 +54,7 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, new URL(event.request.url).origin === self.location.origin ? { cache: 'no-cache' } : undefined)
       .then(response => {
         // If network succeeds, save a clone to the cache for future offline use
         const responseClone = response.clone();
