@@ -331,7 +331,7 @@ export function debtTrackerCardHtml() {
           <p class="text-[10px] font-black text-rose-400">${peso(debtIncTot)} <span class="text-slate-500 font-normal">/</span> ${peso(debtExpTot)}</p>
         </div>
       </summary>
-      <div class="p-2.5 pt-1 space-y-2 bg-slate-950/40 border-t border-white/[0.04] max-h-48 overflow-y-auto no-scrollbar">
+      <div class="p-2.5 pt-1 space-y-2 bg-slate-950/40 border-t border-white/[0.04]">
         <details open class="group">
           <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
             <div class="flex items-center gap-1">
@@ -503,7 +503,7 @@ export function accountsCardHtml() {
       </div>
       <p class="text-xs font-black text-emerald-400">${peso(accountsTotal())}</p>
     </summary>
-    <div class="p-2.5 pt-0 space-y-1 max-h-80 overflow-y-auto no-scrollbar">
+    <div class="p-2.5 pt-0 space-y-1">
       ${rows}
       <div class="flex gap-2 mt-1.5">
         <button data-action="openAccountModal" class="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Add account</button>
@@ -678,10 +678,15 @@ export async function fetchInvestmentRates(force = false) {
   appData.investments.lastFetch = now;
   isFetchingRates = false;
   
-  await syncSet(appData);
-  renderBudget();
+  // Nothing on the main page shows these rates, so never re-render it from a background fetch:
+  // replacing the DOM mid-swipe interrupts touch scrolling. Only save when something changed and
+  // refresh the Overview sheet (keeping its scroll position) if it is open.
+  if (changed) await syncSet(appData);
   if ($("more-overlay")?.classList.contains("open")) {
+    const mb = $("more-body");
+    const tops = [mb, mb?.parentElement].map((el) => (el ? el.scrollTop : 0));
     openMore();
+    [mb, mb?.parentElement].forEach((el, i) => { if (el) el.scrollTop = tops[i]; });
   }
 }
 
@@ -827,7 +832,7 @@ export function installmentsCardHtml() {
       </div>
       <p class="text-xs font-black text-fuchsia-300">${peso(grandRemaining)}</p>
     </summary>
-    <div class="p-2.5 pt-0 space-y-1 max-h-40 overflow-y-auto no-scrollbar">${rows}</div>
+    <div class="p-2.5 pt-0 space-y-1">${rows}</div>
   </details>`;
 }
 
@@ -874,7 +879,7 @@ export function recurringPaymentsCardHtml() {
       </div>
       <p class="text-xs font-black text-teal-300">${peso(totalMonthly)}</p>
     </summary>
-    <div class="p-2.5 pt-0 space-y-1 max-h-48 overflow-y-auto no-scrollbar">${rows || `<div class="text-center py-2 text-[10px] text-slate-500">No recurring payments for this month</div>`}</div>
+    <div class="p-2.5 pt-0 space-y-1">${rows || `<div class="text-center py-2 text-[10px] text-slate-500">No recurring payments for this month</div>`}</div>
   </details>`;
 }
 
@@ -893,7 +898,7 @@ export function projectionInnerHtml() {
     <div class="h-28 mb-1.5">
       <canvas id="projectionChart" class="projection-chart-canvas w-full h-full"></canvas>
     </div>
-    <div class="grid grid-cols-2 gap-1 max-h-28 overflow-y-auto no-scrollbar">${yearCards}</div>
+    <div class="grid grid-cols-2 gap-1">${yearCards}</div>
   `;
 }
 
