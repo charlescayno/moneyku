@@ -227,7 +227,7 @@
     </div>
 
     <!-- QUICK LOG PILL -->
-    <div id="ql-bar" class="fixed bottom-0 left-0 right-0 z-40 px-3 pt-8 pointer-events-none bg-gradient-to-t from-slate-900 via-slate-900/70 to-transparent" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom))">
+    <div id="ql-bar" class="fixed bottom-[calc(3.25rem+env(safe-area-inset-bottom))] sm:bottom-0 left-0 right-0 z-40 px-3 pt-6 pb-2 sm:pb-3 pointer-events-none bg-gradient-to-t from-slate-900 via-slate-900/70 to-transparent">
       <form id="ql-form" class="pointer-events-auto max-w-2xl mx-auto flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-full shadow-xl pl-3.5 pr-1.5 py-1.5">
         <span class="material-icons text-indigo-400" style="font-size:18px">auto_awesome</span>
         <input id="ql-input" type="text" autocomplete="off" enterkeyhint="send" placeholder="Log anything, or ask..." class="flex-1 min-w-0 bg-transparent text-white placeholder-slate-500 text-sm outline-none py-1.5" />
@@ -240,6 +240,13 @@
       </form>
     </div>
 
+    <!-- MOBILE TAB BAR -->
+    <nav id="tabbar" aria-label="Sections" class="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-slate-900/95 border-t border-white/10 flex" style="padding-bottom:env(safe-area-inset-bottom)">
+      <button type="button" data-tab="home" data-action="tabGo" data-arg0="home" class="flex-1 h-[3.25rem] flex flex-col items-center justify-center gap-0.5 text-slate-500"><span class="material-icons" style="font-size:20px">home</span><span class="text-[9px] font-bold">Home</span></button>
+      <button type="button" data-tab="accounts" data-action="tabGo" data-arg0="accounts" class="flex-1 h-[3.25rem] flex flex-col items-center justify-center gap-0.5 text-slate-500"><span class="material-icons" style="font-size:20px">account_balance_wallet</span><span class="text-[9px] font-bold">Accounts</span></button>
+      <button type="button" data-tab="calendar" data-action="tabGo" data-arg0="calendar" class="flex-1 h-[3.25rem] flex flex-col items-center justify-center gap-0.5 text-slate-500"><span class="material-icons" style="font-size:20px">event_note</span><span class="text-[9px] font-bold">Calendar</span></button>
+      <button type="button" data-tab="overview" data-action="tabGo" data-arg0="overview" class="flex-1 h-[3.25rem] flex flex-col items-center justify-center gap-0.5 text-slate-500"><span class="material-icons" style="font-size:20px">insights</span><span class="text-[9px] font-bold">Overview</span></button>
+    </nav>
     <!-- QUICK LOG SHEET -->
     <div id="ql-overlay" class="fixed inset-0 z-[58] bg-black/60 opacity-0 pointer-events-none transition-opacity duration-200 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div id="ql-sheet" class="bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4 border border-white/5 shadow-2xl max-h-[85vh] flex flex-col translate-y-full transition-transform duration-300">

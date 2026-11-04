@@ -1,6 +1,7 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
+import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
 import { renderProjectionChart } from '../charts.js';
 import { toast } from './core.js';
 import { saveChildAndAddAnother, saveModal, spendSectionHtml, toggleField } from './components.js';
@@ -77,7 +78,8 @@ export function updateBpiCcMonth(isExistingInit = false) {
 }
 
 export function openModalShell() {
-  $("save-btn").onclick = saveModal;
+  // Save is wired through data-action="saveModal" on the button (an extra onclick here made it fire twice)
+  $("save-btn").onclick = null;
   const ov = $("modal-overlay");
   ov.classList.add("open");
 }
@@ -117,7 +119,15 @@ export function openItemModal(who, kind, id, presetDay) {
     body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (₱)</label>
       <div class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-slate-300">${peso(itemTotal(it, selectedKey))} <span class="text-[11px] font-bold text-slate-500">· sum of ${kids.length} sub-expenses</span></div></div>`;
   } else {
-    body += inputBlock("Amount (₱)", "f-amount", amount, "text", 'inputmode="text" placeholder="0"');
+    body += `<div id="f-amount-wrap">${inputBlock("Amount (₱)", "f-amount", amount, "text", 'inputmode="text" placeholder="0"')}</div>`;
+    if (isNew && kind === "expenses") {
+      body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
+        <div><p class="text-sm font-bold text-white">Group with sub-expenses</p><p id="f-group-hint" class="hidden text-[10px] text-violet-300">Amount = sum of sub-expenses. You'll add them next.</p><p class="text-[10px] text-slate-500">e.g. Family Expense with several items</p></div>
+        <button type="button" id="f-group" data-on="false" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors bg-slate-700 relative flex-shrink-0">
+          <span class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all"></span>
+        </button>
+      </div>`;
+    }
   }
 
   body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
@@ -127,7 +137,10 @@ export function openItemModal(who, kind, id, presetDay) {
     </button>
   </div>`;
 
-  const payMethod = it ? (it.paymentMethod || "cash") : "cash";
+  let lastPm = "cash";
+  try { lastPm = localStorage.getItem("moneyku_last_pm") || "cash"; } catch { /* ignore */ }
+  if (!["cash", "bpi_platinum", "cc_other"].includes(lastPm)) lastPm = "cash";
+  const payMethod = it ? (it.paymentMethod || "cash") : (kind === "expenses" ? lastPm : "cash");
   const txDayVal = it ? (it.txDay || 15) : 15;
   const cutoffDayVal = it ? (it.cutoffDay || 14) : 14;
 
@@ -172,6 +185,14 @@ export function openItemModal(who, kind, id, presetDay) {
   more += `<div class="space-y-0.5" id="f-end-wrap"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Runs until</label>
     <select id="f-end" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">${monthSelect("f-end", end, true, start)}</select></div></div>`;
 
+  if (kind === "expenses") {
+    const curCat = it ? (it.category || "") : "";
+    more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Category <span class="text-slate-600">(for budgets)</span></label>
+      <select id="f-category" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">
+        <option value="">Auto${it ? ` (${catInfo(categoryOf(it)).label})` : ""}</option>
+        ${SPEND_CATS.map((c) => `<option value="${c.id}" ${curCat === c.id ? "selected" : ""}>${c.label}</option>`).join("")}
+      </select></div>`;
+  }
   const pd = parseInt(presetDay, 10);
   const ddVal = it ? (dueDayFor(it) ?? "") : (pd >= 1 && pd <= 31 ? pd : "");
   more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Auto-completes on day <span class="text-slate-600">(1-31, optional)</span></label>

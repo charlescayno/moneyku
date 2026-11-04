@@ -22,6 +22,7 @@ import {
   getSelectedKey,
   timeline,
 } from "./state.js";
+import { showSheet } from "./ui/quicklog.js";
 
 // Returns active items that have a due date in month k
 export function getMonthBillSchedule(k) {
@@ -353,8 +354,8 @@ function calEntries(k) {
   const out = [];
   for (let d = 1; d <= daysInMonth; d++) {
     const day = scheduleByDay[d];
-    for (const b of day.bills) out.push({ day: d, name: b.name, amount: b.amount, paid: b.paid, type: "exp", cat: b.who === "debt" ? "oth" : "exp" });
-    for (const i of day.incomes) out.push({ day: d, name: i.name, amount: i.amount, paid: i.paid, type: "inc", cat: i.who === "debt" ? "oth" : "inc" });
+    for (const b of day.bills) out.push({ day: d, id: b.id, who: b.who || "charlie", kind: "expenses", name: b.name, amount: b.amount, paid: b.paid, type: "exp", cat: b.who === "debt" ? "oth" : "exp" });
+    for (const i of day.incomes) out.push({ day: d, id: i.id, who: i.who || "charlie", kind: "income", name: i.name, amount: i.amount, paid: i.paid, type: "inc", cat: i.who === "debt" ? "oth" : "inc" });
   }
   return { entries: out, daysInMonth };
 }
@@ -391,7 +392,7 @@ function activityCalInnerHtml() {
     const shown = list.slice(0, 2);
     const more = list.length - shown.length;
     const sel = calSelDay === d;
-    cells += `<button type="button" data-action="calSelectDay" data-arg0="${d}" class="min-h-[64px] border-t border-white/[0.05] px-0.5 pt-1 pb-0.5 flex flex-col items-stretch text-left ${sel ? "bg-indigo-500/15" : ""}" aria-label="Day ${d}, ${list.length} entries">
+    cells += `<button type="button" data-action="calSelectDay" data-arg0="${d}" class="cal-day select-none min-h-[64px] border-t border-white/[0.05] px-0.5 pt-1 pb-0.5 flex flex-col items-stretch text-left ${sel ? "bg-indigo-500/15" : ""}" aria-label="Day ${d}, ${list.length} entries">
       <span class="self-center text-[11px] font-bold w-5 h-5 flex items-center justify-center rounded-full ${d === todayD ? "bg-indigo-500 text-white" : "text-slate-300"}">${d}</span>
       <span class="mt-0.5 space-y-[2px] min-w-0">
         ${shown.map((e) => `<span class="block truncate rounded-[3px] px-[3px] py-[1px] text-[8px] font-semibold leading-tight ${e.paid ? "opacity-45 line-through" : ""}" style="${CAL_STYLE[e.cat]}">${escapeHtml(e.name)}</span>`).join("")}
@@ -404,7 +405,7 @@ function activityCalInnerHtml() {
   const listEntries = calSelDay ? entries.filter((e) => e.day === calSelDay) : entries;
   const heading = calSelDay ? `${monthShort(k)} ${ordinal(calSelDay)}` : `All of ${monthName(k)}`;
   const rows = listEntries.length
-    ? listEntries.map((e) => `<div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40">
+    ? listEntries.map((e) => `<div data-action="openItemModal" data-arg0="${e.who}" data-arg1="${e.kind}" data-arg2="${e.id}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40 cursor-pointer active:bg-slate-800">
         <span class="w-1.5 h-6 rounded-full flex-shrink-0" style="background:${e.cat === "oth" ? "#8b5cf6" : e.type === "inc" ? "#10b981" : "#ef4444"}"></span>
         <div class="min-w-0 flex-1"><p class="text-xs font-bold truncate ${e.paid ? "text-slate-500 line-through" : "text-slate-100"}">${escapeHtml(e.name)}</p>
         <p class="text-[9px] text-slate-500">${monthShort(k)} ${ordinal(e.day)}${e.paid ? " · done" : ""}${e.cat === "oth" ? " · debt" : ""}</p></div>
@@ -435,7 +436,7 @@ function activityCalInnerHtml() {
 }
 
 export function activityCalendarCardHtml() {
-  return `<details open class="glass-card rounded-xl overflow-hidden border border-indigo-500/15 w-full flex-shrink-0">
+  return `<details open data-persist="calendar" class="glass-card rounded-xl overflow-hidden border border-indigo-500/15 w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-600 flex items-center justify-center flex-shrink-0"><span class="material-icons text-white" style="font-size:14px">event_note</span></div>
@@ -455,3 +456,39 @@ export function calSetFilter(f) { calFilter = f; calSelDay = null; refreshActivi
 export function calSelectDay(d) { const n = parseInt(d, 10); calSelDay = calSelDay === n ? null : n; refreshActivityCal(); }
 export function calGoto(k) { calSelDay = null; if (typeof window.selectMonth === "function") window.selectMonth(k); }
 export function calAdd(kind) { if (typeof window.openItemModal === "function") window.openItemModal("charlie", kind, "", calSelDay || ""); }
+
+// Tap an entry (list below) to edit; long-press a day to pick Income / Expense for that day
+export function calAddFrom(kind) { if (typeof window.qlClose === "function") window.qlClose(); calAdd(kind); }
+
+function openDayChooser(d) {
+  const k = getSelectedKey() || currentKey();
+  const b = (cls, kind, icon, label) => `<button type="button" data-action="calAddFrom" data-arg0="${kind}" class="flex-1 py-2.5 text-sm font-bold rounded-xl flex items-center justify-center gap-1 ${cls}"><span class="material-icons" style="font-size:16px">${icon}</span>${label}</button>`;
+  showSheet(`Add on ${monthShort(k)} ${ordinal(d)}`, `<p class="text-sm text-slate-300">What do you want to add on this day?</p>`,
+    b("text-emerald-300 bg-emerald-500/15 border border-emerald-500/25", "income", "add", "Income") +
+    b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "add", "Expense") +
+    `<button type="button" data-action="qlClose" class="px-4 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Cancel</button>`);
+}
+
+export function initCalendarGestures() {
+  let timer = null, sx = 0, sy = 0, suppress = false;
+  const clear = () => { clearTimeout(timer); timer = null; };
+  document.addEventListener("pointerdown", (e) => {
+    const cell = e.target.closest?.(".cal-day");
+    if (!cell) return;
+    sx = e.clientX; sy = e.clientY;
+    timer = setTimeout(() => {
+      timer = null; suppress = true;
+      const d = parseInt(cell.getAttribute("data-arg0"), 10);
+      calSelDay = d; refreshActivityCal();
+      if (navigator.vibrate) navigator.vibrate(15);
+      openDayChooser(d);
+    }, 500);
+  });
+  document.addEventListener("pointermove", (e) => { if (timer && (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8)) clear(); });
+  ["pointerup", "pointercancel"].forEach((t) => document.addEventListener(t, clear));
+  document.addEventListener("contextmenu", (e) => { if (e.target.closest?.(".cal-day")) e.preventDefault(); });
+  // The click that follows a long-press must not toggle the day selection
+  document.addEventListener("click", (e) => {
+    if (suppress) { suppress = false; if (e.target.closest?.(".cal-day")) { e.stopPropagation(); e.preventDefault(); } }
+  }, true);
+}

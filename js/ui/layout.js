@@ -2,6 +2,7 @@ import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, 
 import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { activityCalendarCardHtml } from '../calendar.js';
+import { budgetsCardHtml, compareCardHtml, dueSoonCardHtml } from '../insights.js';
 import { renderProjectionChart } from '../charts.js';
 import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
@@ -9,6 +10,8 @@ import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 // =============================
 // Dashboard Main Renderer
 // =============================
+const wrap = (cls, html) => (html ? `<div class="${cls}">${html}</div>` : "");
+
 export function renderBudget() {
   const pb = document.getElementById("budget-body");
   const k = getSelectedKey();
@@ -64,28 +67,54 @@ export function renderBudget() {
   `;
 
   $("budget-body").innerHTML = `
-    <div class="w-full flex flex-col gap-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+    <div class="w-full flex flex-col gap-2 pb-[calc(9rem+env(safe-area-inset-bottom))]">
       ${kpiBar}
+      ${dueSoonCardHtml()}
       <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->
         <div class="contents">
-          <div class="order-1">${accountsCardHtml()}</div>
+          <div class="order-1" id="sec-accounts" style="scroll-margin-top:5.5rem">${accountsCardHtml()}</div>
           <div class="order-[6]">${debtTrackerCardHtml()}</div>
         </div>
 
         <!-- Col 2: Charlie's Monthly Budget -->
-        <div class="order-2 flex flex-col min-w-0">
+        <div class="order-2 flex flex-col min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
           ${personSectionHtml("charlie", false)}
         </div>
 
         <!-- Col 3: Recurring payments (installments, investments, forecast and overview live in the Overview sheet) -->
         <div class="contents">
-          <div class="order-[4]">${activityCalendarCardHtml()}</div>
+          ${wrap("order-[3]", budgetsCardHtml())}
+          ${wrap("order-[3]", compareCardHtml())}
+          <div class="order-[4]" id="sec-calendar" style="scroll-margin-top:5.5rem">${activityCalendarCardHtml()}</div>
         </div>
       </div>
     </div>
   `;
+  applyPersistedDetails();
+}
+
+// Cards/sections remember whether they were left open or collapsed
+const CARDS_KEY = "moneyku_cards";
+let persistBound = false;
+function readCards() { try { return JSON.parse(localStorage.getItem(CARDS_KEY) || "{}"); } catch { return {}; } }
+function applyPersistedDetails() {
+  if (!persistBound) {
+    persistBound = true;
+    document.addEventListener("toggle", (e) => {
+      const d = e.target;
+      if (!d.matches?.("details[data-persist]")) return;
+      const s = readCards();
+      s[d.dataset.persist] = d.open;
+      try { localStorage.setItem(CARDS_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+    }, true);
+  }
+  const s = readCards();
+  document.querySelectorAll("#budget-body details[data-persist]").forEach((d) => {
+    const v = s[d.dataset.persist];
+    if (v !== undefined && d.open !== v) d.open = v;
+  });
 }
 
 export function renderAll() {

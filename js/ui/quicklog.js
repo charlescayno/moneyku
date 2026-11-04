@@ -18,7 +18,7 @@ const btn = (cls, action, label, extra = "") =>
 const CANCEL = "text-slate-300 bg-slate-700/60";
 const PRIMARY = "text-white bg-indigo-600 shadow-lg shadow-indigo-900/40";
 
-function showSheet(title, bodyHtml, actionsHtml) {
+export function showSheet(title, bodyHtml, actionsHtml) {
   $("ql-title").textContent = title;
   $("ql-body").innerHTML = bodyHtml;
   $("ql-actions").innerHTML = actionsHtml;

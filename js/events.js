@@ -25,7 +25,41 @@ function inHorizontalScroller(el) {
   return false;
 }
 
+// Swipe an item row: right = mark paid, left = edit
+let startedOnRow = false;
+function initRowSwipe() {
+  let row = null, sx = 0, sy = 0, dx = 0, active = false;
+  const reset = () => { if (!row) return; row.style.transition = 'transform .18s ease, background .18s ease'; row.style.transform = ''; row.style.background = ''; const r = row; setTimeout(() => { r.style.transition = ''; }, 220); };
+  document.addEventListener('touchstart', (e) => {
+    row = e.target.closest?.('.item-row[data-action="openItemModal"], .item-row[data-action="openChildModal"]') || null;
+    startedOnRow = !!row; active = false; dx = 0;
+    if (!row) return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (!row) return;
+    const mx = e.touches[0].clientX - sx, my = e.touches[0].clientY - sy;
+    if (!active) { if (Math.abs(mx) > 12 && Math.abs(mx) > Math.abs(my) * 1.5) active = true; else return; }
+    dx = Math.max(-90, Math.min(90, mx));
+    row.style.transition = 'none';
+    row.style.transform = `translateX(${dx}px)`;
+    row.style.background = dx > 0 ? 'rgba(16,185,129,.2)' : 'rgba(99,102,241,.2)';
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    if (!row) return;
+    const r = row, fired = active && Math.abs(dx) >= 70, dir = dx;
+    reset();
+    if (fired) {
+      if (dir > 0) r.querySelector('button[data-action="togglePaidQuick"]')?.click();
+      else r.click();
+    }
+    row = null; setTimeout(() => { startedOnRow = false; }, 0);
+  }, { passive: true });
+  document.addEventListener('touchcancel', () => { reset(); row = null; startedOnRow = false; }, { passive: true });
+}
+
 export function initGestures() {
+  initRowSwipe();
   document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
@@ -94,7 +128,7 @@ function handleSwipe() {
   const diffY = touchStartY - touchEndY;
   
   // Need primarily horizontal movement
-  if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > 60 && !startedInStrip) {
+  if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > 60 && !startedInStrip && !startedOnRow) {
     const modalShell = document.getElementById('modal-overlay');
     const confirmModal = document.getElementById('confirm-overlay');
     const calendarModal = document.getElementById('calendar-overlay');

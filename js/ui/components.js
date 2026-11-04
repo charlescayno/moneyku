@@ -317,7 +317,7 @@ export function debtTrackerCardHtml() {
   const dO = OWNERS.debt;
 
   return `
-    <details open class="glass-card rounded-xl border border-rose-500/20 overflow-hidden w-full flex-shrink-0">
+    <details open data-persist="debts" class="glass-card rounded-xl border border-rose-500/20 overflow-hidden w-full flex-shrink-0">
       <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
         <div class="flex items-center gap-2">
           <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -400,7 +400,7 @@ export function personSectionHtml(who, includeDebt = true) {
       </div>`}
     </div>
     <div class="p-2.5 space-y-2 no-scrollbar">
-      <details open class="group">
+      <details open data-persist="sec-income" class="group">
         <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
           <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
@@ -414,7 +414,7 @@ export function personSectionHtml(who, includeDebt = true) {
         <div class="space-y-0.5 mt-1">${incHtml}</div>
       </details>
       <div class="border-t border-white/[0.04] pt-2">
-        <details open class="group">
+        <details open data-persist="sec-expenses" class="group">
           <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
             <div class="flex items-center gap-1">
               <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
@@ -564,7 +564,7 @@ export function accountsCardHtml() {
       ? acctCardSection("Cash & Bank", bank, sum(bank)) + acctCardSection("Credit", credit, sum(credit))
       : groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("");
   const tgl = (v, icon, label) => `<button type="button" data-action="setAccountsView" data-arg0="${v}" aria-label="${label}" aria-pressed="${view === v}" class="w-7 h-6 flex items-center justify-center rounded-md ${view === v ? "bg-slate-600/70 text-white" : "text-slate-400"}"><span class="material-icons" style="font-size:15px">${icon}</span></button>`;
-  return `<details open class="glass-card rounded-xl overflow-hidden border border-emerald-500/10 w-full flex-shrink-0">
+  return `<details open data-persist="accounts" class="glass-card rounded-xl overflow-hidden border border-emerald-500/10 w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-teal-600 flex items-center justify-center flex-shrink-0">
@@ -1134,6 +1134,10 @@ export function toggleField(btn) {
   const isPaidToggle = btn.id === "f-paid";
   btn.className = `w-10 h-6 rounded-full transition-colors ${on ? (isPaidToggle ? "bg-emerald-600" : "bg-indigo-600") : "bg-slate-700"} relative flex-shrink-0`;
   knob.className = `absolute top-1 ${on ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all`;
+  if (btn.id === "f-group") {
+    $("f-amount-wrap")?.classList.toggle("hidden", on);
+    $("f-group-hint")?.classList.toggle("hidden", !on);
+  }
 }
 
 export async function saveChildAndAddAnother() {
@@ -1156,9 +1160,22 @@ export async function saveChildAndAddAnother() {
   setTimeout(() => $("f-name")?.focus(), 60);
 }
 
+const PM_KEY = "moneyku_last_pm";
+function rememberPayMethod(pm) {
+  try { if (pm) localStorage.setItem(PM_KEY, pm); } catch { /* ignore */ }
+}
+
+let saving = false;
 export async function saveModal() {
+  if (saving) return;
+  saving = true;
+  try { await saveModalInner(); } finally { saving = false; }
+}
+
+async function saveModalInner() {
   const activeEdit = getActiveEdit();
   if (!activeEdit) return;
+  if (activeEdit.kind === "budgets") return window.saveBudgets?.();
   const name = ($("f-name")?.value || "").trim();
   const amount = parseMathAmount($("f-amount")?.value);
   const appData = getAppData();
@@ -1244,6 +1261,7 @@ export async function saveModal() {
   const txDay = $("f-txday") ? parseInt($("f-txday").value, 10) : null;
   const cutoffDay = $("f-cutoff") ? parseInt($("f-cutoff").value, 10) : null;
   const txDate = $("f-txdate") ? $("f-txdate").value : null;
+  const category = $("f-category") ? $("f-category").value : "";
 
   if (id) {
     const it = list.find((x) => x.id === id);
@@ -1257,6 +1275,7 @@ export async function saveModal() {
       it.txDay = txDay;
       it.cutoffDay = cutoffDay;
       if (txDate) it.txDate = txDate; else delete it.txDate;
+      if ($("f-category")) { if (category) it.category = category; else delete it.category; }
       const scope = $("f-scope") ? $("f-scope").value : "all";
       if (getKids(it).length) {
         // Amount is sum of children
@@ -1271,8 +1290,17 @@ export async function saveModal() {
       appData.paid[selectedKey][id] = on;
     }
   } else {
-    addItemData(appData, { who, kind: type, name, amount, start, recurring, end, dueDay, paymentMethod: payMethod, txDay, cutoffDay, txDate });
+    const isGroup = $("f-group")?.dataset.on === "true";
+    const created = addItemData(appData, { who, kind: type, name, amount: isGroup ? 0 : amount, start, recurring, end, dueDay, paymentMethod: payMethod, txDay, cutoffDay, txDate, category });
+    if (isGroup) {
+      rememberPayMethod(payMethod);
+      await syncSet(appData);
+      closeModal(); renderAll();
+      openChildModal(who, created.id);
+      return;
+    }
   }
+  rememberPayMethod(payMethod);
   await syncSet(appData);
   closeModal(); renderAll(); toast("Saved");
 }

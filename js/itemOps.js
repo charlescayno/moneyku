@@ -24,10 +24,11 @@ export function applyItemAmount(appData, list, it, amount, scope, k) {
 }
 
 /** Create a new income/expense item and add it to the right list. Returns the item. */
-export function addItemData(appData, { who = "charlie", kind, name, amount, start, recurring = true, end = null, dueDay = null, paymentMethod = "cash", txDay = null, cutoffDay = null, txDate = null }) {
+export function addItemData(appData, { who = "charlie", kind, name, amount, start, recurring = true, end = null, dueDay = null, paymentMethod = "cash", txDay = null, cutoffDay = null, txDate = null, category = "" }) {
   const list = appData.items[who][kind];
   const item = { id: generateId(), name, amount, start, end: recurring ? end : null, recurring, dueDay, paymentMethod, txDay, cutoffDay };
   if (txDate) item.txDate = txDate;
+  if (category) item.category = category;
   list.push(item);
   return item;
 }

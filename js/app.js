@@ -2,6 +2,9 @@
 // Application Entry Point (Modular v2.0)
 // =============================
 
+import { openBudgetModal, saveBudgets } from "./insights.js";
+import { tabGo, initTabs } from "./tabs.js";
+
 import {
   onValue,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -91,6 +94,8 @@ import {
   closeCalendarModal,
   calSetFilter,
   calAdd,
+  calAddFrom,
+  initCalendarGestures,
   calSelectDay,
   calGoto,
 } from "./calendar.js";
@@ -174,6 +179,12 @@ window.openCalendarModal = openCalendarModal;
 window.closeCalendarModal = closeCalendarModal;
 window.calSetFilter = calSetFilter;
 window.calAdd = calAdd;
+window.calAddFrom = calAddFrom;
+window.openBudgetModal = openBudgetModal;
+window.saveBudgets = saveBudgets;
+window.tabGo = tabGo;
+initCalendarGestures();
+initTabs();
 window.calSelectDay = calSelectDay;
 window.calGoto = calGoto;
 window.fetchInvestmentRates = fetchInvestmentRates;
