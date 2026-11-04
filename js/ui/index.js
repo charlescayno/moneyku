@@ -96,3 +96,13 @@ export {
   renderBudget,
   renderAll
 } from "./layout.js";
+
+export {
+  qlClose,
+  qlOpenKey,
+  qlSaveKey,
+  qlRemoveKey,
+  qlConfirm,
+  runQuickLog,
+  initQuickLog
+} from "./quicklog.js";

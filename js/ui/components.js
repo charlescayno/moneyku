@@ -1,6 +1,7 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
+import { addItemData, applyItemAmount } from '../itemOps.js';
 import { renderProjectionChart } from '../charts.js';
 import { toast } from './core.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
@@ -1131,8 +1132,8 @@ export function toggleField(btn) {
   btn.dataset.on = on;
   const knob = btn.querySelector("span");
   const isPaidToggle = btn.id === "f-paid";
-  btn.className = `w-14 h-8 rounded-full transition-colors ${on ? (isPaidToggle ? "bg-emerald-600" : "bg-indigo-600") : "bg-slate-700"} relative flex-shrink-0`;
-  knob.className = `absolute top-1 ${on ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all`;
+  btn.className = `w-10 h-6 rounded-full transition-colors ${on ? (isPaidToggle ? "bg-emerald-600" : "bg-indigo-600") : "bg-slate-700"} relative flex-shrink-0`;
+  knob.className = `absolute top-1 ${on ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all`;
 }
 
 export async function saveChildAndAddAnother() {
@@ -1259,20 +1260,8 @@ export async function saveModal() {
       const scope = $("f-scope") ? $("f-scope").value : "all";
       if (getKids(it).length) {
         // Amount is sum of children
-      } else if (recurring && scope === "month") {
-        appData.overrides[selectedKey] = appData.overrides[selectedKey] || {};
-        appData.overrides[selectedKey][id] = amount;
-      } else if (recurring && scope === "future" && cmpKey(selectedKey, it.start) > 0) {
-        const prevMonth = addMonths(selectedKey, -1);
-        const clone = JSON.parse(JSON.stringify(it));
-        clone.id = generateId();
-        clone.start = selectedKey;
-        clone.amount = amount;
-        list.push(clone);
-        it.end = prevMonth;
       } else {
-        it.amount = amount;
-        if (appData.overrides[selectedKey]) delete appData.overrides[selectedKey][id];
+        applyItemAmount(appData, list, it, amount, scope, selectedKey);
       }
     }
     const pf = $("f-paid");
@@ -1282,9 +1271,7 @@ export async function saveModal() {
       appData.paid[selectedKey][id] = on;
     }
   } else {
-    const newItem = { id: generateId(), name, amount, start, end: recurring ? end : null, recurring, dueDay, paymentMethod: payMethod, txDay, cutoffDay };
-    if (txDate) newItem.txDate = txDate;
-    list.push(newItem);
+    addItemData(appData, { who, kind: type, name, amount, start, recurring, end, dueDay, paymentMethod: payMethod, txDay, cutoffDay, txDate });
   }
   await syncSet(appData);
   closeModal(); renderAll(); toast("Saved");

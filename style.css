@@ -265,7 +265,7 @@ input:focus-visible {
   outline: none !important;
   appearance: none !important;
   -webkit-appearance: none !important;
-  padding: 1.25rem 1.25rem !important; /* Match common container spacing */
+  padding: 0.625rem 0.875rem !important; /* compact */
   box-sizing: border-box !important;
   display: block !important;
   width: 100% !important;
@@ -287,7 +287,7 @@ input:focus-visible {
 /* "Log spending" row — amount input fills the row next to the + button,
    opting out of the big-padding default the modal applies to every input. */
 #modal-body .spend-add input[type="number"] {
-  padding: 0.9rem 1rem !important;
+  padding: 0.55rem 0.75rem !important;
 }
 #modal-body .spend-add .spend-amt {
   flex: 1 1 auto;
@@ -404,7 +404,7 @@ html { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.3) transparent;
   /* Modal wider on desktop */
   #modal-content {
     max-width: 480px;
-    border-radius: 2.5rem !important;
+    border-radius: 1.25rem !important;
   }
 
   /* Month picker full screen on desktop too */

@@ -68,6 +68,12 @@ import {
   confirmDelete,
   closeConfirm,
   doDelete,
+  qlClose,
+  qlOpenKey,
+  qlSaveKey,
+  qlRemoveKey,
+  qlConfirm,
+  initQuickLog,
   toggleProjected,
   toggleInvestments,
   prevOverviewPage,
@@ -151,6 +157,12 @@ window.deleteSpend = deleteSpend;
 window.confirmDelete = confirmDelete;
 window.closeConfirm = closeConfirm;
 window.doDelete = doDelete;
+window.qlClose = qlClose;
+window.qlOpenKey = qlOpenKey;
+window.qlSaveKey = qlSaveKey;
+window.qlRemoveKey = qlRemoveKey;
+window.qlConfirm = qlConfirm;
+initQuickLog();
 window.toggleProjected = toggleProjected;
 window.toggleInvestments = toggleInvestments;
 window.prevOverviewPage = prevOverviewPage;
@@ -347,10 +359,7 @@ function boot() {
   applyDensityMode();
   runIntro();
   initGestures();
-  initEventListeners();
-  // NOTE: AI chat bar (ui/chat.js + nlp.js) is unfinished and hidden in index.html.
-  // Re-enable by removing "hidden" from #chat-bar and calling import("./ui/chat.js") here.
-  window.__moneykuBooted = true;
+  initEventListeners();  window.__moneykuBooted = true;
 
   // Background live ticker: updates rates periodically (only while signed in)
   setInterval(() => {

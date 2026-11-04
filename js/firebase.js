@@ -1,4 +1,4 @@
-﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getDatabase,
   ref,
@@ -167,6 +167,7 @@ export function normalize(d) {
   d.paid = d.paid || {};
   d.overrides = d.overrides || {};
   d.spend = d.spend || {};
+  d.settings = d.settings || {};
   return d;
 }
 

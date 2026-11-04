@@ -10,10 +10,10 @@ import { renderAll } from './layout.js';
 // Modals — Inputs & Forms
 // =============================
 export function inputBlock(label, id, value, type = "text", extra = "") {
-  return `<div class="space-y-1">
+  return `<div class="space-y-0.5">
     <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">${label}</label>
     <input type="${type}" id="${id}" value="${escapeHtml(value)}" ${extra}
-      class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-lg font-black text-white focus:outline-none" />
+      class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" />
   </div>`;
 }
 
@@ -38,6 +38,7 @@ export function updateBpiCcMonth(isExistingInit = false) {
     return;
   }
   box.classList.remove("hidden");
+  $("f-more")?.setAttribute("open", "");
 
   const txDay = parseInt($("f-txday")?.value || "15", 10);
   const cutoff = parseInt($("f-cutoff")?.value || "14", 10);
@@ -106,22 +107,23 @@ export function openItemModal(who, kind, id) {
     title = kind === "income" ? "Add Person (They owe me)" : "Add Person (I owe them)";
   }
   $("modal-title").textContent = title;
-  $("modal-title").className = `text-2xl font-black uppercase tracking-tight ${o.text}`;
+  $("modal-title").className = `text-lg font-black uppercase tracking-tight ${o.text}`;
 
   const kids = it ? getKids(it) : [];
   let body = "";
+  let more = "";
   body += inputBlock(kind === "income" ? "Source" : (who === "debt" ? "Name" : "Name"), "f-name", name, "text", 'placeholder="e.g. Rent"');
   if (kids.length) {
-    body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (₱)</label>
-      <div class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-black text-slate-300">${peso(itemTotal(it, selectedKey))} <span class="text-[11px] font-bold text-slate-500">· sum of ${kids.length} sub-expenses</span></div></div>`;
+    body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (₱)</label>
+      <div class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-slate-300">${peso(itemTotal(it, selectedKey))} <span class="text-[11px] font-bold text-slate-500">· sum of ${kids.length} sub-expenses</span></div></div>`;
   } else {
     body += inputBlock("Amount (₱)", "f-amount", amount, "text", 'inputmode="text" placeholder="0"');
   }
 
-  body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
+  body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
     <div><p class="text-sm font-bold text-white">Recurring</p><p class="text-[10px] text-slate-500">Repeats every month</p></div>
-    <button type="button" id="f-recurring" data-on="${recurring}" data-action="toggleField" data-arg0="this" class="w-14 h-8 rounded-full transition-colors ${recurring ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
-      <span class="absolute top-1 ${recurring ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all"></span>
+    <button type="button" id="f-recurring" data-on="${recurring}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${recurring ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
+      <span class="absolute top-1 ${recurring ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span>
     </button>
   </div>`;
 
@@ -130,9 +132,9 @@ export function openItemModal(who, kind, id) {
   const cutoffDayVal = it ? (it.cutoffDay || 14) : 14;
 
   if (kind === "expenses") {
-    body += `<div class="space-y-1">
+    body += `<div class="space-y-0.5">
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Payment Method / Category</label>
-      <select id="f-paymethod" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">
+      <select id="f-paymethod" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">
         <option value="cash" ${payMethod === "cash" ? "selected" : ""}>Cash / Bank / E-Wallet</option>
         <option value="bpi_platinum" ${payMethod === "bpi_platinum" ? "selected" : ""}>💳 BPI Platinum Rewards Mastercard</option>
         <option value="cc_other" ${payMethod === "cc_other" ? "selected" : ""}>💳 Other Credit Card</option>
@@ -141,7 +143,7 @@ export function openItemModal(who, kind, id) {
 
     const txDateVal = it ? (it.txDate || "") : "";
 
-    body += `<div id="bpi-cc-box" class="${payMethod === "bpi_platinum" ? "" : "hidden"} p-4 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl space-y-3">
+    more += `<div id="bpi-cc-box" class="${payMethod === "bpi_platinum" ? "" : "hidden"} p-4 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl space-y-3">
       <div class="flex items-center gap-2 text-indigo-300 text-xs font-black">
         <span class="material-icons text-sm">credit_card</span>
         <span>BPI Credit Card Auto-Scheduling</span>
@@ -164,19 +166,19 @@ export function openItemModal(who, kind, id) {
     </div>`;
   }
 
-  body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Starts</label>
-    <select id="f-start" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">${monthSelect("f-start", start, false)}</select></div>`;
+  more += `<div class="grid grid-cols-2 gap-2.5"><div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Starts</label>
+    <select id="f-start" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">${monthSelect("f-start", start, false)}</select></div>`;
 
-  body += `<div class="space-y-1" id="f-end-wrap"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Runs until <span class="text-amber-400">(installment)</span></label>
-    <select id="f-end" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">${monthSelect("f-end", end, true, start)}</select></div>`;
+  more += `<div class="space-y-0.5" id="f-end-wrap"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Runs until</label>
+    <select id="f-end" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">${monthSelect("f-end", end, true, start)}</select></div></div>`;
 
   const ddVal = it ? (dueDayFor(it) ?? "") : "";
-  body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Auto-completes on day <span class="text-slate-600">(1-31, optional)</span></label>
-    <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none" /></div>`;
+  more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Auto-completes on day <span class="text-slate-600">(1-31, optional)</span></label>
+    <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" /></div>`;
 
   if (!isNew && recurring && !kids.length) {
-    body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Apply amount to</label>
-      <select id="f-scope" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-bold text-white focus:outline-none">
+    more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Apply amount to</label>
+      <select id="f-scope" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">
         <option value="all">All months</option>
         <option value="future">This and future months</option>
         <option value="month" ${hasOverride(id, selectedKey) ? "selected" : ""}>${monthName(selectedKey)} ${keyParts(selectedKey).y} only</option>
@@ -185,25 +187,34 @@ export function openItemModal(who, kind, id) {
 
   if (!isNew && !kids.length) {
     if (kind === "expenses") {
-      body += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
+      more += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
     }
     const verb = kind === "income" ? "Received" : "Paid";
     let hint = kind === "income" ? "Mark this month's income received" : "Mark this month settled";
     if (kind === "expenses") {
       hint = `Locks the final for this month${getSpendList(it.id, selectedKey).length ? "" : " (at the estimate)"}`;
     }
-    body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
+    more += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
       <div><p class="text-sm font-bold text-white">${verb} in ${monthShort(selectedKey)}</p><p class="text-[10px] text-slate-500">${hint}</p></div>
-      <button type="button" id="f-paid" data-on="${settledNow}" data-action="toggleField" data-arg0="this" class="w-14 h-8 rounded-full transition-colors ${settledNow ? "bg-emerald-600" : "bg-slate-700"} relative flex-shrink-0">
-        <span class="absolute top-1 ${settledNow ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all"></span>
+      <button type="button" id="f-paid" data-on="${settledNow}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${settledNow ? "bg-emerald-600" : "bg-slate-700"} relative flex-shrink-0">
+        <span class="absolute top-1 ${settledNow ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span>
       </button>
     </div>`;
   }
 
   if (!isNew && kind === "expenses") {
-    body += `<button type="button" data-action="openChildModal" data-arg0="${who}" data-arg1="${id}" class="w-full py-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"><span class="material-icons" style="font-size:18px">account_tree</span>Add sub-expense</button>`;
+    more += `<button type="button" data-action="openChildModal" data-arg0="${who}" data-arg1="${id}" class="w-full py-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"><span class="material-icons" style="font-size:18px">account_tree</span>Add sub-expense</button>`;
   }
 
+  if (more) {
+    const openMoreByDefault = payMethod === "bpi_platinum";
+    body += `<details id="f-more" ${openMoreByDefault ? "open" : ""} class="group">
+      <summary class="flex items-center justify-between cursor-pointer select-none text-xs font-bold text-slate-400 py-1 px-1 list-none">
+        <span>More options</span><span class="material-icons text-base transition-transform group-open:rotate-180">expand_more</span>
+      </summary>
+      <div class="space-y-3 pt-2">${more}</div>
+    </details>`;
+  }
   $("modal-body").innerHTML = body;
 
   const delBtn = $("delete-btn");
@@ -224,19 +235,19 @@ export function openChildModal(who, parentId, childId) {
   const selectedKey = getSelectedKey();
   setActiveEdit({ kind: "child", who, parentId, id: childId });
   $("modal-title").textContent = isNew ? "Add Sub-expense" : "Edit Sub-expense";
-  $("modal-title").className = "text-2xl font-black uppercase tracking-tight text-violet-300";
+  $("modal-title").className = "text-lg font-black uppercase tracking-tight text-violet-300";
   const settledNow = c ? isPaid(c.id, selectedKey) : false;
   let body = `<p class="text-[11px] text-slate-500 mb-1">Under <span class="font-bold text-slate-300">${escapeHtml(parent.name)}</span></p>`;
   body += inputBlock("Name", "f-name", c ? c.name : "", "text", 'placeholder="e.g. Electricity"');
   body += inputBlock("Estimate (₱)", "f-amount", c ? c.amount : "", "text", 'inputmode="text" placeholder="0"');
   if (!isNew) {
     body += `<div id="spend-section">${spendSectionHtml(c)}</div>`;
-    body += `<div class="flex items-center justify-between bg-slate-900 rounded-2xl px-5 py-4">
+    body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
       <div><p class="text-sm font-bold text-white">Paid in ${monthShort(selectedKey)}</p><p class="text-[10px] text-slate-500">Locks the final for this month${getSpendList(c.id, selectedKey).length ? "" : " (at the estimate)"}</p></div>
-      <button type="button" id="f-paid" data-on="${settledNow}" data-action="toggleField" data-arg0="this" class="w-14 h-8 rounded-full transition-colors ${settledNow ? "bg-emerald-600" : "bg-slate-700"} relative flex-shrink-0"><span class="absolute top-1 ${settledNow ? "left-7" : "left-1"} w-6 h-6 bg-white rounded-full transition-all"></span></button>
+      <button type="button" id="f-paid" data-on="${settledNow}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${settledNow ? "bg-emerald-600" : "bg-slate-700"} relative flex-shrink-0"><span class="absolute top-1 ${settledNow ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span></button>
     </div>`;
   } else {
-    body += `<button type="button" data-action="saveChildAndAddAnother" class="w-full py-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2"><span class="material-icons" style="font-size:18px">playlist_add</span>Save &amp; add another</button>`;
+    body += `<button type="button" data-action="saveChildAndAddAnother" class="w-full py-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2"><span class="material-icons" style="font-size:18px">playlist_add</span>Save &amp; add another</button>`;
   }
   $("modal-body").innerHTML = body;
   const delBtn = $("delete-btn");
@@ -250,7 +261,7 @@ export function openInvestmentModal() {
   const inv = appData?.investments || {};
   setActiveEdit({ kind: "investment" });
   $("modal-title").textContent = "Edit Rates";
-  $("modal-title").className = "text-2xl font-black uppercase tracking-tight text-amber-400";
+  $("modal-title").className = "text-lg font-black uppercase tracking-tight text-amber-400";
   
   $("modal-body").innerHTML = `
     <div class="space-y-4">
@@ -274,13 +285,13 @@ export function openAccountModal(id) {
   const isNew = !a;
   setActiveEdit({ kind: "account", id });
   $("modal-title").textContent = isNew ? "Add Account" : "Edit Account";
-  $("modal-title").className = "text-2xl font-black uppercase tracking-tight text-emerald-400";
+  $("modal-title").className = "text-lg font-black uppercase tracking-tight text-emerald-400";
 
   let body = "";
   body += inputBlock("Account name", "f-name", a ? a.name : "", "text", 'placeholder="e.g. BPI"');
   body += inputBlock("Balance (₱)", "f-amount", a ? a.amount : "", "text", 'inputmode="text" placeholder="0"');
   const curType = a ? acctType(a) : "bank";
-  body += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Type</label><select id="f-type" class="w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-black text-white focus:outline-none appearance-none"><option value="bank" ${curType === "bank" ? "selected" : ""}>Cash & Bank (counts toward money on hand)</option><option value="credit" ${curType === "credit" ? "selected" : ""}>Credit card (not counted)</option></select></div>`;
+  body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Type</label><select id="f-type" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none appearance-none"><option value="bank" ${curType === "bank" ? "selected" : ""}>Cash & Bank (counts toward money on hand)</option><option value="credit" ${curType === "credit" ? "selected" : ""}>Credit card (not counted)</option></select></div>`;
   $("modal-body").innerHTML = body;
 
   const delBtn = $("delete-btn");
@@ -295,16 +306,16 @@ export function openTransferModal() {
   if (accts.length < 2) return toast("Add at least 2 accounts to transfer", "error");
   setActiveEdit({ kind: "transfer" });
   $("modal-title").textContent = "Transfer";
-  $("modal-title").className = "text-2xl font-black uppercase tracking-tight text-emerald-400";
+  $("modal-title").className = "text-lg font-black uppercase tracking-tight text-emerald-400";
   const opts = (sel) => accts.map((a, i) => `<option value="${a.id}" ${i === sel ? "selected" : ""}>${escapeHtml(a.name)} — ${peso(a.amount)}</option>`).join("");
-  const sel = "w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-black text-white focus:outline-none appearance-none";
+  const sel = "w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none appearance-none";
   $("modal-body").innerHTML = `
-    <div class="space-y-1">
+    <div class="space-y-0.5">
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">From</label>
       <select id="f-from" class="${sel}">${opts(0)}</select>
     </div>
     <div class="flex justify-center -my-1"><span class="material-icons text-emerald-400">south</span></div>
-    <div class="space-y-1">
+    <div class="space-y-0.5">
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">To</label>
       <select id="f-to" class="${sel}">${opts(1)}</select>
     </div>
