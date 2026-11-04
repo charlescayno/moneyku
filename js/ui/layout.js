@@ -10,9 +10,6 @@ import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 // =============================
 export function renderBudget() {
   const pb = document.getElementById("budget-body");
-  if (pb && window.Sortable && !pb.sortableInst) {
-    pb.sortableInst = new Sortable(pb, { animation: 150, handle: "summary", ghostClass: "bg-slate-800/50" });
-  }
   const k = getSelectedKey();
   const t = monthTotals(k);
   const projected = runningFundsAt(k);

@@ -15,12 +15,18 @@ let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
 let isPulling = false;
+let startedInStrip = false;
 
 export function initGestures() {
   document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
-    isPulling = window.scrollY === 0;
+    // Pull-to-refresh only when the budget list is at the very top, nothing is open on top of it,
+    // and the touch isn't on the month strip (the page itself never scrolls, so window.scrollY is always 0)
+    const bv = document.getElementById('budget-view');
+    const overlayOpen = !!document.querySelector('#modal-overlay.open, #confirm-overlay.open, #calendar-overlay.open, #more-overlay.open, #month-picker.open');
+    startedInStrip = !!e.target.closest?.('#month-strip');
+    isPulling = !!bv && bv.scrollTop <= 0 && !overlayOpen && !startedInStrip;
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
@@ -81,7 +87,7 @@ function handleSwipe() {
   const diffY = touchStartY - touchEndY;
   
   // Need primarily horizontal movement
-  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 60) {
+  if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > 60 && !startedInStrip) {
     const modalShell = document.getElementById('modal-overlay');
     const confirmModal = document.getElementById('confirm-overlay');
     const calendarModal = document.getElementById('calendar-overlay');
