@@ -1,0 +1,10 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "money_single_v1": {
+      ".read": "auth != null && auth.token.email_verified === true && auth.token.email === 'REPLACE_WITH_YOUR_GOOGLE_EMAIL'",
+      ".write": "auth != null && auth.token.email_verified === true && auth.token.email === 'REPLACE_WITH_YOUR_GOOGLE_EMAIL'"
+    }
+  }
+}

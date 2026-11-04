@@ -3,8 +3,12 @@ export {
   updateDOM,
   celebrate,
   initParticles,
-  unlockApp,
-  toggleLockPassword,
+  enterApp,
+  showSignIn,
+  showAccessDenied,
+  setAuthError,
+  setSignInBusy,
+  copyAuthInfo,
   revealApp,
   runIntro
 } from "./core.js";

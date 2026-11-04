@@ -14,6 +14,12 @@ import {
   getLocalCachedData,
   getPendingEchoes,
   decrementPendingEchoes,
+  watchAuth,
+  signInWithGoogle,
+  finishRedirectSignIn,
+  signOutUser,
+  describeAuthError,
+  isPermissionDenied,
 } from "./firebase.js";
 
 import {
@@ -33,8 +39,12 @@ import {
   toast,
   revealApp,
   runIntro,
-  unlockApp,
-  toggleLockPassword,
+  enterApp,
+  showSignIn,
+  showAccessDenied,
+  setAuthError,
+  setSignInBusy,
+  copyAuthInfo,
   openMore,
   closeMore,
   toggleMonthPicker,
@@ -79,11 +89,40 @@ import {
 } from "./events.js";
 
 // =============================
+// Auth actions (sign in / out)
+// =============================
+async function signIn() {
+  setAuthError("");
+  setSignInBusy(true);
+  try {
+    const user = await signInWithGoogle();
+    // On success onAuthStateChanged takes over (loads data, opens the app).
+    // null = popup closed, or a full-page redirect is starting.
+    if (!user) setSignInBusy(false);
+  } catch (e) {
+    console.error("Sign-in error", e);
+    setAuthError(describeAuthError(e));
+    setSignInBusy(false);
+  }
+}
+
+async function signOut() {
+  try {
+    await signOutUser(); // triggers watchAuth(null)
+  } catch (e) {
+    console.error("Sign-out error", e);
+    toast("Could not sign out", "error");
+  }
+}
+
+// =============================
 // Window Action Registration
 // =============================
 // Expose actions so delegated attributes (e.g. data-action="openItemModal") work seamlessly
-window.unlockApp = unlockApp;
-window.toggleLockPassword = toggleLockPassword;
+window.signIn = signIn;
+window.signOut = signOut;
+window.copyAuthInfo = copyAuthInfo;
+window.reloadApp = () => location.reload();
 window.openMore = openMore;
 window.closeMore = closeMore;
 window.toggleMonthPicker = toggleMonthPicker;
@@ -120,23 +159,75 @@ window.toggleDensityMode = toggleDensityMode;
 // =============================
 // Boot & Lifecycle
 // =============================
+const bootStart = performance.now();
 let firstLoad = true;
+let currentUser = null;
+let unsubscribeData = null;
+let syncSession = 0; // bumped whenever a sync starts/stops so stale callbacks/timers are ignored
 
-function boot() {
-  applyDensityMode();
-  runIntro();
-  initGestures();
-  initEventListeners();
-  // NOTE: AI chat bar (ui/chat.js + nlp.js) is unfinished and hidden in index.html.
-  // Re-enable by removing "hidden" from #chat-bar and calling import("./ui/chat.js") here.
-  window.__moneykuBooted = true;
-  
-  // Background live ticker: updates rates periodically
-  setInterval(() => {
-    fetchInvestmentRates(false);
-  }, 60000);
+/** Run fn once the intro splash has played (full intro first visit of a session, quick afterwards). */
+function whenIntroDone(fn) {
+  const quick =
+    sessionStorage.getItem("moneyku_intro_seen") === "1" ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const wait = Math.max(0, (quick ? 250 : 1600) - (performance.now() - bootStart));
+  setTimeout(fn, wait);
+}
 
-  // 1. Instant offline hydration
+// Order-independent compare, used to detect local edits that never reached the cloud
+function stable(v) {
+  if (Array.isArray(v)) return v.map(stable);
+  if (v && typeof v === "object") {
+    const o = {};
+    for (const k of Object.keys(v).sort()) o[k] = stable(v[k]);
+    return o;
+  }
+  return v;
+}
+const sameData = (a, b) => JSON.stringify(stable(a)) === JSON.stringify(stable(b));
+
+/**
+ * Cloud sync was blocked for a while (database rules), so this device may hold newer data than the
+ * cloud. Before the first cloud snapshot overwrites the local copy, check for unsynced local edits
+ * and let the user keep them. A backup of the local copy is always saved first.
+ * Returns the local data to keep (and upload), or null to use the cloud data.
+ */
+function resolveLocalConflict(cached, remote) {
+  if (!cached) return null;
+  const legacy = localStorage.getItem("moneyku_sync_v2") !== "1"; // first run of the sign-in version
+  const dirty = localStorage.getItem("moneyku_dirty") === "1";
+  localStorage.setItem("moneyku_sync_v2", "1");
+  if (!(legacy || dirty)) return null;
+  if (sameData(cached, remote)) {
+    localStorage.removeItem("moneyku_dirty");
+    return null;
+  }
+  try {
+    localStorage.setItem("moneyku_backup_local", JSON.stringify({ savedAt: new Date().toISOString(), data: cached }));
+  } catch (e) { /* storage full: continue */ }
+  const keepLocal = window.confirm(
+    "This device has data that differs from the cloud (changes made while syncing was blocked).\n\n" +
+    "OK = keep this device's data and upload it to the cloud\n" +
+    "Cancel = use the cloud data (a backup of this device's data is kept)"
+  );
+  return keepLocal ? cached : null;
+}
+
+function stopDataSync() {
+  syncSession++;
+  firstLoad = true;
+  if (unsubscribeData) {
+    try { unsubscribeData(); } catch (e) { /* ignore */ }
+    unsubscribeData = null;
+  }
+}
+
+function startDataSync(user) {
+  stopDataSync();
+  const session = syncSession;
+  currentUser = user;
+
+  // 1. Instant offline hydration (renders behind the lock screen until we enter the app)
   const cached = getLocalCachedData();
   if (cached) {
     setAppData(cached);
@@ -145,15 +236,22 @@ function boot() {
   }
 
   // 2. Firebase live database subscription
-  onValue(
+  unsubscribeData = onValue(
     dbRef,
     (snap) => {
+      if (session !== syncSession) return;
       if (!firstLoad && getPendingEchoes() > 0) {
         decrementPendingEchoes();
         return;
       }
       const val = snap.val();
-      const nextData = val ? normalize(val) : emptyData();
+      let nextData = val ? normalize(val) : emptyData();
+
+      let uploadLocal = false;
+      if (firstLoad) {
+        const keep = resolveLocalConflict(cached, nextData);
+        if (keep) { nextData = keep; uploadLocal = true; }
+      }
       setAppData(nextData);
 
       // Save offline copy
@@ -163,7 +261,10 @@ function boot() {
         console.warn("Storage error", err);
       }
 
-      if (reconcileAutoPaid()) {
+      if (uploadLocal) {
+        syncSet(getAppData());
+        toast("Uploaded this device's data to the cloud");
+      } else if (reconcileAutoPaid()) {
         syncSet(getAppData());
       }
 
@@ -171,22 +272,26 @@ function boot() {
         firstLoad = false;
         clampSelected();
         renderAll();
-        // Full intro on first visit of a session; quick reveal afterwards or with reduced motion
-        const quick =
-          sessionStorage.getItem("moneyku_intro_seen") === "1" ||
-          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        setTimeout(revealApp, quick ? 250 : 1600);
+        whenIntroDone(() => { revealApp(); enterApp(); });
       } else {
         renderAll();
       }
     },
     (err) => {
+      if (session !== syncSession) return;
       console.error("Firebase error", err);
+      if (isPermissionDenied(err)) {
+        // Signed in, but the rules don't allow this account: show how to whitelist it
+        firstLoad = false;
+        whenIntroDone(() => { revealApp(); showAccessDenied(currentUser); });
+        return;
+      }
       if (!getAppData()) {
         setAppData(emptyData());
         renderAll();
       }
-      revealApp();
+      firstLoad = false;
+      whenIntroDone(() => { revealApp(); enterApp(); });
       // Persistent badge (the toast alone disappears after 2s)
       const badge = document.getElementById("offline-indicator");
       if (badge) badge.classList.remove("hidden");
@@ -194,8 +299,9 @@ function boot() {
     }
   );
 
-  // Safety fallback: reveal UI even if Firebase is sluggish
+  // Safety fallback: open the UI even if Firebase is sluggish
   setTimeout(() => {
+    if (session !== syncSession) return;
     if (firstLoad) {
       firstLoad = false;
       if (!getAppData()) {
@@ -204,8 +310,50 @@ function boot() {
       clampSelected();
       renderAll();
       revealApp();
+      enterApp();
     }
   }, 3500);
+}
+
+let authResolved = false;
+function onAuth(user) {
+  authResolved = true;
+  if (user) {
+    startDataSync(user);
+    return;
+  }
+  // Signed out: stop listening, hide data. (The offline cache is kept on purpose: it may hold
+  // edits that haven't reached the cloud yet, and is only reused after the same sign-in.)
+  currentUser = null;
+  stopDataSync();
+  setAppData(null);
+  try { closeMore(); } catch (e) { /* ignore */ }
+  const badge = document.getElementById("offline-indicator");
+  if (badge) badge.classList.add("hidden");
+  whenIntroDone(() => { revealApp(); showSignIn(); });
+}
+
+function boot() {
+  applyDensityMode();
+  runIntro();
+  initGestures();
+  initEventListeners();
+  // NOTE: AI chat bar (ui/chat.js + nlp.js) is unfinished and hidden in index.html.
+  // Re-enable by removing "hidden" from #chat-bar and calling import("./ui/chat.js") here.
+  window.__moneykuBooted = true;
+
+  // Background live ticker: updates rates periodically (only while signed in)
+  setInterval(() => {
+    if (currentUser && getAppData()) fetchInvestmentRates(false);
+  }, 60000);
+
+  // Complete a redirect-based sign-in if we just came back from Google
+  finishRedirectSignIn().then((err) => { if (err) setAuthError(describeAuthError(err)); });
+
+  watchAuth(onAuth);
+
+  // If auth state never resolves (e.g. storage blocked), fall back to the sign-in screen
+  setTimeout(() => { if (!authResolved) onAuth(null); }, 6000);
 }
 
 // Start application

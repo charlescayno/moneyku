@@ -156,19 +156,6 @@ input:focus-visible {
   body[data-density="comfortable"] .text-\[11px\] { font-size: 12px !important; }
 }
 
-/* Lock screen: shake on wrong passphrase */
-@keyframes lockShake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-8px); }
-  40% { transform: translateX(8px); }
-  60% { transform: translateX(-6px); }
-  80% { transform: translateX(6px); }
-}
-#lock-password.shake {
-  animation: lockShake 0.4s ease-in-out;
-  border-color: #fb7185;
-}
-
 /* Month strip: gentle snapping so chips settle neatly while swiping */
 #month-strip { scroll-snap-type: x proximity; }
 #month-strip .month-chip { scroll-snap-align: center; }

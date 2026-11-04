@@ -7,7 +7,7 @@ import {
   getSelectedKey,
   getActiveView,
 } from "./state.js";
-import { selectMonth, unlockApp } from "./ui/index.js";
+import { selectMonth } from "./ui/index.js";
 
 // Touch state
 let touchStartX = 0;
@@ -166,20 +166,9 @@ export function initEventListeners() {
     }
     
     if (action === 'saveModal') args.unshift(e);
-    if (action === 'unlockApp') args.unshift(e);
     
     if (typeof window[action] === 'function') {
       window[action](...args);
-    }
-  });
-
-  // Enter key for lock password
-  document.addEventListener("DOMContentLoaded", () => {
-    const pwdInput = document.getElementById("lock-password");
-    if (pwdInput) {
-      pwdInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") unlockApp();
-      });
     }
   });
 

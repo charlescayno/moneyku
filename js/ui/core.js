@@ -113,9 +113,11 @@ export function celebrate() {
   draw();
 }
 
+let particlesStarted = false;
 export function initParticles() {
   const app = $("app");
-  if (!app) return;
+  if (!app || particlesStarted) return;
+  particlesStarted = true;
   const colors = ["#6366f1", "#8b5cf6", "#3b82f6", "#f43f5e"];
   for (let i = 0; i < 8; i++) {
     const p = document.createElement("div");
@@ -129,56 +131,109 @@ export function initParticles() {
 // =============================
 // Lock Screen & App Reveal
 // =============================
-export function unlockApp() {
-  const pwd = $("lock-password").value.toLowerCase();
-  if (pwd === "lokomoko") {
-    const lock = $("lock-screen");
-    const app = $("app");
+let lockHideTimer = null;
+
+function setAuthMode(mode) {
+  // mode: "signin" | "denied"
+  const signinBtn = $("google-signin-btn");
+  const denied = $("auth-denied");
+  const icon = $("auth-icon");
+  const title = $("auth-title");
+  const sub = $("auth-sub");
+  if (mode === "denied") {
+    if (signinBtn) signinBtn.classList.add("hidden");
+    if (denied) denied.classList.remove("hidden");
+    if (icon) icon.textContent = "gpp_bad";
+    if (title) title.textContent = "Access not granted";
+    if (sub) sub.textContent = "You're signed in, but this account isn't allowed to open the database yet.";
+  } else {
+    if (signinBtn) signinBtn.classList.remove("hidden");
+    if (denied) denied.classList.add("hidden");
+    if (icon) icon.textContent = "lock";
+    if (title) title.textContent = "Vault Locked";
+    if (sub) sub.textContent = "Sign in with Google to view your dashboard";
+  }
+}
+
+function showLockScreen() {
+  const lock = $("lock-screen");
+  const app = $("app");
+  clearTimeout(lockHideTimer);
+  if (app) app.style.opacity = "0";
+  if (lock) {
+    lock.classList.remove("hidden");
+    lock.classList.add("flex");
+    lock.style.opacity = "1";
+    lock.style.pointerEvents = "auto";
+  }
+}
+
+/** Show the Google sign-in screen (signed out). */
+export function showSignIn() {
+  setAuthMode("signin");
+  setSignInBusy(false);
+  showLockScreen();
+}
+
+/** Show the "signed in but not allowed by the rules" screen with the account details to whitelist. */
+export function showAccessDenied(user) {
+  setAuthMode("denied");
+  const email = $("auth-email");
+  const uid = $("auth-uid");
+  if (email) email.textContent = (user && user.email) || "(no email)";
+  if (uid) uid.textContent = (user && user.uid) || "";
+  showLockScreen();
+}
+
+export function setAuthError(msg) {
+  const el = $("auth-error");
+  if (el) el.textContent = msg || "";
+}
+
+export function setSignInBusy(busy) {
+  const btn = $("google-signin-btn");
+  if (!btn) return;
+  btn.disabled = !!busy;
+  btn.classList.toggle("opacity-60", !!busy);
+  const label = $("google-signin-label");
+  if (label) label.textContent = busy ? "Signing in..." : "Sign in with Google";
+}
+
+/** Signed in and data ready: fade out the lock screen and show the app. */
+export function enterApp() {
+  const lock = $("lock-screen");
+  const app = $("app");
+  if (lock && !lock.classList.contains("hidden")) {
     lock.style.opacity = "0";
     lock.style.pointerEvents = "none";
-    setTimeout(() => { lock.classList.remove("flex"); lock.classList.add("hidden"); }, 700);
-    app.style.opacity = "1";
-    initParticles();
-  } else {
-    const err = $("lock-error");
-    err.style.opacity = "1";
-    setTimeout(() => { err.style.opacity = "0"; }, 2000);
-    // Shake the field so the error is noticeable
-    const field = $("lock-password");
-    field.classList.remove("shake");
-    void field.offsetWidth; // restart animation
-    field.classList.add("shake");
-    setTimeout(() => field.classList.remove("shake"), 450);
-    field.select();
+    clearTimeout(lockHideTimer);
+    lockHideTimer = setTimeout(() => { lock.classList.remove("flex"); lock.classList.add("hidden"); }, 700);
+  }
+  setAuthError("");
+  if (app) app.style.opacity = "1";
+  initParticles();
+}
+
+/** Copy the signed-in account's email + UID (for pasting into the Firebase rules). */
+export async function copyAuthInfo() {
+  const email = ($("auth-email") || {}).textContent || "";
+  const uid = ($("auth-uid") || {}).textContent || "";
+  const text = `email: ${email}\nuid: ${uid}`;
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Copied");
+  } catch (e) {
+    toast("Select and copy manually", "error");
   }
 }
 
-export function toggleLockPassword() {
-  const input = $("lock-password");
-  const icon = $("lock-toggle-icon");
-  if (input.type === "password") {
-    input.type = "text";
-    icon.textContent = "visibility_off";
-  } else {
-    input.type = "password";
-    icon.textContent = "visibility";
-  }
-}
-
+/** Fade out the intro splash. */
 export function revealApp() {
   const intro = $("intro-screen");
   if (intro) {
     intro.style.opacity = "0";
     intro.style.pointerEvents = "none";
     setTimeout(() => { intro.style.display = "none"; }, 700);
-  }
-  
-  const lock = $("lock-screen");
-  if (lock) {
-    lock.classList.remove("hidden");
-    lock.classList.add("flex");
-    const pwd = $("lock-password");
-    if (pwd) pwd.focus({ preventScroll: true });
   }
   try { sessionStorage.setItem("moneyku_intro_seen", "1"); } catch (e) { /* ignore */ }
 }
