@@ -330,11 +330,9 @@ input:focus-visible {
 @media (min-width: 768px) {
   /* Budget view: single-pane, no horizontal scroll */
   #budget-view {
-    display: block !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
+    /* Keep Tailwind's flex-col layout; cards scroll inside the cockpit columns */
+    overflow: hidden !important;
     scroll-snap-type: none !important;
-    padding-bottom: 100px;
   }
 
   /* Hide all month snap-points except the active one */
@@ -730,19 +728,8 @@ input:focus-visible {
   pointer-events: auto;
 }
 
-/* --- Desktop budget layout: 2-column grid (hero/accounts/pending span full) --- */
-@media (min-width: 768px) {
-  #budget-body {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    align-items: start;
-  }
-  #budget-body > * { margin-top: 0 !important; }
-  #budget-body > section,
-  #budget-body > details,
-  #budget-body > button { grid-column: 1 / -1; }
-}
+/* (Removed legacy 2-column #budget-body grid: layout.js now renders its own
+   responsive cockpit grid inside #budget-body.) */
 
 /* --- Current-month "NOW" banner tag on the month chip --- */
 .now-banner {
@@ -895,12 +882,20 @@ body[data-density="compact"] header h1 {
   font-size: 1.5rem !important; /* 24px */
 }
 
+@media (max-width: 379px) {
+  body[data-density="compact"] header h1 {
+    font-size: 1.25rem !important;
+  }
+}
+
 body[data-density="compact"] header button {
   height: 2.5rem !important;
   border-radius: 0.875rem !important;
 }
 
-body[data-density="compact"] header button.w-12 {
+body[data-density="compact"] header button.w-12,
+body[data-density="compact"] header button.w-11,
+body[data-density="compact"] header button.w-9 {
   width: 2.5rem !important;
 }
 
