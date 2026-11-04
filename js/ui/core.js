@@ -6,16 +6,35 @@ import { $ } from '../utils.js';
 // Toast & Notifications
 // =============================
 let toastTimer = null;
-export function toast(msg, type = "ok") {
+// opts: { actionLabel, onAction, duration } - optional action button (e.g. Undo)
+export function toast(msg, type = "ok", opts = {}) {
   const t = $("toast");
   if (!t) return;
   $("toast-text").textContent = msg;
   const icon = $("toast-icon");
   icon.textContent = type === "error" ? "error" : "check_circle";
   icon.className = `material-icons text-lg ${type === "error" ? "text-rose-400" : "text-emerald-400"}`;
+
+  const actionBtn = $("toast-action");
+  if (actionBtn) {
+    if (opts.actionLabel && typeof opts.onAction === "function") {
+      actionBtn.textContent = opts.actionLabel;
+      actionBtn.classList.remove("hidden");
+      actionBtn.onclick = () => {
+        actionBtn.onclick = null;
+        t.classList.remove("show");
+        clearTimeout(toastTimer);
+        opts.onAction();
+      };
+    } else {
+      actionBtn.classList.add("hidden");
+      actionBtn.onclick = null;
+    }
+  }
+
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
+  toastTimer = setTimeout(() => t.classList.remove("show"), opts.duration || 2000);
 }
 
 // =============================
@@ -124,6 +143,13 @@ export function unlockApp() {
     const err = $("lock-error");
     err.style.opacity = "1";
     setTimeout(() => { err.style.opacity = "0"; }, 2000);
+    // Shake the field so the error is noticeable
+    const field = $("lock-password");
+    field.classList.remove("shake");
+    void field.offsetWidth; // restart animation
+    field.classList.add("shake");
+    setTimeout(() => field.classList.remove("shake"), 450);
+    field.select();
   }
 }
 
@@ -151,7 +177,10 @@ export function revealApp() {
   if (lock) {
     lock.classList.remove("hidden");
     lock.classList.add("flex");
+    const pwd = $("lock-password");
+    if (pwd) pwd.focus({ preventScroll: true });
   }
+  try { sessionStorage.setItem("moneyku_intro_seen", "1"); } catch (e) { /* ignore */ }
 }
 
 export function runIntro() {

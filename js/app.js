@@ -171,7 +171,11 @@ function boot() {
         firstLoad = false;
         clampSelected();
         renderAll();
-        setTimeout(revealApp, 1600);
+        // Full intro on first visit of a session; quick reveal afterwards or with reduced motion
+        const quick =
+          sessionStorage.getItem("moneyku_intro_seen") === "1" ||
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        setTimeout(revealApp, quick ? 250 : 1600);
       } else {
         renderAll();
       }
@@ -183,6 +187,9 @@ function boot() {
         renderAll();
       }
       revealApp();
+      // Persistent badge (the toast alone disappears after 2s)
+      const badge = document.getElementById("offline-indicator");
+      if (badge) badge.classList.remove("hidden");
       toast("Offline — loaded local cache", "error");
     }
   );

@@ -30,14 +30,14 @@
     />
     <link rel="apple-touch-icon" href="assets/money-icon.png" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="tailwind.css?v=20261104_2" />
+    <link rel="stylesheet" href="tailwind.css?v=20261104_3" />
     <script src="https://cdn.jsdelivr.net/npm/morphdom@2.7.0/dist/morphdom-umd.min.js"></script>
     
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20261104_2" />
+    <link rel="stylesheet" href="style.css?v=20261104_3" />
   </head>
   <body
     class="bg-slate-900 text-slate-100 overflow-hidden font-sans select-none"
@@ -204,6 +204,16 @@
           <div id="month-banner" class="px-5 sm:px-6 md:px-8 pb-2 empty:hidden flex-shrink-0"></div>
 
           <div class="flex-1 min-h-0 px-5 sm:px-6 md:px-8 pb-4 stagger-in flex flex-col overflow-hidden" id="budget-body">
+            <!-- Skeleton shown until the first render replaces it -->
+            <div class="w-full h-full flex flex-col gap-3 animate-pulse" aria-hidden="true">
+              <div class="h-14 rounded-xl bg-slate-800/70"></div>
+              <div class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="rounded-xl bg-slate-800/60"></div>
+                <div class="rounded-xl bg-slate-800/60 hidden md:block"></div>
+                <div class="rounded-xl bg-slate-800/60 hidden lg:block"></div>
+                <div class="rounded-xl bg-slate-800/60 hidden lg:block"></div>
+              </div>
+            </div>
             <!-- month detail injected -->
           </div>
         </div>
@@ -258,7 +268,7 @@
     >
       <div
         id="modal-content"
-        class="bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl p-8 translate-y-full transition-transform duration-500 ease-out shadow-2xl border border-white/5 flex flex-col max-h-[90vh]"
+        class="bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 sm:p-8 translate-y-full transition-transform duration-500 ease-out shadow-2xl border border-white/5 flex flex-col max-h-[90vh]"
       >
         <div
           class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6 sm:hidden flex-shrink-0"
@@ -287,17 +297,17 @@
           <!-- Inputs injected dynamically -->
         </div>
 
-        <div class="mt-8 flex gap-4 flex-shrink-0">
+        <div class="mt-5 sm:mt-8 flex gap-3 sm:gap-4 flex-shrink-0">
           <button
             data-action="closeModal"
-            class="flex-1 py-5 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform"
+            class="flex-1 py-3.5 sm:py-5 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform"
           >
             Cancel
           </button>
           <button
             id="save-btn"
             data-action="saveModal"
-            class="flex-1 py-5 font-bold text-white bg-indigo-600 rounded-2xl transition-transform shadow-lg shadow-indigo-900/40 disabled:opacity-50 disabled:pointer-events-none"
+            class="flex-1 py-3.5 sm:py-5 font-bold text-white bg-indigo-600 rounded-2xl transition-transform shadow-lg shadow-indigo-900/40 disabled:opacity-50 disabled:pointer-events-none"
           >
             Save
           </button>
@@ -370,9 +380,23 @@
     >
       <span id="toast-icon" class="material-icons text-emerald-400 text-lg">check_circle</span>
       <span id="toast-text" class="text-sm font-bold text-white">Done!</span>
+      <button
+        id="toast-action"
+        type="button"
+        class="hidden ml-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-wider"
+      ></button>
+    </div>
+
+    <!-- OFFLINE / SYNC-UNAVAILABLE BADGE -->
+    <div
+      id="offline-indicator"
+      role="status"
+      class="hidden fixed top-2 left-1/2 -translate-x-1/2 z-[75] px-3 py-1 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black uppercase tracking-wider shadow-lg pointer-events-none"
+    >
+      Offline &middot; local data
     </div>
 
     <!-- Main Script -->
-    <script type="module" src="js/app.js?v=20261104_1"></script>
+    <script type="module" src="js/app.js?v=20261104_3"></script>
   </body>
 </html>

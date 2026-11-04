@@ -352,6 +352,8 @@ export async function doDelete(scope = "all") {
   if (!activeEdit) return;
   const appData = getAppData();
   const selectedKey = getSelectedKey();
+  // Snapshot so the deletion can be undone from the toast
+  const snapshot = JSON.parse(JSON.stringify(appData));
 
   if (activeEdit.kind === "account") {
     appData.accounts = appData.accounts.filter((a) => a.id !== activeEdit.id);
@@ -402,5 +404,15 @@ export async function doDelete(scope = "all") {
     }
   }
   await syncSet(appData);
-  closeConfirm(); closeModal(); renderAll(); toast("Deleted");
+  closeConfirm(); closeModal(); renderAll();
+  toast("Deleted", "ok", {
+    actionLabel: "Undo",
+    duration: 6000,
+    onAction: async () => {
+      setAppData(snapshot);
+      await syncSet(snapshot);
+      renderAll();
+      toast("Restored");
+    },
+  });
 }

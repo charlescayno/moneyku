@@ -253,7 +253,14 @@ export function bankGroupHtml(bank, list, k, kind, who) {
 }
 
 export function groupedRowsHtml(items, k, kind, who) {
-  if (!items.length) return `<p class="text-[11px] text-slate-600 px-3 py-2">No ${kind === "income" ? "income" : "expenses"} this month</p>`;
+  if (!items.length) {
+    const isInc = kind === "income";
+    return `<div class="empty-state flex flex-col items-center gap-1 px-3 py-4 text-center">
+      <span class="material-icons text-slate-600" style="font-size:22px" aria-hidden="true">${isInc ? "savings" : "receipt_long"}</span>
+      <p class="text-[11px] font-bold text-slate-500">No ${isInc ? "income" : "expenses"} this month</p>
+      <p class="text-[10px] text-slate-600">Tap <span class="font-black">Add</span> above to create one</p>
+    </div>`;
+  }
   let html = "";
   const parents = items.filter((it) => getKids(it).length);
   for (const it of parents) html += itemRowHtml(it, k, kind, who);
