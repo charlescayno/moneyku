@@ -64,7 +64,6 @@ import {
   exportData,
   fetchInvestmentRates,
   refreshInvestmentRates,
-  initChat,
   toggleDensityMode,
   applyDensityMode,
 } from "./ui/index.js";
@@ -127,8 +126,10 @@ function boot() {
   applyDensityMode();
   runIntro();
   initGestures();
-  initChat();
   initEventListeners();
+  import("./ui/chat.js")
+    .then((m) => m.initChat?.())
+    .catch((err) => console.warn("Chat module disabled:", err));
   
   // Background live ticker: updates rates periodically
   setInterval(() => {
