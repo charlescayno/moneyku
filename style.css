@@ -1081,3 +1081,7 @@ header, #budget-body [class*="backdrop-blur"] {
   backdrop-filter: none !important;
 }
 header { background-color: #0f172a !important; }
+
+/* One-time hint: nudge the first row sideways so the swipe gesture is discoverable */
+@keyframes nudge-row { 0%,100% { transform: translateX(0); } 30% { transform: translateX(34px); } 60% { transform: translateX(-26px); } }
+.nudge-hint { animation: nudge-row 1.4s ease 1.2s 2; }

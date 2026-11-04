@@ -2,12 +2,13 @@
 // Insights: due soon, category budgets, month-over-month
 // =============================
 import { $, addMonths, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
-import { getActiveEdit, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline } from "./state.js";
+import { getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline } from "./state.js";
 import { syncSet } from "./firebase.js";
 import { SPEND_CATS, catInfo, categoryOf } from "./categories.js";
 import { closeModal, openModalShell } from "./ui/modals.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
+import { findItemAnywhere } from "./itemOps.js";
 
 // ---------- shared ----------
 export function categoryTotals(k) {
@@ -65,7 +66,8 @@ export function dueSoonCardHtml() {
   const body = rows.slice(0, 6).map((r) => `<div data-action="openItemModal" data-arg0="${r.who}" data-arg1="expenses" data-arg2="${r.it.id}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40 cursor-pointer">
       <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${chip(r)} flex-shrink-0">${label(r)}</span>
       <p class="text-xs font-bold text-slate-100 truncate flex-1">${escapeHtml(r.it.name)}</p>
-      <p class="text-xs font-black text-white flex-shrink-0">${peso(r.amt)}</p></div>`).join("") + (rows.length > 6 ? `<p class="text-[10px] text-slate-500 text-center">+${rows.length - 6} more</p>` : "");
+      <p class="text-xs font-black text-white flex-shrink-0">${peso(r.amt)}</p>
+      ${r.next ? "" : `<button type="button" data-action="dueMarkPaid" data-arg0="${r.it.id}" title="Mark paid" aria-label="Mark ${escapeHtml(r.it.name)} paid" class="w-7 h-7 rounded-lg border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-400"><span class="material-icons" style="font-size:16px">check</span></button>`}</div>`).join("") + (rows.length > 6 ? `<p class="text-[10px] text-slate-500 text-center">+${rows.length - 6} more</p>` : "");
   return cardShell("due", overdue ? "border-rose-500/30" : "border-amber-500/25", "notifications_active", overdue ? "from-rose-500 to-red-600" : "from-amber-500 to-orange-600",
     "Due soon", `${rows.length} unpaid in the next 7 days${overdue ? ` · ${overdue} overdue` : ""}`, `<p class="text-sm font-black text-white">${peso(total)}</p>`, body);
 }
@@ -150,4 +152,50 @@ export function compareCardHtml() {
   return cardShell("compare", "border-sky-500/15", "compare_arrows", "from-sky-500 to-blue-600", "vs last month", `${monthShort(k)} compared to ${monthShort(prevK)}`, "",
     line("Income", t.cI, p.cI, true) + line("Expenses", t.cE, p.cE, false) + line("Net", net, pnet, true) +
     (moverRows ? `<p class="text-[9px] font-black uppercase tracking-wider text-slate-500 px-1 pt-1">Biggest changes</p>${moverRows}` : ""));
+}
+
+// ---------- mark paid from the Due soon card (with undo) ----------
+export async function dueMarkPaid(id) {
+  const d = getAppData();
+  const f = findItemAnywhere(d, id);
+  if (!f) return;
+  const k = getSelectedKey();
+  const snapshot = JSON.parse(JSON.stringify(d));
+  const ids = getKids(f.item).length ? getKids(f.item).map((c) => c.id) : [id];
+  d.paid = d.paid || {};
+  d.paid[k] = d.paid[k] || {};
+  ids.forEach((x) => { d.paid[k][x] = true; });
+  if (navigator.vibrate) navigator.vibrate(12);
+  await syncSet(d);
+  renderAll();
+  toast(`${f.item.name} marked paid`, "ok", {
+    actionLabel: "Undo", duration: 5000,
+    onAction: async () => { setAppData(snapshot); await syncSet(snapshot); renderAll(); },
+  });
+}
+
+// ---------- budget alerts: warn when a change pushes a category over its limit ----------
+function overSet() {
+  const limits = getAppData()?.settings?.budgets || {};
+  const spent = categoryTotals(getSelectedKey());
+  const over = {};
+  for (const c of SPEND_CATS) if (limits[c.id] > 0 && (spent[c.id] || 0) > limits[c.id]) over[c.id] = (spent[c.id] || 0) - limits[c.id];
+  return over;
+}
+export function budgetBefore() { try { return overSet(); } catch { return {}; } }
+export function budgetAlert(before) {
+  setTimeout(() => {
+    try {
+      const now = overSet();
+      const fresh = Object.keys(now).filter((id) => !(id in before));
+      if (fresh.length) toast(`${catInfo(fresh[0]).label} is over budget by ${peso(now[fresh[0]])}`, "error", { duration: 4500 });
+    } catch { /* ignore */ }
+  }, 700);
+}
+export function budgetAlertText(before) {
+  try {
+    const now = overSet();
+    const fresh = Object.keys(now).filter((id) => !(id in before));
+    return fresh.length ? `${catInfo(fresh[0]).label} is over budget by ${peso(now[fresh[0]])}` : "";
+  } catch { return ""; }
 }

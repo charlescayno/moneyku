@@ -96,7 +96,16 @@ export async function togglePaidQuick(event, id, kind) {
     flashLabel(valEl || btn, kind === "income" ? "Received!" : "Paid!");
   }
   refreshRealized();
+  if (navigator.vibrate) navigator.vibrate(12);
   await syncSet(appData);
+  toast(nowSettled ? (kind === "income" ? "Marked received" : "Marked paid") : "Marked unpaid", "ok", {
+    actionLabel: "Undo", duration: 4000,
+    onAction: async () => {
+      appData.paid[selectedKey][id] = !nowSettled;
+      await syncSet(appData);
+      renderAll();
+    },
+  });
 }
 
 export async function togglePaidGroup(event, idsStr, k, kind) {

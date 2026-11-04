@@ -8,6 +8,7 @@ import { askGemini, GeminiError } from "../gemini.js";
 import { addItemData, applyItemAmount, findItemAnywhere, setPaidData } from "../itemOps.js";
 import { toast } from "./core.js";
 import { renderAll } from "./layout.js";
+import { budgetAlertText, budgetBefore } from "../insights.js";
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 let pending = null; // { text, rows }
@@ -219,13 +220,15 @@ export async function qlConfirm() {
   const rows = pending.rows.filter((r) => r.ok);
   const d = getAppData();
   const snapshot = JSON.parse(JSON.stringify(d));
+  const bb = budgetBefore();
   rows.forEach((r) => r.apply(d));
   const input = $("ql-input");
   if (input) input.value = "";
   qlClose();
   await syncSet(d);
   renderAll();
-  toast(`Applied ${rows.length} change${rows.length === 1 ? "" : "s"}`, "ok", {
+  const warn = budgetAlertText(bb);
+  toast(`Applied ${rows.length} change${rows.length === 1 ? "" : "s"}${warn ? " · " + warn : ""}`, warn ? "error" : "ok", {
     actionLabel: "Undo",
     duration: 6000,
     onAction: async () => {

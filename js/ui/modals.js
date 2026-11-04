@@ -228,6 +228,9 @@ export function openItemModal(who, kind, id, presetDay) {
     more += `<button type="button" data-action="openChildModal" data-arg0="${who}" data-arg1="${id}" class="w-full py-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl font-bold text-violet-300 text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"><span class="material-icons" style="font-size:18px">account_tree</span>Add sub-expense</button>`;
   }
 
+  if (!isNew) {
+    more += `<button type="button" data-action="duplicateItem" data-arg0="${who}" data-arg1="${kind}" data-arg2="${id}" class="w-full py-2.5 bg-slate-900 rounded-xl font-bold text-slate-300 text-sm flex items-center justify-center gap-2"><span class="material-icons" style="font-size:18px">content_copy</span>Duplicate</button>`;
+  }
   if (more) {
     const openMoreByDefault = payMethod === "bpi_platinum" || (isNew && pd >= 1);
     body += `<details id="f-more" ${openMoreByDefault ? "open" : ""} class="group">

@@ -3,6 +3,7 @@ import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, cu
 import { syncSet } from '../firebase.js';
 import { activityCalendarCardHtml } from '../calendar.js';
 import { budgetsCardHtml, compareCardHtml, dueSoonCardHtml } from '../insights.js';
+import { tipCardHtml } from '../extras.js';
 import { renderProjectionChart } from '../charts.js';
 import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
@@ -39,8 +40,13 @@ export function renderBudget() {
         </div>
       </div>
 
-      <!-- KPI Metrics Grid -->
-      <div class="flex-1 min-w-0 grid grid-cols-2 gap-1.5 items-center">
+      <!-- KPI Metrics (collapsed by default; headline shows savings) -->
+      <details data-persist="kpi" class="group">
+      <summary class="flex items-center justify-between cursor-pointer list-none select-none px-1">
+        <span class="text-[10px] font-bold text-slate-400">Left this month <span class="text-sm font-black ${savColor}">${signedPeso(t.savings)}</span></span>
+        <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
+      </summary>
+      <div class="flex-1 min-w-0 grid grid-cols-2 gap-1.5 items-center mt-1.5">
         <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
           <span class="text-[8px] font-bold uppercase text-slate-400">Current</span>
           <span class="text-xs font-black text-white">${peso(current)}</span>
@@ -63,12 +69,14 @@ export function renderBudget() {
           <span class="text-xs font-black ${(t.debtToReceive - t.debtToPay) >= 0 ? 'text-indigo-300' : 'text-orange-300'}">${signedPeso(t.debtToReceive - t.debtToPay)}</span>
         </div>` : ''}
       </div>
+      </details>
     </div>
   `;
 
   $("budget-body").innerHTML = `
     <div class="w-full flex flex-col gap-2 pb-[calc(9rem+env(safe-area-inset-bottom))]">
       ${kpiBar}
+      ${tipCardHtml()}
       ${dueSoonCardHtml()}
       <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
@@ -93,6 +101,7 @@ export function renderBudget() {
     </div>
   `;
   applyPersistedDetails();
+  if (document.getElementById("tip-card")) document.querySelector("#budget-body .item-row[data-action=openItemModal]")?.classList.add("nudge-hint");
 }
 
 // Cards/sections remember whether they were left open or collapsed

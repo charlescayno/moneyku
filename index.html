@@ -163,6 +163,7 @@
           >
             <span class="material-icons text-indigo-400 text-xl sm:text-2xl" id="density-icon">view_compact</span>
           </button>
+          <button type="button" data-action="openSearch" title="Search" aria-label="Search" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-400">search</span></button>
           <button
             type="button"
             data-action="openItemModal" data-arg0="charlie" data-arg1="expenses"
@@ -229,9 +230,10 @@
     <!-- QUICK LOG PILL -->
     <div id="ql-bar" class="fixed bottom-[calc(3.25rem+env(safe-area-inset-bottom))] sm:bottom-0 left-0 right-0 z-40 px-3 pt-6 pb-2 sm:pb-3 pointer-events-none bg-gradient-to-t from-slate-900 via-slate-900/70 to-transparent">
       <form id="ql-form" class="pointer-events-auto max-w-2xl mx-auto flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-full shadow-xl pl-3.5 pr-1.5 py-1.5">
+        <button type="button" data-action="qlAddChooser" aria-label="Add income or expense" title="Add" class="w-8 h-8 -ml-1.5 flex items-center justify-center rounded-full bg-slate-700 text-white flex-shrink-0"><span class="material-icons" style="font-size:18px">add</span></button>
         <span class="material-icons text-indigo-400" style="font-size:18px">auto_awesome</span>
         <input id="ql-input" type="text" autocomplete="off" enterkeyhint="send" placeholder="Log anything, or ask..." class="flex-1 min-w-0 bg-transparent text-white placeholder-slate-500 text-sm outline-none py-1.5" />
-        <button type="button" data-action="qlOpenKey" aria-label="Gemini key settings" title="Gemini key" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-300">
+        <button type="button" data-action="openSettings" aria-label="Settings" title="Settings" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-300">
           <span class="material-icons" style="font-size:18px">settings</span>
         </button>
         <button type="submit" aria-label="Send" class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-600 text-white">

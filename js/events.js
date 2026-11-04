@@ -50,6 +50,7 @@ function initRowSwipe() {
     const r = row, fired = active && Math.abs(dx) >= 70, dir = dx;
     reset();
     if (fired) {
+      if (navigator.vibrate) navigator.vibrate(12);
       if (dir > 0) r.querySelector('button[data-action="togglePaidQuick"]')?.click();
       else r.click();
     }

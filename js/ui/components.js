@@ -2,6 +2,8 @@ import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, 
 import { acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
+import { budgetAlert, budgetBefore } from '../insights.js';
+import { lastMonthOneTimes } from '../extras.js';
 import { renderProjectionChart } from '../charts.js';
 import { toast } from './core.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
@@ -375,6 +377,9 @@ export function personSectionHtml(who, includeDebt = true) {
   const expTot = who === "charlie" ? t.cE : t.dE;
   const net = incTot - expTot;
   const incHtml = groupedRowsHtml(income, k, "income", who);
+  const emptyRow = (w, kind) => `<button type="button" data-action="openItemModal" data-arg0="${w}" data-arg1="${kind}" class="w-full py-3 text-[11px] font-bold text-slate-500 border border-dashed border-slate-700 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>No ${kind === "income" ? "income" : "expenses"} this month · add one</button>`;
+  const copyN = who === "charlie" ? lastMonthOneTimes().length : 0;
+  const copyBtn = copyN ? `<button type="button" data-action="copyLastMonth" class="w-full mt-1 py-2 text-[11px] font-bold text-indigo-300 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy ${copyN} one-time item${copyN === 1 ? "" : "s"} from last month</button>` : "";
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
 
   let debtSectionHtml = "";
@@ -411,7 +416,7 @@ export function personSectionHtml(who, includeDebt = true) {
           </div>
           <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
         </summary>
-        <div class="space-y-0.5 mt-1">${incHtml}</div>
+        <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>
       </details>
       <div class="border-t border-white/[0.04] pt-2">
         <details open data-persist="sec-expenses" class="group">
@@ -425,7 +430,8 @@ export function personSectionHtml(who, includeDebt = true) {
             </div>
             <button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
           </summary>
-          <div class="space-y-0.5 mt-1">${expHtml}</div>
+          <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>
+          ${copyBtn}
         </details>
       </div>
       ${debtSectionHtml}
@@ -558,7 +564,7 @@ export function accountsCardHtml() {
   const sum = (l) => l.reduce((s, a) => s + (Number(a.amount) || 0), 0);
   const bank = accts.filter((a) => acctType(a) !== "credit");
   const credit = accts.filter((a) => acctType(a) === "credit");
-  const empty = `<p class="text-[10px] text-slate-600 px-2 py-1.5">No accounts yet.</p>`;
+  const empty = `<p class="text-[10px] text-slate-600 px-2 py-1.5">No accounts yet. Add one below to see your balances here.</p>`;
   const rows = !accts.length ? empty
     : view === "cards"
       ? acctCardSection("Cash & Bank", bank, sum(bank)) + acctCardSection("Credit", credit, sum(credit))
@@ -1248,6 +1254,7 @@ async function saveModalInner() {
 
   // Regular item
   if (!name) return toast("Name required", "error");
+  const bb = budgetBefore();
   const { who, type, id } = activeEdit;
   const recurring = $("f-recurring").dataset.on === "true";
   const start = $("f-start").value;
@@ -1303,4 +1310,5 @@ async function saveModalInner() {
   rememberPayMethod(payMethod);
   await syncSet(appData);
   closeModal(); renderAll(); toast("Saved");
+  budgetAlert(bb);
 }

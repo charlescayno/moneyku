@@ -2,7 +2,8 @@
 // Application Entry Point (Modular v2.0)
 // =============================
 
-import { openBudgetModal, saveBudgets } from "./insights.js";
+import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
+import { openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
 
 import {
@@ -183,6 +184,8 @@ window.calAddFrom = calAddFrom;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;
 window.tabGo = tabGo;
+Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, dismissTip });
+initExtras();
 initCalendarGestures();
 initTabs();
 window.calSelectDay = calSelectDay;
