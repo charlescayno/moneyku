@@ -1,8 +1,8 @@
 // =============================
 // Insights: due soon, category budgets, month-over-month
 // =============================
-import { $, addMonths, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
-import { getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline } from "./state.js";
+import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
+import { accountsTotal, amountIn, getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline } from "./state.js";
 import { syncSet } from "./firebase.js";
 import { SPEND_CATS, catInfo, categoryOf } from "./categories.js";
 import { closeModal, openModalShell } from "./ui/modals.js";
@@ -200,4 +200,44 @@ export function budgetAlertText(before) {
     const fresh = Object.keys(now).filter((id) => !(id in before));
     return fresh.length ? `${catInfo(fresh[0]).label} is over budget by ${peso(now[fresh[0]])}` : "";
   } catch { return ""; }
+}
+
+// ---------- Real money: cash & bank minus what is owed on the BPI Platinum card ----------
+// "Owed" = every unpaid expense marked BPI Platinum that has already been charged
+// (purchase date <= today, or its budget month is this month or earlier).
+export function cardOwed() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const nowKey = currentKey();
+  const byMonth = {};
+  let total = 0, any = false;
+  for (const who of ["charlie", "debt"]) {
+    for (const it of getItems(who, "expenses")) {
+      if (it.paymentMethod !== "bpi_platinum") continue;
+      any = true;
+      for (const m of timeline()) {
+        if (!itemActiveIn(it, m)) continue;
+        const charged = it.txDate && !it.recurring ? it.txDate <= todayStr : cmpKey(m, nowKey) <= 0;
+        if (!charged) continue;
+        const kids = getKids(it, m);
+        const amt = kids.length
+          ? kids.reduce((s, c) => s + (isPaid(c.id, m) ? 0 : Number(c.amount) || 0), 0)
+          : isPaid(it.id, m) ? 0 : amountIn(it, m);
+        if (amt > 0) { byMonth[m] = (byMonth[m] || 0) + amt; total += amt; }
+      }
+    }
+  }
+  return { total, byMonth, any };
+}
+
+export function realMoney() {
+  const k = getSelectedKey();
+  const t = monthTotals(k);
+  const cash = accountsTotal();
+  const owed = cardOwed();
+  const real = cash - owed.total;
+  // bills still to pay this month, minus the card part that is already subtracted above
+  const afterAll = real + t.toReceive - (t.toPay - (owed.byMonth[k] || 0));
+  return { cash, owed, real, afterAll, toReceive: t.toReceive };
 }

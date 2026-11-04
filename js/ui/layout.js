@@ -2,7 +2,7 @@ import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, 
 import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { activityCalendarCardHtml } from '../calendar.js';
-import { budgetsCardHtml, compareCardHtml, dueSoonCardHtml } from '../insights.js';
+import { budgetsCardHtml, compareCardHtml, dueSoonCardHtml, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
 import { renderProjectionChart } from '../charts.js';
 import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, statsGridHtml } from './components.js';
@@ -22,6 +22,9 @@ export function renderBudget() {
   const current = currentMoneyAt();
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
 
+  const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  const rm = realMoney();
+  const owedBreak = Object.entries(rm.owed.byMonth).sort(([a], [b]) => (a < b ? -1 : 1)).map(([m, v]) => `${monthShort(m)} ${peso(v)}`).join(" · ");
   const kpiBar = `
     <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-2 flex flex-col items-stretch gap-2 shadow-md flex-shrink-0">
       <!-- Projected Hero Stat -->
@@ -43,9 +46,15 @@ export function renderBudget() {
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
       <details data-persist="kpi" class="group">
       <summary class="flex items-center justify-between cursor-pointer list-none select-none px-1">
-        <span class="text-[10px] font-bold text-slate-400">Left this month <span class="text-sm font-black ${savColor}">${signedPeso(t.savings)}</span></span>
+        <span class="text-[10px] font-bold text-slate-400">Real money <span class="text-base font-black ${rm.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rm.real)}</span></span>
         <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
       </summary>
+      <div class="mt-1.5 rounded-lg bg-black/20 px-2.5 py-1.5 space-y-1 text-[11px]">
+        <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rm.cash)}</span></div>
+        ${rm.owed.total > 0 ? `<div class="flex justify-between"><span class="text-slate-400">BPI Platinum owed</span><span class="font-black text-rose-300">-${peso(rm.owed.total)}</span></div>
+        ${owedBreak ? `<p class="text-[9px] text-slate-500 text-right">${owedBreak}</p>` : ""}` : ""}
+        <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rm.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rm.afterAll)}</span></div>
+      </div>
       <div class="flex-1 min-w-0 grid grid-cols-2 gap-1.5 items-center mt-1.5">
         <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
           <span class="text-[8px] font-bold uppercase text-slate-400">Current</span>
