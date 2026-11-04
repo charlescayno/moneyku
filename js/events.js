@@ -98,7 +98,7 @@ export function initGestures() {
   document.addEventListener('touchend', e => {
     touchEndX = e.changedTouches[0].screenX;
     touchEndY = e.changedTouches[0].screenY;
-    handleSwipe();
+    // Swipe-to-change-month removed (use the month strip, header or calendar arrows)
     
     if (isPulling) {
       const diffY = touchEndY - touchStartY;
@@ -123,6 +123,8 @@ export function initGestures() {
   }, { passive: true });
 }
 
+// Kept for reference; no longer called.
+// eslint-disable-next-line no-unused-vars
 function handleSwipe() {
   const diffX = touchStartX - touchEndX;
   const diffY = touchStartY - touchEndY;
