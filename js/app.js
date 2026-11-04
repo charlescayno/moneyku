@@ -52,6 +52,7 @@ import {
   openItemModal,
   openChildModal,
   openAccountModal,
+  openTransferModal,
   openInvestmentModal,
   closeModal,
   saveModal,
@@ -130,6 +131,7 @@ window.selectMonth = selectMonth;
 window.openItemModal = openItemModal;
 window.openChildModal = openChildModal;
 window.openAccountModal = openAccountModal;
+window.openTransferModal = openTransferModal;
 window.openInvestmentModal = openInvestmentModal;
 window.closeModal = closeModal;
 window.saveModal = saveModal;

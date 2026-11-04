@@ -288,6 +288,29 @@ export function openAccountModal(id) {
   openModalShell();
 }
 
+export function openTransferModal() {
+  const accts = getAppData()?.accounts || [];
+  if (accts.length < 2) return toast("Add at least 2 accounts to transfer", "error");
+  setActiveEdit({ kind: "transfer" });
+  $("modal-title").textContent = "Transfer";
+  $("modal-title").className = "text-2xl font-black uppercase tracking-tight text-emerald-400";
+  const opts = (sel) => accts.map((a, i) => `<option value="${a.id}" ${i === sel ? "selected" : ""}>${escapeHtml(a.name)} — ${peso(a.amount)}</option>`).join("");
+  const sel = "w-full bg-slate-900 rounded-2xl py-4 px-5 text-base font-black text-white focus:outline-none appearance-none";
+  $("modal-body").innerHTML = `
+    <div class="space-y-1">
+      <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">From</label>
+      <select id="f-from" class="${sel}">${opts(0)}</select>
+    </div>
+    <div class="flex justify-center -my-1"><span class="material-icons text-emerald-400">south</span></div>
+    <div class="space-y-1">
+      <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">To</label>
+      <select id="f-to" class="${sel}">${opts(1)}</select>
+    </div>
+    ${inputBlock("Amount (₱)", "f-amount", "", "text", 'inputmode="text" placeholder="0"')}
+  `;
+  $("delete-btn").classList.add("hidden");
+  openModalShell();
+}
 export function pickOwner(btn, w) {
   const wrap = $("f-owner");
   if (!wrap) return;

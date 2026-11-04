@@ -60,6 +60,7 @@ export {
   openChildModal,
   openInvestmentModal,
   openAccountModal,
+  openTransferModal,
   pickOwner,
   confirmDelete,
   closeConfirm,

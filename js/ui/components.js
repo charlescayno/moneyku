@@ -436,37 +436,37 @@ export function personSectionHtml(who, includeDebt = true) {
 // Accounts Card & Renderers
 // =============================
 export function acctIconHtml(a) {
-  const icon = bankIconFor(a.name);
-  if (icon) {
-    return `<img src="${icon}" alt="${escapeHtml(a.name)}" class="w-full h-full object-contain rounded-md" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span class="material-icons text-white hidden" style="font-size:14px">account_balance</span>`;
-  }
-  return `<span class="material-icons text-white" style="font-size:14px">account_balance</span>`;
+  const key = bankIconFor(a.name);
+  const domain = key && BANK_DOMAINS[key];
+  const fallback = `<span class="material-icons text-slate-300" style="font-size:18px">account_balance</span>`;
+  if (!domain) return fallback;
+  // Bank logo (favicon service); falls back to the generic bank icon if it can't load (offline)
+  return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=128" alt="${escapeHtml(BANK_LABELS[key] || a.name)}" loading="lazy" class="w-full h-full object-cover bg-white" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="material-icons text-slate-300 items-center justify-center" style="font-size:18px;display:none">account_balance</span>`;
 }
-
 export function acctRowHtml(a) {
   return `<div class="item-row flex items-center justify-between px-2.5 py-1.5 rounded-lg group">
     <div class="flex items-center gap-2 min-w-0 flex-1">
-      <div class="w-6 h-6 rounded-md bg-slate-800/80 border border-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <div class="w-9 h-9 rounded-xl bg-slate-800/80 border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
         ${acctIconHtml(a)}
       </div>
-      <p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(a.name)}</p>
+      <p class="text-sm font-bold text-slate-100 truncate">${escapeHtml(a.name)}</p>
     </div>
     <div class="flex items-center gap-1.5 flex-shrink-0">
-      <p class="text-xs font-black text-white">${peso(a.balance)}</p>
+      <p class="text-xs font-black text-white">${peso(a.amount)}</p>
       <button data-action="openAccountModal" data-arg0="${a.id}" class="text-slate-400 hover:text-white transition-opacity p-0.5"><span class="material-icons" style="font-size:13px">edit</span></button>
     </div>
   </div>`;
 }
 
 export function acctGroupHtml(group) {
-  const tot = group.items.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+  const tot = group.items.reduce((s, a) => s + (Number(a.amount) || 0), 0);
   const subs = group.items.map((a) => acctRowHtml(a)).join("");
   const first = group.items[0];
   return `<div class="rounded-lg bg-slate-900/30 border border-white/[0.04] p-1.5 space-y-1">
     <div class="flex items-center justify-between px-1.5 py-0.5">
       <div class="flex items-center gap-1.5 min-w-0">
-        <div class="w-5 h-5 rounded-md bg-slate-800 border border-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div class="w-7 h-7 rounded-lg bg-slate-800 border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
           ${acctIconHtml(first)}
         </div>
         <p class="text-[11px] font-black text-slate-300 truncate uppercase tracking-wider">${escapeHtml(group.name)}</p>
@@ -503,9 +503,12 @@ export function accountsCardHtml() {
       </div>
       <p class="text-xs font-black text-emerald-400">${peso(accountsTotal())}</p>
     </summary>
-    <div class="p-2.5 pt-0 space-y-1 max-h-48 overflow-y-auto no-scrollbar">
+    <div class="p-2.5 pt-0 space-y-1 max-h-80 overflow-y-auto no-scrollbar">
       ${rows}
-      <button data-action="openAccountModal" class="w-full mt-1.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[10px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:13px">add</span>Add account</button>
+      <div class="flex gap-2 mt-1.5">
+        <button data-action="openAccountModal" class="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Add account</button>
+        ${accts.length >= 2 ? `<button data-action="openTransferModal" class="flex-1 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg font-bold text-indigo-300 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">swap_horiz</span>Transfer</button>` : ""}
+      </div>
     </div>
   </details>`;
 }
@@ -1095,6 +1098,21 @@ export async function saveModal() {
     if ($("more-overlay")?.classList.contains("open")) {
       openMore();
     }
+    return;
+  }
+
+  if (activeEdit.kind === "transfer") {
+    const fromId = $("f-from")?.value, toId = $("f-to")?.value;
+    const from = appData.accounts.find((x) => x.id === fromId);
+    const to = appData.accounts.find((x) => x.id === toId);
+    if (!from || !to) return toast("Pick both accounts", "error");
+    if (from.id === to.id) return toast("Choose two different accounts", "error");
+    if (!(amount > 0)) return toast("Enter an amount", "error");
+    if (amount > (Number(from.amount) || 0) + 0.005) return toast(`${from.name} only has ${peso(from.amount)}`, "error");
+    from.amount = Math.round(((Number(from.amount) || 0) - amount) * 100) / 100;
+    to.amount = Math.round(((Number(to.amount) || 0) + amount) * 100) / 100;
+    await syncSet(appData);
+    closeModal(); renderAll(); toast(`Moved ${peso(amount)} to ${to.name}`);
     return;
   }
 
