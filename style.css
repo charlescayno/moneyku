@@ -138,6 +138,24 @@ input[type="checkbox"]:checked::before {
   }
 }
 
+/* Accessibility: visible keyboard focus */
+button:focus-visible,
+[data-action]:focus-visible,
+input:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
+}
+
+/* Respect reduced-motion preference (intro, stagger, particles) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Intro: Charlie & Karla avatars bump, then money pops */
 .intro-avatars {
   position: relative;

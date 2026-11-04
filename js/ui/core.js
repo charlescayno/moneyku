@@ -176,7 +176,7 @@ if (!navigator.onLine) {
 
 // Add Sortable JS dynamically for drag and drop
 const sortableScript = document.createElement('script');
-sortableScript.src = 'https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js';
+sortableScript.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
 sortableScript.onload = () => {
     // Make main sections sortable
     const pContainer = document.getElementById('budget-body');

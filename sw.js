@@ -1,17 +1,22 @@
-const CACHE_NAME = 'moneyku-cache-v11';
+const CACHE_NAME = 'moneyku-cache-v12';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
+  './tailwind.css',
   './js/app.js',
   './js/utils.js',
   './js/state.js',
   './js/firebase.js',
   './js/charts.js',
   './js/calendar.js',
-  './js/ui.js',
   './js/events.js',
-  'https://cdn.tailwindcss.com',
+  './js/ui/index.js',
+  './js/ui/core.js',
+  './js/ui/components.js',
+  './js/ui/modals.js',
+  './js/ui/actions.js',
+  './js/ui/layout.js',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdn.jsdelivr.net/npm/morphdom@2.7.0/dist/morphdom-umd.min.js',
   'https://fonts.googleapis.com/icon?family=Material+Icons'
@@ -20,8 +25,10 @@ const urlsToCache = [
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache =>
+      // Cache each file independently so one 404 doesn't abort the whole install
+      Promise.all(urlsToCache.map(url => cache.add(url).catch(err => console.warn('SW cache skip:', url, err))))
+    )
   );
 });
 

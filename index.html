@@ -10,20 +10,18 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#0f172a" />
     <script>
-      window.onerror = function(msg, url, line, col, error) {
-        var splash = document.getElementById("intro-splash");
-        if (splash) {
-          splash.style.opacity = "1";
-          splash.innerHTML = "<div style='padding:20px; color:red; font-size:12px; font-family:monospace; background:#222; height:100vh; overflow:auto;'><b>ERROR:</b><br>" + msg + "<br><br><b>Line:</b> " + line + ":" + col + "<br><br><b>Stack:</b><br>" + (error ? error.stack : '') + "</div>";
-        }
-      };
-      window.addEventListener("unhandledrejection", function(event) {
-        var splash = document.getElementById("intro-splash");
-        if (splash) {
-          splash.style.opacity = "1";
-          splash.innerHTML = "<div style='padding:20px; color:orange; font-size:12px; font-family:monospace; background:#222; height:100vh; overflow:auto;'><b>PROMISE REJECTION:</b><br>" + event.reason + "</div>";
-        }
-      });
+      // Show a friendly retry message if the app fails to start (instead of an endless splash)
+      function showBootError(detail) {
+        var splash = document.getElementById("intro-screen");
+        if (!splash || window.__moneykuBooted) return;
+        splash.style.opacity = "1";
+        splash.style.display = "flex";
+        splash.innerHTML = "<div style='padding:24px; text-align:center; color:#cbd5e1; font-family:sans-serif;'><p style='font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;'>Couldn't start Moneyku</p><p style='font-size:13px; margin-bottom:16px;'>Check your connection and try again.</p><button onclick='location.reload()' style='padding:12px 24px; border:0; border-radius:12px; background:#4f46e5; color:#fff; font-weight:800; font-size:14px;'>Retry</button><p style='font-size:11px; color:#64748b; margin-top:16px; word-break:break-word;'>" + String(detail || "").slice(0, 200) + "</p></div>";
+      }
+      window.onerror = function(msg) { showBootError(msg); };
+      window.addEventListener("unhandledrejection", function(event) { showBootError(event.reason); });
+      // If nothing booted after 8s (e.g. module failed to load), offer a retry
+      setTimeout(function() { showBootError("Startup timed out"); }, 8000);
     </script>
     <!-- ðŸ’¸ money-with-wings favicon -->
     <link
@@ -39,7 +37,7 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20260815_24" />
+    <link rel="stylesheet" href="style.css?v=20261104_1" />
   </head>
   <body
     class="bg-slate-900 text-white overflow-hidden font-sans select-none"
@@ -90,10 +88,12 @@
             type="password" 
             id="lock-password" 
             class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl py-4 pl-5 pr-14 text-center text-xl font-bold tracking-widest text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+            placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
             autocomplete="current-password"
+            autofocus
+            aria-label="Passphrase"
           />
-          <button id="lock-toggle-btn" data-action="toggleLockPassword" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer" type="button">
+          <button id="lock-toggle-btn" aria-label="Show or hide passphrase" data-action="toggleLockPassword" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer" type="button">
             <span class="material-icons" style="font-size: 20px" id="lock-toggle-icon">visibility</span>
           </button>
         </div>
@@ -148,30 +148,38 @@
         </div>
         <div class="flex items-center gap-1.5">
           <button
+            type="button"
             data-action="toggleDensityMode"
             id="density-toggle-btn"
             title="Toggle Density Mode (Compact / Comfortable)"
+            aria-label="Toggle density mode"
             class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-lg md:rounded-xl transition-transform shadow"
           >
             <span class="material-icons text-indigo-400" style="font-size: 17px" id="density-icon">view_compact</span>
           </button>
           <button
+            type="button"
             data-action="openItemModal" data-arg0="charlie" data-arg1="expenses"
             title="Add Expense"
+            aria-label="Add expense"
             class="h-8 md:h-9 px-3 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-[11px] uppercase tracking-wider rounded-lg md:rounded-xl flex items-center gap-1 shadow shadow-rose-950/40 active:scale-95 transition-all"
           >
             <span class="material-icons text-sm">add</span>
             <span class="hidden sm:inline">Expense</span>
           </button>
           <button
+            type="button"
             data-action="openMore"
             title="Intelligence & Overview"
+            aria-label="Open overview"
             class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-lg md:rounded-xl transition-transform shadow"
           >
             <span class="material-icons text-indigo-400" style="font-size: 17px">insights</span>
           </button>
           <button
+            type="button"
             data-action="toggleMonthPicker"
+            aria-label="Choose month"
             class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-lg md:rounded-xl transition-transform shadow md:hidden"
           >
             <span class="material-icons text-indigo-400" style="font-size: 17px">calendar_month</span>
@@ -205,7 +213,7 @@
         <div id="nlp-response" class="absolute bottom-20 left-4 right-4 bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl z-50 transform translate-y-[150%] opacity-0 transition-all duration-300 pointer-events-none">
         </div>
         
-        <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent z-40">
+        <div id="chat-bar" class="hidden absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent z-40">
           <div class="relative max-w-2xl mx-auto">
             <!-- Smart Preview Popover -->
             <div id="nlp-preview" class="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200">
@@ -214,7 +222,7 @@
             <div class="relative flex items-center bg-slate-800/80 backdrop-blur border border-slate-700 rounded-full shadow-lg overflow-hidden">
               <span class="material-icons text-slate-400 pl-4">auto_awesome</span>
               <input type="text" id="chat-input" placeholder="e.g. Paid PC, Add Netflix for 500" class="w-full bg-transparent text-white placeholder-slate-500 py-3 px-3 outline-none focus:ring-0 text-sm">
-              <button class="pr-4 pl-2 text-blue-400 hover:text-blue-300 transition-colors">
+              <button type="button" aria-label="Send" class="pr-4 pl-2 text-blue-400 hover:text-blue-300 transition-colors">
                 <span class="material-icons text-lg">send</span>
               </button>
             </div>
@@ -234,7 +242,7 @@
       >
         <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
           <h3 class="text-lg font-black uppercase tracking-wide text-white">Overview</h3>
-          <button data-action="closeMore" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
+          <button type="button" aria-label="Close overview" data-action="closeMore" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
             <span class="material-icons text-slate-400">close</span>
           </button>
         </div>
@@ -264,7 +272,9 @@
             Edit Item
           </h3>
           <button
+            type="button"
             id="delete-btn"
+            aria-label="Delete item"
             class="text-rose-500 p-2 hidden transition-transform"
           >
             <span class="material-icons">delete_outline</span>
@@ -305,6 +315,8 @@
         <!-- Year groups injected -->
       </div>
       <button
+        type="button"
+        aria-label="Close month picker"
         data-action="toggleMonthPicker"
         class="fixed bottom-8 left-1/2 -translate-x-1/2 w-14 h-14 flex items-center justify-center bg-slate-800 rounded-full shadow-2xl transition-transform aspect-square"
       >
@@ -362,6 +374,6 @@
     </div>
 
     <!-- Main Script -->
-    <script type="module" src="js/app.js?v=20260826_Refactor"></script>
+    <script type="module" src="js/app.js?v=20261104_1"></script>
   </body>
 </html>

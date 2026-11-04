@@ -127,9 +127,9 @@ function boot() {
   runIntro();
   initGestures();
   initEventListeners();
-  import("./ui/chat.js")
-    .then((m) => m.initChat?.())
-    .catch((err) => console.warn("Chat module disabled:", err));
+  // NOTE: AI chat bar (ui/chat.js + nlp.js) is unfinished and hidden in index.html.
+  // Re-enable by removing "hidden" from #chat-bar and calling import("./ui/chat.js") here.
+  window.__moneykuBooted = true;
   
   // Background live ticker: updates rates periodically
   setInterval(() => {
