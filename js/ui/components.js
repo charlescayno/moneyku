@@ -1,5 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
-import { accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { renderProjectionChart } from '../charts.js';
 import { toast } from './core.js';
@@ -477,9 +477,76 @@ export function acctGroupHtml(group) {
   </div>`;
 }
 
+// ---- Wallet-style account cards ----
+const CARD_THEMES = {
+  bpi:          { bg: "linear-gradient(160deg,#c8283f 0%,#7a1226 100%)", label: "BPI" },
+  maribank:     { bg: "linear-gradient(160deg,#ff8f45 0%,#e4470a 100%)", label: "MariBank" },
+  gcash:        { bg: "linear-gradient(160deg,#3a82ff 0%,#1140b5 100%)", label: "GCash" },
+  metrobank:    { bg: "linear-gradient(160deg,#2f5fb3 0%,#12306b 100%)", label: "Metrobank" },
+  bdo:          { bg: "linear-gradient(160deg,#2a5db0 0%,#0b2a63 100%)", label: "BDO" },
+  unionbank:    { bg: "linear-gradient(160deg,#f59a3c 0%,#c25a0b 100%)", label: "UnionBank" },
+  securitybank: { bg: "linear-gradient(160deg,#35a066 0%,#14532d 100%)", label: "Security Bank" },
+  cash:         { bg: "linear-gradient(160deg,#34343a 0%,#0a0a0c 100%)", label: "Cash" },
+  other:        { bg: "linear-gradient(160deg,#4f5d75 0%,#1e293b 100%)", label: "" },
+  credit:       { bg: "linear-gradient(135deg,#eceff3 0%,#a3abb8 52%,#dfe3e9 100%)", label: "" },
+};
+
+export function acctCardHtml(a) {
+  const key = bankIconFor(a.name);
+  const isCredit = acctType(a) === "credit";
+  const isCash = !key && /cash/i.test(a.name || "");
+  const theme = isCredit ? { ...CARD_THEMES.credit, label: BANK_LABELS[key] || "" } : (CARD_THEMES[key] || (isCash ? CARD_THEMES.cash : CARD_THEMES.other));
+  const dark = isCredit; // silver card uses dark text
+  const fg = dark ? "#111827" : "#ffffff";
+  const sub = dark ? "rgba(17,24,39,.65)" : "rgba(255,255,255,.75)";
+  const domain = key && BANK_DOMAINS[key];
+  const logo = domain
+    ? `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy" class="w-4 h-4 rounded-[4px] bg-white object-cover flex-shrink-0" onerror="this.style.display='none'">`
+    : `<span class="material-icons" style="font-size:15px;color:${fg}">${isCash ? "payments" : "account_balance"}</span>`;
+  const network = /debit|credit|mastercard|platinum|rewards/i.test(a.name || "") || isCredit;
+  const chip = (key && !isCash) || isCredit
+    ? `<div class="mt-3 w-7 h-[22px] rounded-[5px] border" style="background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(190,195,205,.55));border-color:rgba(255,255,255,.4)"></div>
+       <span class="material-icons mt-2 block" style="font-size:18px;color:${sub};transform:rotate(90deg);width:18px">contactless</span>`
+    : "";
+  return `<button type="button" data-action="openAccountModal" data-arg0="${a.id}" aria-label="Edit ${escapeHtml(a.name)}" class="acct-card relative flex-shrink-0 snap-start text-left rounded-xl overflow-hidden shadow-lg shadow-black/40 active:scale-[0.98] transition-transform" style="width:124px;height:172px;background:${theme.bg};color:${fg};border:1px solid rgba(255,255,255,.12)">
+    <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 45%)"></div>
+    <div class="relative h-full p-2.5 flex flex-col">
+      <div class="flex items-center gap-1.5 min-h-[18px]">${logo}${theme.label ? `<span class="text-[11px] font-black tracking-tight truncate">${escapeHtml(theme.label)}</span>` : ""}</div>
+      ${chip}
+      <div class="mt-auto">
+        <p class="text-[9px] font-semibold leading-tight truncate" style="color:${sub}">${escapeHtml(a.name)}</p>
+        <p class="text-[13px] font-black leading-tight whitespace-nowrap">${peso(a.amount)}</p>
+        <div class="flex justify-end mt-1 h-3">
+          ${network ? `<span class="flex flex-shrink-0"><i class="block w-3 h-3 rounded-full" style="background:#eb001b"></i><i class="block w-3 h-3 rounded-full -ml-1.5" style="background:#f79e1b;opacity:.9"></i></span>` : ""}
+        </div>
+      </div>
+    </div>
+  </button>`;
+}
+
+function acctCardSection(title, list, total) {
+  if (!list.length) return "";
+  return `<div class="mt-1">
+    <div class="flex items-center justify-between px-1 mb-1.5">
+      <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">${title}</p>
+      <p class="text-[10px] font-black text-slate-400">${peso(total)}</p>
+    </div>
+    <div class="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-1.5 -mx-0.5 px-0.5">${list.map(acctCardHtml).join("")}</div>
+  </div>`;
+}
+
+export function getAccountsView() {
+  try { return localStorage.getItem("moneyku_accts_view") === "list" ? "list" : "cards"; } catch (e) { return "cards"; }
+}
+export function setAccountsView(v) {
+  try { localStorage.setItem("moneyku_accts_view", v === "list" ? "list" : "cards"); } catch (e) { /* ignore */ }
+  renderBudget();
+}
+
 export function accountsCardHtml() {
   const appData = getAppData();
   const accts = appData?.accounts || [];
+  const view = getAccountsView();
   const groups = [];
   const idx = {};
   for (const a of accts) {
@@ -487,9 +554,15 @@ export function accountsCardHtml() {
     if (idx[key] === undefined) { idx[key] = groups.length; groups.push({ key, name: a.name, items: [] }); }
     groups[idx[key]].items.push(a);
   }
-  const rows = accts.length
-    ? groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("")
-    : `<p class="text-[10px] text-slate-600 px-2 py-1.5">No accounts yet.</p>`;
+  const sum = (l) => l.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+  const bank = accts.filter((a) => acctType(a) !== "credit");
+  const credit = accts.filter((a) => acctType(a) === "credit");
+  const empty = `<p class="text-[10px] text-slate-600 px-2 py-1.5">No accounts yet.</p>`;
+  const rows = !accts.length ? empty
+    : view === "cards"
+      ? acctCardSection("Cash & Bank", bank, sum(bank)) + acctCardSection("Credit", credit, sum(credit))
+      : groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("");
+  const tgl = (v, icon, label) => `<button type="button" data-action="setAccountsView" data-arg0="${v}" aria-label="${label}" aria-pressed="${view === v}" class="w-7 h-6 flex items-center justify-center rounded-md ${view === v ? "bg-slate-600/70 text-white" : "text-slate-400"}"><span class="material-icons" style="font-size:15px">${icon}</span></button>`;
   return `<details open class="glass-card rounded-xl overflow-hidden border border-emerald-500/10 w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
@@ -504,6 +577,7 @@ export function accountsCardHtml() {
       <p class="text-xs font-black text-emerald-400">${peso(accountsTotal())}</p>
     </summary>
     <div class="p-2.5 pt-0 space-y-1">
+      <div class="flex justify-end"><div class="inline-flex gap-0.5 p-0.5 rounded-lg bg-slate-900/70 border border-white/5">${tgl("cards", "view_carousel", "Card view")}${tgl("list", "view_list", "List view")}</div></div>
       ${rows}
       <div class="flex gap-2 mt-1.5">
         <button data-action="openAccountModal" class="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Add account</button>
@@ -512,7 +586,6 @@ export function accountsCardHtml() {
     </div>
   </details>`;
 }
-
 // =============================
 // Investments & Live Rates
 // =============================
@@ -1126,9 +1199,9 @@ export async function saveModal() {
     const owner = "charlie";
     if (activeEdit.id) {
       const a = appData.accounts.find((x) => x.id === activeEdit.id);
-      if (a) { a.name = name; a.amount = amount; a.owner = owner; }
+      if (a) { a.name = name; a.amount = amount; a.owner = owner; a.type = $("f-type")?.value || "bank"; }
     } else {
-      appData.accounts.push({ id: generateId(), name, amount, owner });
+      appData.accounts.push({ id: generateId(), name, amount, owner, type: $("f-type")?.value || "bank" });
     }
     await syncSet(appData);
     closeModal(); renderAll(); toast("Saved");

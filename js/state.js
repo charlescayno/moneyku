@@ -96,8 +96,15 @@ export function isPaid(id, k) {
   return !!appData?.paid?.[k]?.[id]; 
 }
 
+// Account type: "bank" (cash & bank) or "credit". Uses the saved type, otherwise guesses from the name.
+export function acctType(a) {
+  if (a && (a.type === "credit" || a.type === "bank")) return a.type;
+  return /credit|platinum|\bcc\b/i.test((a && a.name) || "") ? "credit" : "bank";
+}
+
+// Money on hand: credit accounts are not counted (their balance is available credit, not cash)
 export function accountsTotal() { 
-  return (appData?.accounts || []).reduce((s, a) => s + (Number(a.amount) || 0), 0); 
+  return (appData?.accounts || []).filter((a) => acctType(a) !== "credit").reduce((s, a) => s + (Number(a.amount) || 0), 0); 
 }
 
 // Sub-expenses: container logic

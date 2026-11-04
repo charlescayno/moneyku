@@ -28,6 +28,8 @@ export {
   acctRowHtml,
   acctGroupHtml,
   accountsCardHtml,
+  setAccountsView,
+  getAccountsView,
   investmentsCardHtml,
   fetchInvestmentRates,
   refreshInvestmentRates,

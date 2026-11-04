@@ -21,12 +21,11 @@ export function initGestures() {
   document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
-    // Pull-to-refresh only when the budget list is at the very top, nothing is open on top of it,
-    // and the touch isn't on the month strip (the page itself never scrolls, so window.scrollY is always 0)
-    const bv = document.getElementById('budget-view');
+    // Pull-to-refresh only when the page is at the very top, nothing is open on top of it,
+    // and the touch isn't on the month strip
     const overlayOpen = !!document.querySelector('#modal-overlay.open, #confirm-overlay.open, #calendar-overlay.open, #more-overlay.open, #month-picker.open');
     startedInStrip = !!e.target.closest?.('#month-strip');
-    isPulling = !!bv && bv.scrollTop <= 0 && !overlayOpen && !startedInStrip;
+    isPulling = window.scrollY <= 0 && !overlayOpen && !startedInStrip;
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {

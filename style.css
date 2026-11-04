@@ -4,13 +4,7 @@ html, body {
   font-family: "Inter", sans-serif;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  /* Lock the viewport entirely to act like a native app */
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
-  position: fixed;
-  inset: 0;
-  overscroll-behavior-y: none;
+  /* The whole page scrolls natively (no inner scroll container): most reliable on every browser */
   background-color: #0f172a; /* slate-900 */
 }
 
@@ -18,16 +12,16 @@ html, body {
 ::-webkit-scrollbar {
   display: none;
 }
+/* Page scrollbar: thin and visible on desktop so it can be dragged */
+html::-webkit-scrollbar { display: block; width: 8px; }
+html::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 8px; }
+html::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.45); }
+html { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.3) transparent; }
+/* Sheets/modals scroll on their own without dragging the page behind them */
+#more-overlay, #more-body, #modal-body, #modal-overlay { overscroll-behavior: contain; }
 
-#budget-view {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  overscroll-behavior-y: contain; /* Prevents scroll chaining/bouncing */
-}
 
-#budget-view:active {
-  cursor: grabbing;
-}
 
 /* Snap Layout */
 .snap-point {
@@ -341,8 +335,6 @@ input:focus-visible {
 @media (min-width: 768px) {
   /* Budget view: single-pane, no horizontal scroll */
   #budget-view {
-    /* Keep Tailwind's flex-col layout; cards scroll inside the cockpit columns */
-    overflow-y: auto !important;
     scroll-snap-type: none !important;
   }
 
@@ -377,6 +369,14 @@ input:focus-visible {
   #desktop-sidebar::-webkit-scrollbar {
     display: none;
   }
+/* Page scrollbar: thin and visible on desktop so it can be dragged */
+html::-webkit-scrollbar { display: block; width: 8px; }
+html::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 8px; }
+html::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.45); }
+html { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.3) transparent; }
+/* Sheets/modals scroll on their own without dragging the page behind them */
+#more-overlay, #more-body, #modal-body, #modal-overlay { overscroll-behavior: contain; }
   .sidebar-month-btn {
     width: 100%;
     padding: 10px 14px;
@@ -1043,6 +1043,14 @@ body[data-density="compact"] #budget-body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+/* Page scrollbar: thin and visible on desktop so it can be dragged */
+html::-webkit-scrollbar { display: block; width: 8px; }
+html::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 8px; }
+html::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.45); }
+html { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.3) transparent; }
+/* Sheets/modals scroll on their own without dragging the page behind them */
+#more-overlay, #more-body, #modal-body, #modal-overlay { overscroll-behavior: contain; }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -1072,5 +1080,4 @@ header, #budget-body [class*="backdrop-blur"] {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
-header { background-color: rgba(15, 23, 42, 0.97) !important; }
-#budget-view { -webkit-overflow-scrolling: touch; will-change: scroll-position; }
+header { background-color: #0f172a !important; }

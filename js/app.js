@@ -53,6 +53,7 @@ import {
   openChildModal,
   openAccountModal,
   openTransferModal,
+  setAccountsView,
   openInvestmentModal,
   closeModal,
   saveModal,
@@ -82,6 +83,9 @@ import {
 import {
   openCalendarModal,
   closeCalendarModal,
+  calSetFilter,
+  calSelectDay,
+  calGoto,
 } from "./calendar.js";
 
 import {
@@ -132,6 +136,7 @@ window.openItemModal = openItemModal;
 window.openChildModal = openChildModal;
 window.openAccountModal = openAccountModal;
 window.openTransferModal = openTransferModal;
+window.setAccountsView = setAccountsView;
 window.openInvestmentModal = openInvestmentModal;
 window.closeModal = closeModal;
 window.saveModal = saveModal;
@@ -154,6 +159,9 @@ window.jumpOverviewYear = jumpOverviewYear;
 window.exportData = exportData;
 window.openCalendarModal = openCalendarModal;
 window.closeCalendarModal = closeCalendarModal;
+window.calSetFilter = calSetFilter;
+window.calSelectDay = calSelectDay;
+window.calGoto = calGoto;
 window.fetchInvestmentRates = fetchInvestmentRates;
 window.refreshInvestmentRates = refreshInvestmentRates;
 window.toggleDensityMode = toggleDensityMode;

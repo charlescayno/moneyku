@@ -20,6 +20,7 @@ import {
   isPaid,
   getKids,
   getSelectedKey,
+  timeline,
 } from "./state.js";
 
 // Returns active items that have a due date in month k
@@ -339,3 +340,116 @@ export function closeCalendarModal() {
   const ov = $("calendar-overlay");
   if (ov) ov.classList.remove("open");
 }
+
+// =============================
+// Activity Calendar (income / expenses / other, per day)
+// =============================
+let calFilter = "all";   // all | exp | inc | oth
+let calSelDay = null;    // selected day number or null
+
+// Everything scheduled in month k as flat entries (items that have a due day / date)
+function calEntries(k) {
+  const { scheduleByDay, daysInMonth } = getMonthBillSchedule(k);
+  const out = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const day = scheduleByDay[d];
+    for (const b of day.bills) out.push({ day: d, name: b.name, amount: b.amount, paid: b.paid, type: "exp", cat: b.who === "debt" ? "oth" : "exp" });
+    for (const i of day.incomes) out.push({ day: d, name: i.name, amount: i.amount, paid: i.paid, type: "inc", cat: i.who === "debt" ? "oth" : "inc" });
+  }
+  return { entries: out, daysInMonth };
+}
+
+const CAL_STYLE = {
+  exp: "background:rgba(239,68,68,.16);color:#fca5a5;border-left:2px solid #ef4444",
+  inc: "background:rgba(16,185,129,.16);color:#6ee7b7;border-left:2px solid #10b981",
+  oth: "background:rgba(139,92,246,.18);color:#c4b5fd;border-left:2px solid #8b5cf6",
+};
+
+function activityCalInnerHtml() {
+  const k = getSelectedKey() || currentKey();
+  const { entries: all, daysInMonth } = calEntries(k);
+  const { y, m } = keyParts(k);
+  const entries = all.filter((e) => calFilter === "all" || e.cat === calFilter);
+  const income = entries.filter((e) => e.type === "inc").reduce((s, e) => s + e.amount, 0);
+  const outcome = entries.filter((e) => e.type === "exp").reduce((s, e) => s + e.amount, 0);
+  const first = new Date(y, m, 1).getDay();
+  const now = new Date();
+  const todayD = now.getFullYear() === y && now.getMonth() === m ? now.getDate() : -1;
+  const tl = timeline();
+  const idx = tl.indexOf(k);
+  const prevK = idx > 0 ? tl[idx - 1] : null;
+  const nextK = idx >= 0 && idx < tl.length - 1 ? tl[idx + 1] : null;
+  const navBtn = (icon, k2, label) => `<button type="button" ${k2 ? `data-action="calGoto" data-arg0="${k2}"` : "disabled"} aria-label="${label}" class="w-8 h-8 rounded-full flex items-center justify-center bg-slate-700/60 ${k2 ? "text-white" : "text-slate-600"}"><span class="material-icons" style="font-size:18px">${icon}</span></button>`;
+
+  const byDay = {};
+  for (const e of entries) (byDay[e.day] = byDay[e.day] || []).push(e);
+
+  let cells = "";
+  for (let i = 0; i < first; i++) cells += `<div class="min-h-[64px] border-t border-white/[0.05]"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const list = byDay[d] || [];
+    const shown = list.slice(0, 2);
+    const more = list.length - shown.length;
+    const sel = calSelDay === d;
+    cells += `<button type="button" data-action="calSelectDay" data-arg0="${d}" class="min-h-[64px] border-t border-white/[0.05] px-0.5 pt-1 pb-0.5 flex flex-col items-stretch text-left ${sel ? "bg-indigo-500/15" : ""}" aria-label="Day ${d}, ${list.length} entries">
+      <span class="self-center text-[11px] font-bold w-5 h-5 flex items-center justify-center rounded-full ${d === todayD ? "bg-indigo-500 text-white" : "text-slate-300"}">${d}</span>
+      <span class="mt-0.5 space-y-[2px] min-w-0">
+        ${shown.map((e) => `<span class="block truncate rounded-[3px] px-[3px] py-[1px] text-[8px] font-semibold leading-tight ${e.paid ? "opacity-45 line-through" : ""}" style="${CAL_STYLE[e.cat]}">${escapeHtml(e.name)}</span>`).join("")}
+        ${more > 0 ? `<span class="block text-[8px] font-bold text-slate-500 pl-1">+${more}</span>` : ""}
+      </span>
+    </button>`;
+  }
+
+  for (let i = (first + daysInMonth) % 7; i !== 0 && i < 7; i++) cells += `<div class="min-h-[64px] border-t border-white/[0.05]"></div>`;
+  const listEntries = calSelDay ? entries.filter((e) => e.day === calSelDay) : entries;
+  const heading = calSelDay ? `${monthShort(k)} ${ordinal(calSelDay)}` : `All of ${monthName(k)}`;
+  const rows = listEntries.length
+    ? listEntries.map((e) => `<div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40">
+        <span class="w-1.5 h-6 rounded-full flex-shrink-0" style="background:${e.cat === "oth" ? "#8b5cf6" : e.type === "inc" ? "#10b981" : "#ef4444"}"></span>
+        <div class="min-w-0 flex-1"><p class="text-xs font-bold truncate ${e.paid ? "text-slate-500 line-through" : "text-slate-100"}">${escapeHtml(e.name)}</p>
+        <p class="text-[9px] text-slate-500">${monthShort(k)} ${ordinal(e.day)}${e.paid ? " · done" : ""}${e.cat === "oth" ? " · debt" : ""}</p></div>
+        <p class="text-xs font-black flex-shrink-0 ${e.type === "inc" ? "text-emerald-400" : "text-rose-400"}">${e.type === "inc" ? "+" : "-"}${peso(e.amount)}</p>
+      </div>`).join("")
+    : `<p class="text-center text-[11px] text-slate-500 py-3">Nothing scheduled${calSelDay ? " on this day" : ""}${calFilter !== "all" ? " for this filter" : ""}.</p>`;
+
+  const chip = (v, label) => `<button type="button" data-action="calSetFilter" data-arg0="${v}" aria-pressed="${calFilter === v}" class="px-3.5 py-1.5 rounded-full text-[11px] font-bold ${calFilter === v ? "bg-white text-slate-900" : "bg-slate-700/60 text-slate-200"}">${label}</button>`;
+
+  return `<div class="flex items-start justify-between gap-2 px-0.5">
+      <div class="min-w-0">
+        <p class="text-lg font-black text-white leading-tight">${monthName(k)} ${y}</p>
+        <p class="text-[10px] font-bold whitespace-nowrap"><span class="text-emerald-400">+${peso(income)}</span> <span class="text-slate-600">·</span> <span class="text-rose-400">-${peso(outcome)}</span> <span class="text-slate-600">·</span> <span class="text-slate-400">${entries.length} ${entries.length === 1 ? "entry" : "entries"}</span></p>
+      </div>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <button type="button" data-action="calGoto" data-arg0="${currentKey()}" class="px-3 h-8 rounded-full bg-slate-700/60 text-white text-[11px] font-bold">Today</button>
+        ${navBtn("chevron_left", prevK, "Previous month")}${navBtn("chevron_right", nextK, "Next month")}
+      </div>
+    </div>
+    <div class="grid grid-cols-7 mt-2 text-center">${["S", "M", "T", "W", "T", "F", "S"].map((n) => `<span class="text-[10px] font-bold text-slate-500 pb-1">${n}</span>`).join("")}</div>
+    <div class="grid grid-cols-7">${cells}</div>
+    <div class="flex gap-1.5 overflow-x-auto no-scrollbar mt-2.5">${chip("all", "All")}${chip("exp", "Expenses")}${chip("inc", "Income")}${chip("oth", "Other")}</div>
+    <div class="mt-2.5 space-y-1.5">
+      <div class="flex items-center justify-between px-0.5"><p class="text-[10px] font-black uppercase tracking-wider text-slate-400">${heading}</p>${calSelDay ? `<button type="button" data-action="calSelectDay" data-arg0="${calSelDay}" class="text-[10px] font-bold text-indigo-300">Show all</button>` : ""}</div>
+      ${rows}
+    </div>`;
+}
+
+export function activityCalendarCardHtml() {
+  return `<details open class="glass-card rounded-xl overflow-hidden border border-indigo-500/15 w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-600 flex items-center justify-center flex-shrink-0"><span class="material-icons text-white" style="font-size:14px">event_note</span></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">Activity Calendar</h3><p class="text-[8px] text-slate-400">Income &amp; expenses by day</p></div>
+      </div>
+    </summary>
+    <div id="activity-cal" class="p-2.5 pt-1">${activityCalInnerHtml()}</div>
+  </details>`;
+}
+
+function refreshActivityCal() {
+  const host = $("activity-cal");
+  if (host) host.innerHTML = activityCalInnerHtml();
+}
+
+export function calSetFilter(f) { calFilter = f; calSelDay = null; refreshActivityCal(); }
+export function calSelectDay(d) { const n = parseInt(d, 10); calSelDay = calSelDay === n ? null : n; refreshActivityCal(); }
+export function calGoto(k) { calSelDay = null; if (typeof window.selectMonth === "function") window.selectMonth(k); }

@@ -43,7 +43,9 @@ export function renderMonthStrip() {
 export function scrollChipIntoView() {
   const selectedKey = getSelectedKey();
   const btn = $("month-strip")?.querySelector(`[data-k="${selectedKey}"]`);
-  if (btn) btn.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+  const strip = $("month-strip");
+  // Scroll only the month strip sideways (scrollIntoView could also scroll the whole page vertically)
+  if (btn && strip) strip.scrollTo({ left: btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2, behavior: "smooth" });
 }
 
 export function renderMonthBanner() {
