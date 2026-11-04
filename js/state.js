@@ -108,8 +108,14 @@ export function accountsTotal() {
 }
 
 // Sub-expenses: container logic
-export function getKids(it) { 
-  return Array.isArray(it?.children) ? it.children.filter(Boolean) : []; 
+// With a month key, only sub-expenses active in that month (not deleted/ended there) are returned.
+export function getKids(it, k) {
+  const all = Array.isArray(it?.children) ? it.children.filter(Boolean) : [];
+  if (!k) return all;
+  return all.filter((c) =>
+    !appData?.deleted?.[k]?.[c.id] &&
+    (!c.start || cmpKey(k, c.start) >= 0) &&
+    (!c.end || cmpKey(k, c.end) <= 0));
 }
 
 export function getSpendList(childId, k) {
@@ -133,13 +139,13 @@ export function itemFinal(it, k) {
 }
 
 export function itemTotal(it, k) {
-  const kids = getKids(it);
+  const kids = getKids(it, k);
   if (!kids.length) return isPaid(it.id, k) ? itemFinal(it, k) : amountIn(it, k);
   return kids.reduce((s, c) => s + (isPaid(c.id, k) ? childFinal(c, k) : (Number(c.amount) || 0)), 0);
 }
 
 export function itemAmts(it, k) {
-  const kids = getKids(it);
+  const kids = getKids(it, k);
   if (!kids.length) { 
     const a = itemTotal(it, k); 
     return { total: a, paid: isPaid(it.id, k) ? a : 0 }; 

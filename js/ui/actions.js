@@ -163,6 +163,11 @@ export function updateInstallmentBar(btn, id) {
   const cnt = row.querySelector(".inst-bar-count");
   if (fill) fill.style.width = (total ? Math.round((paidM / total) * 100) : 0) + "%";
   if (cnt) cnt.textContent = `${paidM}/${total}`;
+  const rem = row.querySelector(".inst-bar-rem");
+  if (rem) {
+    const toPay = Math.max(0, total - paidM) * (Number(it.amount) || 0);
+    rem.textContent = toPay > 0 ? `· ${peso(toPay)} to pay in full` : "· fully paid";
+  }
 }
 
 export function flashLabel(anchorEl, text) {

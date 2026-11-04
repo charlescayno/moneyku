@@ -144,7 +144,7 @@ export function exportMonthCsv() {
     for (const kind of ["income", "expenses"]) {
       for (const it of getItems(who, kind)) {
         if (!itemActiveIn(it, k)) continue;
-        const kids = getKids(it);
+        const kids = getKids(it, k);
         const cat = kind === "expenses" ? catInfo(categoryOf(it)).label : "";
         if (kids.length) {
           for (const c of kids) rows.push([kind, who, c.name, it.name, Number(c.amount) || 0, "", isPaid(c.id, k) ? "yes" : "no", cat]);

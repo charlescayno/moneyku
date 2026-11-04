@@ -42,7 +42,7 @@ export function dueSoonCardHtml() {
   const dim = new Date(y, m + 1, 0).getDate();
   const nextK = addMonths(k, 1);
   const rows = [];
-  const unpaid = (it, key) => { const kids = getKids(it); return kids.length ? !kids.every((c) => isPaid(c.id, key)) : !isPaid(it.id, key); };
+  const unpaid = (it, key) => { const kids = getKids(it, key); return kids.length ? !kids.every((c) => isPaid(c.id, key)) : !isPaid(it.id, key); };
   for (const who of ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
       const dd = dueDayFor(it);
@@ -85,15 +85,15 @@ export function budgetsCardHtml() {
     const over = sp > lim, warn = !over && sp >= lim * 0.8;
     const bar = over ? "bg-rose-500" : warn ? "bg-amber-400" : "bg-emerald-400";
     const txt = over ? `<span class="text-rose-400">over ${peso(sp - lim)}</span>` : `<span class="${warn ? "text-amber-300" : "text-emerald-400"}">${peso(lim - sp)} left</span>`;
-    return `<div class="px-2.5 py-1.5 rounded-lg bg-slate-900/40">
+    return `<div data-action="openBudgetModal" data-arg0="${c.id}" class="px-2.5 py-1.5 rounded-lg bg-slate-900/40 cursor-pointer active:bg-slate-800">
       <div class="flex items-center justify-between gap-2"><p class="text-xs font-bold text-slate-100 truncate flex items-center gap-1.5"><span class="material-icons" style="font-size:14px;color:${c.color}">${c.icon}</span>${c.label}</p><p class="text-[10px] font-bold text-slate-400 flex-shrink-0">${peso(sp)} / ${peso(lim)}</p></div>
       <div class="flex items-center gap-2 mt-1"><div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full ${bar} rounded-full" style="width:${pct}%"></div></div><span class="text-[10px] font-bold flex-shrink-0">${txt}</span></div></div>`;
   }).join("");
   return cardShell("budgets", "border-emerald-500/15", "savings", "from-emerald-500 to-teal-600", "Budgets",
-    set.length ? `${set.length} categor${set.length === 1 ? "y" : "ies"} · ${monthShort(k)}` : "Spending limits per category", "", rows + editBtn);
+    set.length ? `${set.length} categor${set.length === 1 ? "y" : "ies"} · ${monthShort(k)}` : "Spending limits per category", `<button type="button" data-action="openBudgetModal" aria-label="Edit budgets" title="Edit budgets" class="w-7 h-7 rounded-lg bg-slate-700/60 flex items-center justify-center text-slate-300"><span class="material-icons" style="font-size:16px">tune</span></button>`, rows + editBtn);
 }
 
-export function openBudgetModal() {
+export function openBudgetModal(focusId) {
   const d = getAppData();
   const limits = d?.settings?.budgets || {};
   const spent = categoryTotals(getSelectedKey());
@@ -108,6 +108,8 @@ export function openBudgetModal() {
     </div>`).join("");
   $("delete-btn").classList.add("hidden");
   openModalShell();
+  const target = typeof focusId === "string" && $(`f-bud-${focusId}`);
+  if (target) setTimeout(() => { target.focus(); target.select(); }, 80);
 }
 
 export async function saveBudgets() {
@@ -161,7 +163,7 @@ export async function dueMarkPaid(id) {
   if (!f) return;
   const k = getSelectedKey();
   const snapshot = JSON.parse(JSON.stringify(d));
-  const ids = getKids(f.item).length ? getKids(f.item).map((c) => c.id) : [id];
+  const ids = getKids(f.item, k).length ? getKids(f.item, k).map((c) => c.id) : [id];
   d.paid = d.paid || {};
   d.paid[k] = d.paid[k] || {};
   ids.forEach((x) => { d.paid[k][x] = true; });

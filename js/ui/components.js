@@ -71,7 +71,7 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses") {
 }
 
 export function parentRowHtml(it, k, kind, who, opts = {}) {
-  const kids = getKids(it);
+  const kids = getKids(it, k);
   const total = itemTotal(it, k);
   const paidCount = kids.filter((c) => isPaid(c.id, k)).length;
   const allPaid = kids.length > 0 && paidCount === kids.length;
@@ -114,7 +114,7 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
 }
 
 export function itemRowHtml(it, k, kind, who, opts = {}) {
-  if (getKids(it).length) return parentRowHtml(it, k, kind, who, opts);
+  if (getKids(it, k).length) return parentRowHtml(it, k, kind, who, opts);
   const settled = isPaid(it.id, k);
   const est = amountIn(it, k);
   const spent = spentIn(it.id, k);
@@ -157,9 +157,11 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     const total = monthsInclusive(it.start, it.end);
     const paidM = monthsPaidCount(it);
     const pct = total ? Math.round((paidM / total) * 100) : 0;
-    progress = `<div class="flex items-center gap-2 mt-1.5 max-w-[220px]">
-      <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden"><div class="inst-bar-fill h-full bg-gradient-to-r ${OWNERS[who].grad} rounded-full" style="width:${pct}%"></div></div>
+    const toPay = Math.max(0, total - paidM) * (Number(it.amount) || 0);
+    progress = `<div class="flex items-center gap-2 mt-1.5 max-w-full">
+      <div class="flex-1 min-w-[24px] max-w-[110px] h-1 bg-slate-800 rounded-full overflow-hidden"><div class="inst-bar-fill h-full bg-gradient-to-r ${OWNERS[who].grad} rounded-full" style="width:${pct}%"></div></div>
       <span class="inst-bar-count text-[9px] font-bold text-slate-500 flex-shrink-0">${paidM}/${total}</span>
+      <span class="inst-bar-rem text-[9px] font-semibold text-slate-500 whitespace-nowrap">${toPay > 0 ? `· ${peso(toPay)} to pay in full` : "· fully paid"}</span>
     </div>`;
   }
   return `<div data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
@@ -265,9 +267,9 @@ export function groupedRowsHtml(items, k, kind, who) {
     </div>`;
   }
   let html = "";
-  const parents = items.filter((it) => getKids(it).length);
+  const parents = items.filter((it) => getKids(it, k).length);
   for (const it of parents) html += itemRowHtml(it, k, kind, who);
-  const rest = items.filter((it) => !getKids(it).length);
+  const rest = items.filter((it) => !getKids(it, k).length);
   
   const grouped = new Set();
   

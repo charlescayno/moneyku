@@ -111,7 +111,7 @@ export function openItemModal(who, kind, id, presetDay) {
   $("modal-title").textContent = title;
   $("modal-title").className = `text-lg font-black uppercase tracking-tight ${o.text}`;
 
-  const kids = it ? getKids(it) : [];
+  const kids = it ? getKids(it, selectedKey) : [];
   let body = "";
   let more = "";
   body += inputBlock(kind === "income" ? "Source" : (who === "debt" ? "Name" : "Name"), "f-name", name, "text", 'placeholder="e.g. Rent"');
@@ -371,6 +371,7 @@ export function confirmDelete() {
     if (activeEdit.kind === "child") {
       const parent = getItems(activeEdit.who, "expenses").find(x => x.id === activeEdit.parentId);
       item = parent ? getKids(parent).find(x => x.id === activeEdit.id) : null;
+      if (parent && parent.recurring) isRecurring = true;
     } else {
       item = getItems(activeEdit.who, activeEdit.type).find(x => x.id === activeEdit.id);
     }
@@ -432,7 +433,7 @@ export async function doDelete(scope = "all") {
       appData.deleted[selectedKey][id] = true;
     } else if (scope === "future") {
       item.end = addMonths(selectedKey, -1);
-      if (cmpKey(item.end, item.start) < 0) {
+      if (cmpKey(item.end, item.start || parent.start) < 0) {
         parent.children = kids.filter((c) => c.id !== id);
       }
     } else {
