@@ -1085,3 +1085,72 @@ header { background-color: #0f172a !important; }
 /* One-time hint: nudge the first row sideways so the swipe gesture is discoverable */
 @keyframes nudge-row { 0%,100% { transform: translateX(0); } 30% { transform: translateX(34px); } 60% { transform: translateX(-26px); } }
 .nudge-hint { animation: nudge-row 1.4s ease 1.2s 2; }
+
+
+/* =====================================================================
+   UI polish (pure CSS: no blur, no JS, no extra repaints)
+   ===================================================================== */
+
+/* 1. Raise the tiny-text floor (labels were 7-9px) */
+.text-\[7px\], .text-\[8px\] { font-size: 10px !important; }
+.text-\[9px\] { font-size: 10.5px !important; }
+.text-\[10px\] { font-size: 11px !important; }
+.text-\[11px\] { font-size: 12px !important; }
+/* ...but keep the dense calendar day cells compact */
+.cal-day .text-\[8px\] { font-size: 9px !important; }
+
+/* 2. Better contrast for muted greys on dark cards */
+.text-slate-500 { color: #8da0ba !important; }
+.text-slate-600 { color: #71859f !important; }
+.placeholder-slate-500::placeholder { color: #8da0ba; }
+
+/* 3. Fixed-width digits so amounts line up and don't jiggle */
+body { font-variant-numeric: tabular-nums; }
+
+/* 5. Colour only for meaning: one accent for card header tiles, neutral card borders */
+.glass-card > summary .w-7.h-7.bg-gradient-to-br {
+  background-image: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+}
+.glass-card { border-color: rgba(148, 163, 184, 0.14) !important; }
+details[data-persist="due"].glass-card.border-rose-500\/30 { border-color: rgba(244, 63, 94, 0.4) !important; }
+details[data-persist="due"].glass-card.border-amber-500\/25 { border-color: rgba(245, 158, 11, 0.4) !important; }
+
+/* 6. Consistent card headers */
+.glass-card > summary { min-height: 48px; }
+
+/* 7. Subtle separators between rows */
+.item-row + .item-row { border-top: 1px solid rgba(255, 255, 255, 0.04); }
+
+/* 8. Bigger touch targets without changing the look */
+.paid-check { position: relative; }
+.paid-check::after { content: ""; position: absolute; inset: -10px; }
+summary button[data-action^="openItemModal"],
+summary button[data-action="copyLastMonth"] { padding: 8px 6px; margin: -8px -6px; }
+
+/* 9. Instant press feedback (compositor-only) */
+button:active { scale: 0.97; }
+.item-row:active, [data-action="srOpen"]:active { background-color: rgba(255, 255, 255, 0.05); }
+button, .item-row { -webkit-tap-highlight-color: transparent; }
+
+/* 10. Popups: transform/opacity only, a touch quicker */
+#modal-content { transition-duration: 0.3s !important; }
+
+/* 11. Header title eases smaller as you scroll (CSS scroll timeline, where supported) */
+@supports (animation-timeline: scroll()) {
+  @keyframes hdr-shrink { from { font-size: 1.2rem; } to { font-size: 1rem; } }
+  header h1 { animation: hdr-shrink linear both; animation-timeline: scroll(root); animation-range: 0 120px; }
+}
+
+/* 13. Slightly lifted card surface so cards separate from the page without shadows */
+.glass-card { background: rgba(33, 45, 66, 0.96); }
+
+/* 14. Respect notches in landscape */
+body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+
+/* Respect reduced-motion preferences (also saves work) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 420px) { header h1 { font-size: 1.2rem !important; } }
+@supports (animation-timeline: scroll()) { @media (max-width: 420px) { header h1 { font-size: inherit !important; } } }

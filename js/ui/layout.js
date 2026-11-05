@@ -46,7 +46,7 @@ export function renderBudget() {
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
       <details data-persist="kpi" class="group">
       <summary class="flex items-center justify-between cursor-pointer list-none select-none px-1">
-        <span class="text-[10px] font-bold text-slate-400">Real money <span class="text-base font-black ${rm.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rm.real)}</span></span>
+        <span class="text-[10px] font-bold text-slate-400">Real money <span class="text-xl font-black ${rm.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rm.real)}</span></span>
         <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
       </summary>
       <div class="mt-1.5 rounded-lg bg-black/20 px-2.5 py-1.5 space-y-1 text-[11px]">
