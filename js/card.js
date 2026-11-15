@@ -73,10 +73,20 @@ export function charges(key) {
   const items = cardItems();
   const out = [];
   if (!items.length) return out;
+  // One-time purchases with a purchase date are charged on exactly that day, whatever month they are filed under
+  for (const it of items) {
+    if (it.recurring || !it.txDate || !itemActiveIn(it, it.start)) continue;
+    const date = it.txDate;
+    if (date <= prev || date > cutoff) continue;
+    const r = itemAmts(it, it.start);
+    if (!(r.total > 0)) continue;
+    out.push({ id: it.id, item: it, month: date.slice(0, 7), date, amt: r.total, posted: r.paid >= r.total - 0.005 });
+  }
   for (let m = prev.slice(0, 7); cmpKey(m, cutoff.slice(0, 7)) <= 0; m = addMonths(m, 1)) {
     for (const it of items) {
+      if (!it.recurring && it.txDate) continue; // handled above
       if (!itemActiveIn(it, m)) continue;
-      const date = !it.recurring && it.txDate && it.txDate.slice(0, 7) === m ? it.txDate : dateOf(m, it.txDay);
+      const date = dateOf(m, it.txDay);
       if (date <= prev || date > cutoff) continue;
       const r = itemAmts(it, m);
       if (!(r.total > 0)) continue;

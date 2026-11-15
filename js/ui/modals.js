@@ -42,12 +42,23 @@ export function updateBpiCcMonth(isExistingInit = false) {
   box.classList.remove("hidden");
   $("f-more")?.setAttribute("open", "");
 
-  const txDay = parseInt($("f-txday")?.value || "15", 10);
+  // A purchase date, when given, decides the charge day and the month the charge belongs to
+  const dateVal = $("f-txdate")?.value || "";
+  const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateVal);
+  const txInput = $("f-txday");
+  let txDay = parseInt(txInput?.value || "15", 10);
   const cutoff = parseInt($("f-cutoff")?.value || "14", 10);
 
-  const baseK = getSelectedKey() || currentKey();
-  const { y, m } = keyParts(baseK);
+  let y, m;
+  if (dm) {
+    y = Number(dm[1]); m = Number(dm[2]) - 1; txDay = Number(dm[3]);
+    if (txInput) { txInput.value = txDay; txInput.readOnly = true; txInput.classList.add("opacity-60"); }
+  } else {
+    ({ y, m } = keyParts(getSelectedKey() || currentKey()));
+    if (txInput) { txInput.readOnly = false; txInput.classList.remove("opacity-60"); }
+  }
 
+  // Charges after the cut-off day go on the next month's statement
   let cutoffDate = new Date(y, m, cutoff);
   if (txDay > cutoff) {
     cutoffDate = new Date(y, m + 1, cutoff);
@@ -59,12 +70,14 @@ export function updateBpiCcMonth(isExistingInit = false) {
   let dueDate = dueIn(cutoffDate.getFullYear(), cutoffDate.getMonth());
   if (dueDate <= cutoffDate) dueDate = dueIn(cutoffDate.getFullYear(), cutoffDate.getMonth() + 1);
 
-  const targetK = mkKey(dueDate.getFullYear(), dueDate.getMonth());
-
   if (!isExistingInit) {
+    // The item sits in the month it was charged; the card section handles the statement and due date
     const startSelect = $("f-start");
     if (startSelect) {
-      startSelect.value = targetK;
+      // months before the timeline start are not in the list; the charge keeps its exact date anyway
+      const want = mkKey(y, m);
+      const opts = [...startSelect.options].map((o) => o.value);
+      startSelect.value = opts.includes(want) ? want : (opts[0] || want);
     }
 
     const dueDayInput = $("f-dueday");
@@ -75,12 +88,9 @@ export function updateBpiCcMonth(isExistingInit = false) {
 
   const hintEl = $("bpi-cc-hint");
   if (hintEl) {
-    const cutMonth = MONTHS_SHORT[cutoffDate.getMonth()];
-    const dueMonth = MONTHS[dueDate.getMonth()];
-    hintEl.innerHTML = `💡 Charge on ${MONTHS_SHORT[m]} ${ordinal(txDay)} → Statement Cut-off ${cutMonth} ${ordinal(cutoff)} → <b>Placed in ${dueMonth} ${dueDate.getFullYear()} budget</b> (Due on ${MONTHS_SHORT[dueDate.getMonth()]} ${ordinal(dueDate.getDate())}).`;
+    hintEl.innerHTML = `\u{1F4A1} Charged on <b>${MONTHS_SHORT[m]} ${ordinal(txDay)}</b> \u2192 Statement cut-off ${MONTHS_SHORT[cutoffDate.getMonth()]} ${ordinal(cutoff)} \u2192 <b>Due ${MONTHS_SHORT[dueDate.getMonth()]} ${ordinal(dueDate.getDate())}, ${dueDate.getFullYear()}</b>. Shown in the BPI Platinum Rewards section.`;
   }
 }
-
 export function openModalShell() {
   // Save is wired through data-action="saveModal" on the button (an extra onclick here made it fire twice)
   $("save-btn").onclick = null;
@@ -166,7 +176,7 @@ export function openItemModal(who, kind, id, presetDay) {
       </div>
       <div>
         <label class="text-[10px] font-bold uppercase text-slate-400">Date of Purchase</label>
-        <input type="date" id="f-txdate" value="${txDateVal}" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
+        <input type="date" id="f-txdate" value="${txDateVal}" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none" />
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
