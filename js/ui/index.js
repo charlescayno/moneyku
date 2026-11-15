@@ -85,7 +85,7 @@ export {
   toggleInvestments,
   toggleExpenseSort,
   toggleArrange,
-  moveChild,
+  reorderChildren,
   prevOverviewPage,
   nextOverviewPage,
   jumpOverviewYear,

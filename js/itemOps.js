@@ -50,3 +50,23 @@ export function setPaidData(appData, id, k, on) {
   appData.paid[k] = appData.paid[k] || {};
   appData.paid[k][id] = !!on;
 }
+
+/**
+ * Reorder a parent's sub-items. `newOrder` is the new order of the ids that are
+ * shown (a permutation of `shownIds`). Sub-items hidden this month keep their slot.
+ * Returns true when the stored order changed.
+ */
+export function applyChildOrder(parent, shownIds, newOrder) {
+  const kids = parent && Array.isArray(parent.children) ? parent.children : null;
+  if (!kids || newOrder.length !== shownIds.length) return false;
+  if (new Set(newOrder).size !== newOrder.length || !newOrder.every((id) => shownIds.includes(id))) return false;
+  const byId = new Map(kids.filter(Boolean).map((c) => [c.id, c]));
+  const slots = kids.map((c, i) => (c && shownIds.includes(c.id) ? i : -1)).filter((i) => i >= 0);
+  if (slots.length !== newOrder.length) return false;
+  let changed = false;
+  slots.forEach((slot, n) => {
+    const next = byId.get(newOrder[n]);
+    if (kids[slot] !== next) { kids[slot] = next; changed = true; }
+  });
+  return changed;
+}

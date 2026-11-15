@@ -58,12 +58,11 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null)
     : "";
     
   if (arr) {
-    const btn = (dir, icon, off) => `<button ${off ? "disabled" : `data-action="moveChild" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" data-arg3="${dir}"`} aria-label="Move ${escapeHtml(c.name)} ${dir < 0 ? "up" : "down"}" class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${off ? "text-slate-700" : "text-indigo-300 bg-indigo-500/15 active:bg-indigo-500/30"}"><span class="material-icons" style="font-size:20px">${icon}</span></button>`;
-    return `<div data-child="${c.id}" class="flex items-center gap-3 py-1.5 px-6">
-    <span class="material-icons text-slate-600 flex-shrink-0" style="font-size:18px">drag_indicator</span>
+    return `<div data-child="${c.id}" class="arr-row flex items-center gap-3 py-1.5 px-6 bg-[#1c2136]">
+    ${rowIconHtml(c.name, 20, kind, true)}
     <div class="flex-1 min-w-0"><span class="item-name block text-sm font-bold text-slate-200 truncate">${escapeHtml(c.name)}</span></div>
     <span class="text-xs font-bold text-slate-500 flex-shrink-0">${peso(rightMain)}</span>
-    ${btn(-1, "keyboard_arrow_up", arr.i === 0)}${btn(1, "keyboard_arrow_down", arr.i === arr.n - 1)}
+    <div data-drag-handle role="button" aria-label="Drag to reorder ${escapeHtml(c.name)}" title="Drag to reorder" class="arr-handle w-11 h-11 -mr-2 rounded-xl flex items-center justify-center flex-shrink-0 text-indigo-300 bg-indigo-500/15" style="touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none"><span class="material-icons" style="font-size:22px;pointer-events:none">drag_handle</span></div>
   </div>`;
   }
 
@@ -116,7 +115,7 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
       </div>
     </summary>
     <div class="pb-4 pt-1 space-y-0 relative">
-      ${childRows}
+      <div class="child-list" data-who="${who}" data-parent="${it.id}">${childRows}</div>
       <div class="px-6 mt-3 flex items-center gap-2">
         ${arrange ? "" : `<button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>`}
         ${kids.length > 1 ? `<button data-action="toggleArrange" data-arg0="${it.id}" aria-pressed="${arrange}" class="${arrange ? "flex-1 bg-indigo-600 text-white" : "text-slate-500 hover:text-white"} py-2.5 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">${arrange ? "check" : "swap_vert"}</span>${arrange ? "Done" : "Arrange"}</button>` : ""}

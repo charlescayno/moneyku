@@ -82,7 +82,7 @@ import {
   toggleInvestments,
   toggleExpenseSort,
   toggleArrange,
-  moveChild,
+  reorderChildren,
   prevOverviewPage,
   nextOverviewPage,
   jumpOverviewYear,
@@ -173,11 +173,12 @@ window.qlSaveKey = qlSaveKey;
 window.qlRemoveKey = qlRemoveKey;
 window.qlConfirm = qlConfirm;
 initQuickLog();
+import { initArrangeDrag } from "./arrange.js";
 window.toggleProjected = toggleProjected;
 window.toggleInvestments = toggleInvestments;
 window.toggleExpenseSort = toggleExpenseSort;
 window.toggleArrange = toggleArrange;
-window.moveChild = moveChild;
+window.reorderChildren = reorderChildren;
 window.prevOverviewPage = prevOverviewPage;
 window.nextOverviewPage = nextOverviewPage;
 window.jumpOverviewYear = jumpOverviewYear;
@@ -381,7 +382,8 @@ function boot() {
   applyDensityMode();
   runIntro();
   initGestures();
-  initEventListeners();  window.__moneykuBooted = true;
+  initEventListeners();
+  initArrangeDrag();  window.__moneykuBooted = true;
 
   // Background live ticker: updates rates periodically (only while signed in)
   setInterval(() => {

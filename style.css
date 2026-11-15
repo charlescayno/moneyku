@@ -1154,3 +1154,9 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 
 @media (max-width: 420px) { header h1 { font-size: 1.2rem !important; } }
 @supports (animation-timeline: scroll()) { @media (max-width: 420px) { header h1 { font-size: inherit !important; } } }
+
+/* Arrange mode: row being dragged */
+.arr-row { position: relative; }
+.arr-row.arr-dragging { z-index: 20; background: #262d4a; border-radius: 0.75rem; box-shadow: 0 8px 24px rgba(0,0,0,.45); transition: none; }
+.arr-handle { cursor: grab; }
+.arr-handle:active { cursor: grabbing; background: rgba(99,102,241,.35); }
