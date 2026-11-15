@@ -1,7 +1,6 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
-import { activityCalendarCardHtml } from '../calendar.js';
 import { dueSoonCardHtml, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
 import { renderProjectionChart } from '../charts.js';
@@ -98,10 +97,6 @@ export function renderBudget() {
           ${personSectionHtml("charlie", false)}
         </div>
 
-        <!-- Col 3: Recurring payments (installments, investments, forecast and overview live in the Overview sheet) -->
-        <div class="contents">
-          <div class="order-[4]" id="sec-calendar" style="scroll-margin-top:5.5rem">${activityCalendarCardHtml()}</div>
-        </div>
       </div>
     </div>
   `;

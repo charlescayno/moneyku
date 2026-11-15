@@ -1,5 +1,5 @@
 // =============================
-// Bottom tab bar (mobile): Home / Accounts / Calendar / Overview
+// Bottom tab bar (mobile): Home / Accounts / Overview
 // =============================
 import { $ } from "./utils.js";
 
@@ -14,7 +14,7 @@ function setActive(name) {
 export function tabGo(name) {
   if (name === "overview") { if (typeof window.openMore === "function") window.openMore(); return; }
   if (name === "home") { window.scrollTo({ top: 0, behavior: "smooth" }); setActive("home"); return; }
-  const el = $(name === "accounts" ? "sec-accounts" : "sec-calendar");
+  const el = $("sec-accounts");
   if (!el) return;
   const d = el.querySelector("details[data-persist]");
   if (d && !d.open) d.open = true;
@@ -32,8 +32,7 @@ export function initTabs() {
     const top = (id) => { const e = $(id); return e ? e.getBoundingClientRect().top : Infinity; };
     let cur = "home";
     if (window.scrollY > 80) {
-      if (top("sec-calendar") <= 140) cur = "calendar";
-      else if (top("sec-accounts") <= 140 && top("sec-budget") > 140) cur = "accounts";
+      if (top("sec-accounts") <= 140 && top("sec-budget") > 140) cur = "accounts";
     }
     setActive(cur);
   };

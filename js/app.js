@@ -96,12 +96,6 @@ import {
 import {
   openCalendarModal,
   closeCalendarModal,
-  calSetFilter,
-  calAdd,
-  calAddFrom,
-  initCalendarGestures,
-  calSelectDay,
-  calGoto,
 } from "./calendar.js";
 
 import {
@@ -185,18 +179,12 @@ window.jumpOverviewYear = jumpOverviewYear;
 window.exportData = exportData;
 window.openCalendarModal = openCalendarModal;
 window.closeCalendarModal = closeCalendarModal;
-window.calSetFilter = calSetFilter;
-window.calAdd = calAdd;
-window.calAddFrom = calAddFrom;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;
 window.tabGo = tabGo;
 Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, dismissTip });
 initExtras();
-initCalendarGestures();
 initTabs();
-window.calSelectDay = calSelectDay;
-window.calGoto = calGoto;
 window.fetchInvestmentRates = fetchInvestmentRates;
 window.refreshInvestmentRates = refreshInvestmentRates;
 window.toggleDensityMode = toggleDensityMode;
