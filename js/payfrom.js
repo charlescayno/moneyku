@@ -5,7 +5,7 @@
 // =============================
 import { acctType, childFinal, getAppData, isPaid, itemFinal } from "./state.js";
 import { isCardItem } from "./card.js";
-import { BANK_DOMAINS, bankIconFor, escapeHtml, peso } from "./utils.js";
+import { ACCOUNT_PAYMENT_METHODS, BANK_DOMAINS, bankIconFor, escapeHtml, peso } from "./utils.js";
 
 const LAST_KEY = "moneyku_pay_acct";
 
@@ -38,6 +38,18 @@ export function amountDue(id, k) {
   if (!f.income && isCardItem(f.item)) return null;
   const amt = f.child ? childFinal(f.child, k) : itemFinal(f.item, k);
   return Number(amt) || 0;
+}
+
+/** The account a payment method points at (Maribank, GCash, BPI Debit Card), matched by name; null for cash/cards/no match. */
+export function accountForMethod(pm) {
+  const m = ACCOUNT_PAYMENT_METHODS.find((x) => x.id === pm);
+  if (!m) return null;
+  return payableAccounts().find((a) => m.account.test((a.name || "").trim())) || null;
+}
+
+function paymentMethodOf(id) {
+  const f = findExpenseLeaf(id);
+  return f && !f.income ? (f.item.paymentMethod || null) : null;
 }
 
 export function isIncomeId(id) { return !!findExpenseLeaf(id)?.income; }
@@ -84,7 +96,9 @@ export async function choosePayment(k, ids, label) {
   if (!items.length || !payableAccounts().length) return { acctId: null, items: [] };
   const income = isIncomeId(items[0].id);
   const total = items.reduce((s, x) => s + x.amt, 0);
-  const choice = await pickAccount(label, total, income);
+  const methods = new Set(items.map((x) => paymentMethodOf(x.id)));
+  const preferred = methods.size === 1 ? accountForMethod([...methods][0]) : null;
+  const choice = await pickAccount(label, total, income, preferred);
   if (choice === null) return null;
   return { acctId: choice, items, income };
 }
@@ -107,13 +121,13 @@ export function accountName(acctId) {
 // ---------- the chooser ----------
 let open = false;
 
-function pickAccount(label, total, income) {
+function pickAccount(label, total, income, preferred = null) {
   if (open) return Promise.resolve(null);
   open = true;
   const accts = payableAccounts();
   let last = null;
   try { last = localStorage.getItem(LAST_KEY); } catch { /* ignore */ }
-  const pre = accts.find((a) => a.id === last) || accts[0];
+  const pre = preferred || accts.find((a) => a.id === last) || accts[0];
 
   return new Promise((resolve) => {
     const el = document.createElement("div");

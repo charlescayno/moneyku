@@ -1,4 +1,4 @@
-import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, ACCOUNT_PAYMENT_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { cardSettings } from "../card.js";
 import { childAmt } from "../state.js";
 import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
@@ -153,9 +153,11 @@ export function openItemModal(who, kind, id, presetDay) {
 
   let lastPm = "cash";
   try { lastPm = localStorage.getItem("moneyku_last_pm") || "cash"; } catch { /* ignore */ }
-  if (lastPm !== "cash" && !CREDIT_CARD_METHODS.some((c) => c.id === lastPm)) lastPm = "bpi_platinum";
+  const knownPm = (id) => id === "cash" || [...CREDIT_CARD_METHODS, ...ACCOUNT_PAYMENT_METHODS].some((c) => c.id === id);
+  if (!knownPm(lastPm)) lastPm = "bpi_platinum";
   let payMethod = it ? (it.paymentMethod || "cash") : (kind === "expenses" ? lastPm : "cash");
-  if (payMethod !== "cash" && !CREDIT_CARD_METHODS.some((c) => c.id === payMethod)) payMethod = "bpi_platinum";
+  if (payMethod === "none") payMethod = "cash";
+  if (!knownPm(payMethod)) payMethod = "bpi_platinum";
   const txDayVal = it ? (it.txDay || 15) : 15;
   const cutoffDayVal = it ? (it.cutoffDay || 14) : 14;
 
@@ -164,6 +166,7 @@ export function openItemModal(who, kind, id, presetDay) {
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Payment Method / Category</label>
       <select id="f-paymethod" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">
         <option value="cash" ${payMethod === "cash" ? "selected" : ""}>Cash / Bank / E-Wallet</option>
+        ${ACCOUNT_PAYMENT_METHODS.map((c) => `<option value="${c.id}" ${payMethod === c.id ? "selected" : ""}>${c.icon} ${escapeHtml(c.label)}</option>`).join("")}
         ${CREDIT_CARD_METHODS.map((c) => `<option value="${c.id}" ${payMethod === c.id ? "selected" : ""}>💳 ${escapeHtml(c.label)}</option>`).join("")}
       </select>
     </div>`;

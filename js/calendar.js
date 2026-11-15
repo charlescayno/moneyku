@@ -11,6 +11,8 @@ import {
   monthName,
   monthShort,
   currentKey,
+  PM_LABELS,
+  isAccountMethod,
   $,
 } from "./utils.js";
 import {
@@ -170,7 +172,7 @@ export function upcomingBillsWidgetHtml() {
             <span class="text-xs font-bold text-slate-200 truncate">${escapeHtml(b.name)}</span>
             <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${badgeClass} uppercase tracking-wider">${badgeText}</span>
           </div>
-          <p class="text-[10px] text-slate-400 font-medium mt-0.5">${b.paymentMethod === 'bpi_platinum' ? '💳 BPI Platinum' : (b.who === 'debt' ? 'Debt / Owed' : 'Expense')}</p>
+          <p class="text-[10px] text-slate-400 font-medium mt-0.5">${b.paymentMethod === 'bpi_platinum' ? '💳 BPI Platinum' : (PM_LABELS[b.paymentMethod] && isAccountMethod(b.paymentMethod) ? PM_LABELS[b.paymentMethod] : (b.who === 'debt' ? 'Debt / Owed' : 'Expense'))}</p>
         </div>
         <div class="flex items-center gap-2.5 flex-shrink-0">
           <span class="text-xs font-black text-white">${peso(b.amount)}</span>

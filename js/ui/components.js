@@ -3,7 +3,7 @@ import { chooseScope } from "../scope.js";
 import { isCardItem } from "../card.js";
 import { cardSectionHtml } from "./cardui.js";
 import { childAmt } from "../state.js";
-import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
 import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
@@ -155,6 +155,9 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
   if (!opts.hidePaymentTag) {
     if (it.paymentMethod === "bpi_platinum") {
       tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
+    } else if (isAccountMethod(it.paymentMethod)) {
+      const m = ACCOUNT_PAYMENT_METHODS.find((x) => x.id === it.paymentMethod);
+      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">${m.icon} ${escapeHtml(m.short)}</span>`);
     } else if (it.paymentMethod && it.paymentMethod.startsWith("cc_")) {
       tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 ${escapeHtml(PM_LABELS[it.paymentMethod] || "Credit Card")}</span>`);
     }
@@ -291,14 +294,14 @@ export function groupedRowsHtml(items, k, kind, who) {
   
   const pmBuckets = {}, pmOrder = [];
   for (const it of rest) {
-    if (it.paymentMethod && it.paymentMethod !== 'cash' && it.paymentMethod !== 'none') {
+    if (it.paymentMethod && it.paymentMethod !== 'cash' && it.paymentMethod !== 'none' && !isAccountMethod(it.paymentMethod)) {
       const pm = it.paymentMethod;
       (pmBuckets[pm] = pmBuckets[pm] || []).push(it);
     }
   }
   for (const it of rest) {
     const pm = it.paymentMethod;
-    if (pm && pm !== 'cash' && pm !== 'none' && pmBuckets[pm].length > 1 && !pmOrder.includes(pm)) pmOrder.push(pm);
+    if (pm && pmBuckets[pm] && pmBuckets[pm].length > 1 && !pmOrder.includes(pm)) pmOrder.push(pm);
   }
   for (const pm of pmOrder) { 
     pmBuckets[pm].forEach((it) => grouped.add(it.id)); 
