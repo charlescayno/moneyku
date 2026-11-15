@@ -91,3 +91,39 @@ export function applyChildOrder(parent, shownIds, newOrder) {
   });
   return changed;
 }
+
+/**
+ * Start fresh at month `startKey`: the timeline begins there and everything stored
+ * for earlier months is dropped. Items that were only active before it are removed.
+ * Items that carry on (recurring, installments still running) are kept untouched,
+ * so installment progress ("month 3 of 12") still counts from the real start.
+ * Returns how many items and months were removed.
+ */
+export function startFreshAt(appData, startKey) {
+  let items = 0, months = 0;
+  const before = (m) => cmpKey(m, startKey) < 0;
+  const over = (it) => (it.recurring ? !!it.end && before(it.end) : !!it.start && before(it.start));
+  for (const who of ["charlie", "debt"]) {
+    for (const kind of ["income", "expenses"]) {
+      const list = appData.items?.[who]?.[kind];
+      if (!Array.isArray(list)) continue;
+      const keep = list.filter((it) => {
+        if (it && over(it)) { items++; return false; }
+        return true;
+      });
+      for (const it of keep) {
+        if (Array.isArray(it.children)) it.children = it.children.filter((c) => !(c && c.end && before(c.end)));
+      }
+      appData.items[who][kind] = keep;
+    }
+  }
+  for (const field of ["paid", "paidFrom", "overrides", "spend", "deleted"]) {
+    const obj = appData[field];
+    if (!obj) continue;
+    for (const m of Object.keys(obj)) {
+      if (/^\d{4}-\d{2}$/.test(m) && before(m)) { delete obj[m]; if (field === "paid") months++; }
+    }
+  }
+  appData.startMonth = startKey;
+  return { items, months };
+}

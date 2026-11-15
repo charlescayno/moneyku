@@ -3,6 +3,8 @@
 // offline badge, double-tap guard, first-run tip
 // =============================
 import { $, addMonths, dueDayFor, escapeHtml, generateId, monthShort, peso } from "./utils.js";
+import { startFreshAt } from "./itemOps.js";
+import { exportData } from "./ui/actions.js";
 import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, setAppData } from "./state.js";
 import { syncSet } from "./firebase.js";
 import { catInfo, categoryOf } from "./categories.js";
@@ -133,6 +135,7 @@ export function openSettings() {
      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 pt-2">Data</p>
      ${row("exportMonthCsv", "table_view", "Export this month (CSV)")}
      ${row("exportData", "download", "Full backup (JSON)")}
+     ${row("startFreshAsk", "restart_alt", "Start fresh from November 2026")}
      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 pt-2">Quick log</p>
      ${row("qlOpenKey", "key", "Gemini API key")}`, CLOSE_BTN);
 }
@@ -161,6 +164,26 @@ export function exportMonthCsv() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   toast("CSV exported");
+}
+
+// ---------- Start fresh (drop everything before November 2026) ----------
+const FRESH_START = "2026-11";
+
+export function startFreshAsk() {
+  showSheet("Start fresh from November 2026",
+    `<p class="text-sm text-slate-300">The timeline will begin in <b>November 2026</b>. Everything recorded for earlier months (paid marks, spending, edits) is removed, and items that only existed before then are deleted.</p>
+     <p class="text-sm text-slate-300">Your accounts, recurring items and running installments stay. A backup file downloads first, and you can tap Undo right after.</p>`,
+    `<button type="button" data-action="startFreshGo" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-rose-600">Back up &amp; start fresh</button>
+     <button type="button" data-action="qlClose" class="px-4 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Cancel</button>`);
+}
+
+export async function startFreshGo() {
+  qlClose();
+  try { exportData(); } catch { /* the Undo below still protects the data */ }
+  let res = { items: 0, months: 0 };
+  await applyWithUndo((d) => { res = startFreshAt(d, FRESH_START); }, "Started fresh from November 2026");
+  const sel = getSelectedKey();
+  if (sel && sel < FRESH_START) { window.selectMonth?.(FRESH_START); }
 }
 
 // ---------- First-run tip ----------

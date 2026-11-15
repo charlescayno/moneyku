@@ -3,7 +3,7 @@
 // =============================
 
 import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
-import { openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, dismissTip, initExtras } from "./extras.js";
+import { openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, startFreshAsk, startFreshGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
 
 import {
@@ -182,7 +182,7 @@ window.closeCalendarModal = closeCalendarModal;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;
 window.tabGo = tabGo;
-Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, dismissTip });
+Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, startFreshAsk, startFreshGo, dismissTip });
 initExtras();
 initTabs();
 window.fetchInvestmentRates = fetchInvestmentRates;
