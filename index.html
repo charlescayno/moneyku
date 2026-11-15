@@ -37,7 +37,7 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20261115_datefix" />
+    <link rel="stylesheet" href="style.css?v=20261115_hdrfix" />
   </head>
   <body
     class="bg-slate-900 text-slate-100 font-sans select-none"
@@ -137,9 +137,9 @@
 
       <!-- HEADER -->
       <header
-        class="px-4 sm:px-6 md:px-8 pt-6 pb-3 flex justify-between items-end bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex-shrink-0"
+        class="app-header px-4 sm:px-6 md:px-8 pt-6 pb-3 flex justify-between items-end bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex-shrink-0"
       >
-        <div class="min-w-0">
+        <div class="app-header-title min-w-0">
           <h1
             id="current-month-display"
             class="text-xl min-[380px]:text-2xl sm:text-3xl font-black tracking-tight text-white uppercase italic leading-none"
@@ -152,7 +152,7 @@
             <span id="current-year-display">2026</span>
           </p>
         </div>
-        <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+        <div class="app-header-tools flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           <button
             type="button"
             data-action="toggleDensityMode"
@@ -171,7 +171,7 @@
             data-action="openItemModal" data-arg0="charlie" data-arg1="expenses"
             title="Add Expense"
             aria-label="Add expense"
-            class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl transition-transform shadow-lg shadow-indigo-900/40"
+            class="app-header-add w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl transition-transform shadow-lg shadow-indigo-900/40"
           >
             <span class="material-icons text-white">add</span>
           </button>
