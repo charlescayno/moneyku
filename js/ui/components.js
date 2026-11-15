@@ -242,7 +242,7 @@ export function paymentMethodGroupHtml(pm, list, k, kind, who) {
   const allPaid = list.length > 0 && list.every(it => isPaid(it.id, k));
   const idsStr = list.map(it => it.id).join(",");
   const subs = sortItems(list, kind).map((it) => itemRowHtml(it, k, kind, who, { hidePaymentTag: true })).join("");
-  const label = PM_LABELS[pm] || pm;
+  const label = PM_LABELS[pm] || (String(pm).startsWith("cc_") ? "Credit Card" : pm);
   return `<details open class="py-1 mt-1 group">
     <summary class="flex justify-between items-center px-3 py-2 bg-indigo-900/10 hover:bg-indigo-900/20 rounded-xl cursor-pointer list-none select-none outline-none">
       <div class="flex items-center gap-2">
