@@ -32,23 +32,12 @@ export const PH_ACCOUNT_OPTIONS = [
   { group: "Bank", names: ["BPI", "BDO", "Metrobank", "Landbank", "PNB", "Security Bank", "UnionBank", "RCBC", "China Bank", "EastWest Bank", "PSBank", "AUB", "PBCom", "Robinsons Bank", "Bank of Commerce", "DBP", "CTBC Bank", "Maybank", "HSBC", "Standard Chartered", "ING"] },
   { group: "Digital bank", names: ["Maribank", "GoTyme", "SeaBank", "Tonik", "CIMB", "UNO Digital Bank", "OwnBank"] },
   { group: "E-wallet", names: ["GCash", "Maya", "Coins.ph", "ShopeePay", "GrabPay"] },
-  { group: "Credit card", names: [
-    "BPI Platinum Rewards Mastercard", "BPI Gold Rewards Mastercard", "BPI Amore Cashback Credit Card", "BPI Blue Mastercard",
-    "BDO Credit Card", "Metrobank Credit Card", "Security Bank Complete Cashback Mastercard", "UnionBank Rewards Visa Platinum",
-    "RCBC Bankard Credit Card", "EastWest Credit Card", "China Bank Credit Card", "PNB Credit Card", "Landbank Credit Card",
-    "Maybank Credit Card", "HSBC Credit Card", "Standard Chartered Credit Card", "Other Credit Card",
-  ] },
+  { group: "Credit card", names: ["BPI Platinum Rewards Mastercard"] },
 ];
 // Credit cards selectable as a payment method. BPI Platinum keeps its legacy id
 // because it drives the statement/due-date auto-scheduling.
 export const CREDIT_CARD_METHODS = [
   { id: "bpi_platinum", label: "BPI Platinum Rewards Mastercard", short: "BPI Platinum" },
-  ...["BPI Gold Rewards Mastercard", "BPI Amore Cashback Credit Card", "BPI Blue Mastercard",
-    "BDO Credit Card", "Metrobank Credit Card", "Security Bank Complete Cashback Mastercard", "UnionBank Rewards Visa Platinum",
-    "RCBC Bankard Credit Card", "EastWest Credit Card", "China Bank Credit Card", "PNB Credit Card", "Landbank Credit Card",
-    "Maybank Credit Card", "HSBC Credit Card", "Standard Chartered Credit Card",
-  ].map((label) => ({ id: "cc_" + label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""), label, short: label })),
-  { id: "cc_other", label: "Other Credit Card", short: "Credit Card" },
 ];
 export const PM_LABELS = Object.fromEntries(CREDIT_CARD_METHODS.map((c) => [c.id, c.short]));
 

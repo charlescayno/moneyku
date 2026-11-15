@@ -153,8 +153,9 @@ export function openItemModal(who, kind, id, presetDay) {
 
   let lastPm = "cash";
   try { lastPm = localStorage.getItem("moneyku_last_pm") || "cash"; } catch { /* ignore */ }
-  if (lastPm !== "cash" && !CREDIT_CARD_METHODS.some((c) => c.id === lastPm)) lastPm = "cash";
-  const payMethod = it ? (it.paymentMethod || "cash") : (kind === "expenses" ? lastPm : "cash");
+  if (lastPm !== "cash" && !CREDIT_CARD_METHODS.some((c) => c.id === lastPm)) lastPm = "bpi_platinum";
+  let payMethod = it ? (it.paymentMethod || "cash") : (kind === "expenses" ? lastPm : "cash");
+  if (payMethod !== "cash" && !CREDIT_CARD_METHODS.some((c) => c.id === payMethod)) payMethod = "bpi_platinum";
   const txDayVal = it ? (it.txDay || 15) : 15;
   const cutoffDayVal = it ? (it.cutoffDay || 14) : 14;
 
