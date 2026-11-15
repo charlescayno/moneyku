@@ -4,6 +4,7 @@
 // Payments are remembered in appData.paidFrom[monthKey][itemId] = { a: accountId, amt }.
 // =============================
 import { acctType, childFinal, getAppData, isPaid, itemFinal } from "./state.js";
+import { isCardItem } from "./card.js";
 import { BANK_DOMAINS, bankIconFor, escapeHtml, peso } from "./utils.js";
 
 const LAST_KEY = "moneyku_pay_acct";
@@ -33,6 +34,8 @@ function findExpenseLeaf(id) {
 export function amountDue(id, k) {
   const f = findExpenseLeaf(id);
   if (!f) return null;
+  // Card purchases are paid when the card bill is paid, not from an account here
+  if (!f.income && isCardItem(f.item)) return null;
   const amt = f.child ? childFinal(f.child, k) : itemFinal(f.item, k);
   return Number(amt) || 0;
 }

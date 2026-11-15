@@ -12,6 +12,7 @@ import {
   parseDueDay,
   dueDayFor,
 } from "./utils.js";
+import { cardDueIn, isCardItem } from "./card.js";
 
 // Internal state variables
 let appData = null;
@@ -193,8 +194,12 @@ export function monthTotals(k) {
     if (itemActiveIn(it, k)) { const r = itemAmts(it, k); dI += r.total; debtRecv += r.paid; }
   }
   for (const it of getItems("charlie", "expenses")) {
+    if (isCardItem(it)) continue; // card purchases are counted as one card bill below
     if (itemActiveIn(it, k)) { const r = itemAmts(it, k); cE += r.total; expPaid += r.paid; }
   }
+  // The BPI Platinum card bill that falls due this month (minus what was already paid on it)
+  const card = cardDueIn(k);
+  cE += card.total; expPaid += card.paid;
   for (const it of getItems("debt", "expenses")) {
     if (itemActiveIn(it, k)) { const r = itemAmts(it, k); dE += r.total; debtPaid += r.paid; }
   }

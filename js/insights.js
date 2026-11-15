@@ -10,6 +10,7 @@ import { closeModal, openModalShell } from "./ui/modals.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
 import { findItemAnywhere } from "./itemOps.js";
+import { cardOwedNow } from "./card.js";
 import { choosePayment, applyPayment, accountName } from "./payfrom.js";
 
 // ---------- shared ----------
@@ -213,29 +214,7 @@ export function budgetAlertText(before) {
 // "Owed" = every unpaid expense marked BPI Platinum that has already been charged
 // (purchase date <= today, or its budget month is this month or earlier).
 export function cardOwed() {
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const nowKey = currentKey();
-  const byMonth = {};
-  let total = 0, any = false;
-  for (const who of ["charlie", "debt"]) {
-    for (const it of getItems(who, "expenses")) {
-      if (it.paymentMethod !== "bpi_platinum") continue;
-      any = true;
-      for (const m of timeline()) {
-        if (!itemActiveIn(it, m)) continue;
-        const charged = it.txDate && !it.recurring ? it.txDate <= todayStr : cmpKey(m, nowKey) <= 0;
-        if (!charged) continue;
-        const kids = getKids(it, m);
-        const amt = kids.length
-          ? kids.reduce((s, c) => s + (isPaid(c.id, m) ? 0 : childAmt(c, m)), 0)
-          : isPaid(it.id, m) ? 0 : amountIn(it, m);
-        if (amt > 0) { byMonth[m] = (byMonth[m] || 0) + amt; total += amt; }
-      }
-    }
-  }
-  return { total, byMonth, any };
+  return cardOwedNow(); // { total, byMonth, any } from the card statements
 }
 
 export function realMoney() {

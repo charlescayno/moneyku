@@ -1,5 +1,7 @@
 import { refundPayment } from "../payfrom.js";
 import { chooseScope } from "../scope.js";
+import { isCardItem } from "../card.js";
+import { cardSectionHtml } from "./cardui.js";
 import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
@@ -392,7 +394,8 @@ export function personSectionHtml(who, includeDebt = true) {
   const o = OWNERS[who];
   const k = getSelectedKey();
   const income = getItems(who, "income").filter((it) => itemActiveIn(it, k));
-  const expenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k));
+  // Card purchases live in their own BPI Platinum section, not in the normal groups
+  const expenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k) && !(who === "charlie" && isCardItem(it)));
   const t = monthTotals(k);
   const incTot = who === "charlie" ? t.cI : t.dI;
   const expTot = who === "charlie" ? t.cE : t.dE;
@@ -455,6 +458,7 @@ export function personSectionHtml(who, includeDebt = true) {
           ${copyBtn}
         </details>
       </div>
+      ${who === "charlie" ? cardSectionHtml(k) : ""}
       ${debtSectionHtml}
     </div>
   </div>`;

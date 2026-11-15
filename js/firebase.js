@@ -168,6 +168,8 @@ export function normalize(d) {
   d.overrides = d.overrides || {};
   d.spend = d.spend || {};
   d.settings = d.settings || {};
+  d.cardStatements = Array.isArray(d.cardStatements) ? d.cardStatements : (d.cardStatements ? Object.values(d.cardStatements) : []);
+  d.cardPayments = Array.isArray(d.cardPayments) ? d.cardPayments : (d.cardPayments ? Object.values(d.cardPayments) : []);
   return d;
 }
 

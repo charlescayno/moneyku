@@ -5,6 +5,7 @@
 import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
 import { openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, startFreshAsk, startFreshGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
+import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay } from "./ui/cardui.js";
 
 import {
   onValue,
@@ -182,6 +183,7 @@ window.closeCalendarModal = closeCalendarModal;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;
 window.tabGo = tabGo;
+Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay });
 Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, startFreshAsk, startFreshGo, dismissTip });
 initExtras();
 initTabs();
