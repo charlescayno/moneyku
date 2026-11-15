@@ -1,4 +1,4 @@
-import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
@@ -139,7 +139,7 @@ export function openItemModal(who, kind, id, presetDay) {
 
   let lastPm = "cash";
   try { lastPm = localStorage.getItem("moneyku_last_pm") || "cash"; } catch { /* ignore */ }
-  if (!["cash", "bpi_platinum", "cc_other"].includes(lastPm)) lastPm = "cash";
+  if (lastPm !== "cash" && !CREDIT_CARD_METHODS.some((c) => c.id === lastPm)) lastPm = "cash";
   const payMethod = it ? (it.paymentMethod || "cash") : (kind === "expenses" ? lastPm : "cash");
   const txDayVal = it ? (it.txDay || 15) : 15;
   const cutoffDayVal = it ? (it.cutoffDay || 14) : 14;
@@ -149,8 +149,7 @@ export function openItemModal(who, kind, id, presetDay) {
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Payment Method / Category</label>
       <select id="f-paymethod" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">
         <option value="cash" ${payMethod === "cash" ? "selected" : ""}>Cash / Bank / E-Wallet</option>
-        <option value="bpi_platinum" ${payMethod === "bpi_platinum" ? "selected" : ""}>💳 BPI Platinum Rewards Mastercard</option>
-        <option value="cc_other" ${payMethod === "cc_other" ? "selected" : ""}>💳 Other Credit Card</option>
+        ${CREDIT_CARD_METHODS.map((c) => `<option value="${c.id}" ${payMethod === c.id ? "selected" : ""}>💳 ${escapeHtml(c.label)}</option>`).join("")}
       </select>
     </div>`;
 
@@ -313,7 +312,8 @@ export function openAccountModal(id) {
   $("modal-title").className = "text-lg font-black uppercase tracking-tight text-emerald-400";
 
   let body = "";
-  body += inputBlock("Account name", "f-name", a ? a.name : "", "text", 'placeholder="e.g. BPI"');
+  body += inputBlock("Account name", "f-name", a ? a.name : "", "text", 'placeholder="Pick or type a bank, e-wallet or card" list="acct-name-options" autocomplete="off"');
+  body += `<datalist id="acct-name-options">${PH_ACCOUNT_OPTIONS.flatMap((g) => g.names.map((n) => `<option value="${escapeHtml(n)}" label="${g.group}"></option>`)).join("")}</datalist>`;
   body += inputBlock("Balance (₱)", "f-amount", a ? a.amount : "", "text", 'inputmode="text" placeholder="0"');
   const curType = a ? acctType(a) : "bank";
   body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Type</label><select id="f-type" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none appearance-none"><option value="bank" ${curType === "bank" ? "selected" : ""}>Cash & Bank (counts toward money on hand)</option><option value="credit" ${curType === "credit" ? "selected" : ""}>Credit card (not counted)</option></select></div>`;

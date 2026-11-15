@@ -1,5 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
-import { acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore } from '../insights.js';
@@ -40,7 +40,7 @@ export function rowIconHtml(name, sz, kind = "expenses", noBg = false) {
   return `<div class="rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-500" style="font-size:${Math.round(sz * 0.62)}px">${iconName}</span></div>`;
 }
 
-export function childRowHtml(parentId, c, k, who, kind = "expenses") {
+export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null) {
   const paid = isPaid(c.id, k);
   const est = Number(c.amount) || 0;
   const spent = spentIn(c.id, k);
@@ -57,6 +57,16 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses") {
       </div>`
     : "";
     
+  if (arr) {
+    const btn = (dir, icon, off) => `<button ${off ? "disabled" : `data-action="moveChild" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" data-arg3="${dir}"`} aria-label="Move ${escapeHtml(c.name)} ${dir < 0 ? "up" : "down"}" class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${off ? "text-slate-700" : "text-indigo-300 bg-indigo-500/15 active:bg-indigo-500/30"}"><span class="material-icons" style="font-size:20px">${icon}</span></button>`;
+    return `<div data-child="${c.id}" class="flex items-center gap-3 py-1.5 px-6">
+    <span class="material-icons text-slate-600 flex-shrink-0" style="font-size:18px">drag_indicator</span>
+    <div class="flex-1 min-w-0"><span class="item-name block text-sm font-bold text-slate-200 truncate">${escapeHtml(c.name)}</span></div>
+    <span class="text-xs font-bold text-slate-500 flex-shrink-0">${peso(rightMain)}</span>
+    ${btn(-1, "keyboard_arrow_up", arr.i === 0)}${btn(1, "keyboard_arrow_down", arr.i === arr.n - 1)}
+  </div>`;
+  }
+
   return `<div data-child="${c.id}" data-action="openChildModal" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" class="item-row flex items-center gap-4 py-2.5 px-6 cursor-pointer hover:bg-white/5 transition-colors">
     <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark paid" class="paid-check ${paid ? "is-paid bg-emerald-500/20 border-emerald-500" : "bg-transparent border-slate-700"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-colors">
       <span class="material-icons check-icon ${paid ? "text-emerald-400 opacity-100" : "text-transparent opacity-0"} transition-opacity" style="font-size:14px">check</span>
@@ -81,7 +91,8 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
     ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[icon] || ''}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
     : `<span class="material-icons text-white" style="font-size:24px">home_work</span>`;
   const iconBg = icon ? "bg-slate-800" : "bg-gradient-to-br from-fuchsia-500 to-purple-600";
-  const childRows = kids.map((c) => childRowHtml(it.id, c, k, who, kind)).join("");
+  const arrange = isArranging(it.id) && kids.length > 1;
+  const childRows = kids.map((c, i) => childRowHtml(it.id, c, k, who, kind, arrange ? { i, n: kids.length } : null)).join("");
   const kidsIds = kids.map(c => c.id).join(",");
   
   return `<details open class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
@@ -106,8 +117,9 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
     </summary>
     <div class="pb-4 pt-1 space-y-0 relative">
       ${childRows}
-      <div class="px-6 mt-3">
-        <button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>
+      <div class="px-6 mt-3 flex items-center gap-2">
+        ${arrange ? "" : `<button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>`}
+        ${kids.length > 1 ? `<button data-action="toggleArrange" data-arg0="${it.id}" aria-pressed="${arrange}" class="${arrange ? "flex-1 bg-indigo-600 text-white" : "text-slate-500 hover:text-white"} py-2.5 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">${arrange ? "check" : "swap_vert"}</span>${arrange ? "Done" : "Arrange"}</button>` : ""}
       </div>
     </div>
   </details>`;
@@ -139,8 +151,8 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
   if (!opts.hidePaymentTag) {
     if (it.paymentMethod === "bpi_platinum") {
       tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
-    } else if (it.paymentMethod === "cc_other") {
-      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 Credit Card</span>`);
+    } else if (it.paymentMethod && it.paymentMethod.startsWith("cc_")) {
+      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 ${escapeHtml(PM_LABELS[it.paymentMethod] || "Credit Card")}</span>`);
     }
   }
   
@@ -182,7 +194,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
 
 export function categoryGroupedHtml(items, k, kind, who) {
   if (!items.length) return "";
-  const sorted = sortItems(items);
+  const sorted = sortItems(items, kind);
   const showHeaders = new Set(sorted.map(itemCategory)).size > 1;
   
   const buckets = {};
@@ -222,7 +234,7 @@ export function paymentMethodGroupHtml(pm, list, k, kind, who) {
   const total = list.reduce((s, it) => s + amountIn(it, k), 0);
   const allPaid = list.length > 0 && list.every(it => isPaid(it.id, k));
   const idsStr = list.map(it => it.id).join(",");
-  const subs = sortItems(list).map((it) => itemRowHtml(it, k, kind, who, { hidePaymentTag: true })).join("");
+  const subs = sortItems(list, kind).map((it) => itemRowHtml(it, k, kind, who, { hidePaymentTag: true })).join("");
   const label = PM_LABELS[pm] || pm;
   return `<details open class="py-1 mt-1 group">
     <summary class="flex justify-between items-center px-3 py-2 bg-indigo-900/10 hover:bg-indigo-900/20 rounded-xl cursor-pointer list-none select-none outline-none">
@@ -246,7 +258,7 @@ export function paymentMethodGroupHtml(pm, list, k, kind, who) {
 
 export function bankGroupHtml(bank, list, k, kind, who) {
   const total = list.reduce((s, it) => s + amountIn(it, k), 0);
-  const subs = sortItems(list).map((it) => itemRowHtml(it, k, kind, who, { hideIcon: true })).join("");
+  const subs = sortItems(list, kind).map((it) => itemRowHtml(it, k, kind, who, { hideIcon: true })).join("");
   return `<div class="py-1">
     <div class="flex items-center gap-3 px-3 py-2">
       <div class="acct-icon flex-shrink-0"><img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[bank] || ''}&sz=128" alt="" class="w-full h-full object-cover bg-white" /></div>
@@ -267,7 +279,7 @@ export function groupedRowsHtml(items, k, kind, who) {
     </div>`;
   }
   let html = "";
-  const parents = items.filter((it) => getKids(it, k).length);
+  const parents = sortItems(items.filter((it) => getKids(it, k).length), kind);
   for (const it of parents) html += itemRowHtml(it, k, kind, who);
   const rest = items.filter((it) => !getKids(it, k).length);
   
@@ -360,13 +372,18 @@ export function debtTrackerCardHtml() {
                   <span class="text-[11px] font-bold text-rose-400">${peso(debtExpTot)}</span>
                 </div>
               </div>
-              <button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
+              <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
             </summary>
             <div class="space-y-0.5 mt-1">${debtExpHtml}</div>
           </details>
         </div>
       </div>
     </details>`;
+}
+
+export function expenseSortBtnHtml() {
+  const on = getExpenseSort() === "name";
+  return `<button data-action="toggleExpenseSort" title="${on ? "Sorted A-Z (tap for default order)" : "Sort A-Z"}" aria-label="Sort expenses by name" aria-pressed="${on}" class="text-[10px] font-bold ${on ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">sort_by_alpha</span>A-Z</button>`;
 }
 
 export function personSectionHtml(who, includeDebt = true) {
@@ -430,7 +447,7 @@ export function personSectionHtml(who, includeDebt = true) {
                 <span class="text-[11px] font-bold text-rose-400">${peso(expTot)}</span>
               </div>
             </div>
-            <button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
+            <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
           </summary>
           <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>
           ${copyBtn}

@@ -167,7 +167,7 @@ export function initEventListeners() {
     if (!btn) return;
     const action = btn.getAttribute('data-action');
     
-    if (action === 'openItemModal' || action === 'openBudgetModal') e.preventDefault();
+    if (action === 'openItemModal' || action === 'openBudgetModal' || action === 'toggleExpenseSort') e.preventDefault();
     
     const args = [];
     let i = 0;

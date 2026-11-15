@@ -80,6 +80,9 @@ import {
   initQuickLog,
   toggleProjected,
   toggleInvestments,
+  toggleExpenseSort,
+  toggleArrange,
+  moveChild,
   prevOverviewPage,
   nextOverviewPage,
   jumpOverviewYear,
@@ -172,6 +175,9 @@ window.qlConfirm = qlConfirm;
 initQuickLog();
 window.toggleProjected = toggleProjected;
 window.toggleInvestments = toggleInvestments;
+window.toggleExpenseSort = toggleExpenseSort;
+window.toggleArrange = toggleArrange;
+window.moveChild = moveChild;
 window.prevOverviewPage = prevOverviewPage;
 window.nextOverviewPage = nextOverviewPage;
 window.jumpOverviewYear = jumpOverviewYear;

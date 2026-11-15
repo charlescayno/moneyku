@@ -47,6 +47,20 @@ export function setHideInvestments(val) {
   localStorage.setItem("hideInvestments", hideInvestments);
 }
 
+let expenseSort = localStorage.getItem("expenseSort") === "name" ? "name" : "default";
+export function getExpenseSort() { return expenseSort; }
+export function setExpenseSort(val) {
+  expenseSort = val === "name" ? "name" : "default";
+  localStorage.setItem("expenseSort", expenseSort);
+}
+
+// Parents currently in "Arrange" mode (sub-expense reordering). In memory only.
+const arranging = new Set();
+export function isArranging(parentId) { return arranging.has(parentId); }
+export function toggleArranging(parentId) {
+  if (arranging.has(parentId)) arranging.delete(parentId); else arranging.add(parentId);
+}
+
 export function getOverviewPage() { return overviewPage; }
 export function setOverviewPage(p) { overviewPage = p; }
 
@@ -269,12 +283,17 @@ export function itemCategory(it) {
   return 2;
 }
 
-export function sortItems(items) {
+const byName = (a, b) =>
+  String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true });
+
+export function sortItems(items, kind) {
+  const nameSort = kind === "expenses" && getExpenseSort() === "name";
   return items
     .map((it, i) => ({ it, i }))
     .sort((a, b) => {
       const ca = itemCategory(a.it), cb = itemCategory(b.it);
       if (ca !== cb) return ca - cb;
+      if (nameSort) return byName(a.it, b.it) || a.i - b.i;
       if (ca === 1) return (dueDayFor(a.it) - dueDayFor(b.it)) || a.i - b.i;
       if (ca === 3) return cmpKey(a.it.end, b.it.end) || a.i - b.i;
       return a.i - b.i;

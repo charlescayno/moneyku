@@ -19,8 +19,38 @@ export const OWNERS = {
 };
 
 export const CATEGORY_LABELS = ["One-time", "Auto-pay", "Recurring", "Installments"];
-export const BANK_LABELS = { maribank: "Maribank", gcash: "GCash", bpi: "BPI", metrobank: "Metrobank", bdo: "BDO", unionbank: "UnionBank", securitybank: "Security Bank" };
-export const PM_LABELS = { bpi_platinum: "BPI Platinum", cc_other: "Credit Card" };
+export const BANK_LABELS = {
+  maribank: "Maribank", gcash: "GCash", bpi: "BPI", metrobank: "Metrobank", bdo: "BDO", unionbank: "UnionBank", securitybank: "Security Bank",
+  landbank: "Landbank", pnb: "PNB", rcbc: "RCBC", eastwest: "EastWest", chinabank: "China Bank", cimb: "CIMB", psbank: "PSBank",
+  pbcom: "PBCom", robinsonsbank: "Robinsons Bank", aub: "AUB", hsbc: "HSBC", sc: "Standard Chartered", maybank: "Maybank",
+  ctbc: "CTBC", bankcom: "Bank of Commerce", dbp: "DBP", gotyme: "GoTyme", seabank: "SeaBank", tonik: "Tonik", uno: "UNO Digital Bank",
+  ownbank: "OwnBank", ing: "ING", maya: "Maya", coinsph: "Coins.ph", shopeepay: "ShopeePay", grabpay: "GrabPay",
+};
+
+// Philippine banks, e-wallets and credit cards offered when adding an account.
+export const PH_ACCOUNT_OPTIONS = [
+  { group: "Bank", names: ["BPI", "BDO", "Metrobank", "Landbank", "PNB", "Security Bank", "UnionBank", "RCBC", "China Bank", "EastWest Bank", "PSBank", "AUB", "PBCom", "Robinsons Bank", "Bank of Commerce", "DBP", "CTBC Bank", "Maybank", "HSBC", "Standard Chartered", "ING"] },
+  { group: "Digital bank", names: ["Maribank", "GoTyme", "SeaBank", "Tonik", "CIMB", "UNO Digital Bank", "OwnBank"] },
+  { group: "E-wallet", names: ["GCash", "Maya", "Coins.ph", "ShopeePay", "GrabPay"] },
+  { group: "Credit card", names: [
+    "BPI Platinum Rewards Mastercard", "BPI Gold Rewards Mastercard", "BPI Amore Cashback Credit Card", "BPI Blue Mastercard",
+    "BDO Credit Card", "Metrobank Credit Card", "Security Bank Complete Cashback Mastercard", "UnionBank Rewards Visa Platinum",
+    "RCBC Bankard Credit Card", "EastWest Credit Card", "China Bank Credit Card", "PNB Credit Card", "Landbank Credit Card",
+    "Maybank Credit Card", "HSBC Credit Card", "Standard Chartered Credit Card", "Other Credit Card",
+  ] },
+];
+// Credit cards selectable as a payment method. BPI Platinum keeps its legacy id
+// because it drives the statement/due-date auto-scheduling.
+export const CREDIT_CARD_METHODS = [
+  { id: "bpi_platinum", label: "BPI Platinum Rewards Mastercard", short: "BPI Platinum" },
+  ...["BPI Gold Rewards Mastercard", "BPI Amore Cashback Credit Card", "BPI Blue Mastercard",
+    "BDO Credit Card", "Metrobank Credit Card", "Security Bank Complete Cashback Mastercard", "UnionBank Rewards Visa Platinum",
+    "RCBC Bankard Credit Card", "EastWest Credit Card", "China Bank Credit Card", "PNB Credit Card", "Landbank Credit Card",
+    "Maybank Credit Card", "HSBC Credit Card", "Standard Chartered Credit Card",
+  ].map((label) => ({ id: "cc_" + label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""), label, short: label })),
+  { id: "cc_other", label: "Other Credit Card", short: "Credit Card" },
+];
+export const PM_LABELS = Object.fromEntries(CREDIT_CARD_METHODS.map((c) => [c.id, c.short]));
 
 export const BRAND_DOMAINS = {
   maribank: "maribank.ph",
@@ -30,6 +60,32 @@ export const BRAND_DOMAINS = {
   bdo: "bdo.com.ph",
   unionbank: "unionbankph.com",
   securitybank: "securitybank.com",
+  landbank: "landbank.com",
+  pnb: "pnb.com.ph",
+  rcbc: "rcbc.com",
+  eastwest: "eastwestbanker.com",
+  chinabank: "chinabank.ph",
+  cimb: "cimbbank.com.ph",
+  psbank: "psbank.com.ph",
+  pbcom: "pbcom.com.ph",
+  robinsonsbank: "robinsonsbank.com.ph",
+  aub: "aub.com.ph",
+  hsbc: "hsbc.com.ph",
+  sc: "sc.com",
+  maybank: "maybank.com.ph",
+  ctbc: "ctbcbank.com.ph",
+  bankcom: "boc.ph",
+  dbp: "dbp.ph",
+  gotyme: "gotyme.com.ph",
+  seabank: "seabank.ph",
+  tonik: "tonikbank.com",
+  uno: "unobank.ph",
+  ownbank: "ownbank.com",
+  ing: "ing.com.ph",
+  maya: "maya.ph",
+  coinsph: "coins.ph",
+  shopeepay: "shopee.ph",
+  grabpay: "grab.com",
   netflix: "netflix.com",
   youtube: "youtube.com",
   prulife: "prulifeuk.com.ph",
@@ -138,6 +194,32 @@ export function bankIconFor(name) {
   if (n.includes("bdo")) return "bdo";
   if (n.includes("unionbank") || n.includes("union bank") || n === "ub") return "unionbank";
   if (n.includes("securitybank") || n.includes("security bank") || n === "secb") return "securitybank";
+  if (n.includes("landbank") || n.includes("land bank")) return "landbank";
+  if (n === "pnb" || n.includes("pnb ") || n.includes("philippine national bank")) return "pnb";
+  if (n.includes("rcbc")) return "rcbc";
+  if (n.includes("eastwest") || n.includes("east west")) return "eastwest";
+  if (n.includes("chinabank") || n.includes("china bank")) return "chinabank";
+  if (n.includes("cimb")) return "cimb";
+  if (n.includes("psbank")) return "psbank";
+  if (n.includes("pbcom")) return "pbcom";
+  if (n.includes("robinsons bank")) return "robinsonsbank";
+  if (n === "aub" || n.includes("asia united")) return "aub";
+  if (n.includes("hsbc")) return "hsbc";
+  if (n.includes("standard chartered")) return "sc";
+  if (n.includes("maybank")) return "maybank";
+  if (n.includes("ctbc")) return "ctbc";
+  if (n.includes("bank of commerce")) return "bankcom";
+  if (n === "dbp" || n.includes("development bank of the philippines")) return "dbp";
+  if (n.includes("gotyme") || n.includes("go tyme")) return "gotyme";
+  if (n.includes("seabank")) return "seabank";
+  if (n.includes("tonik")) return "tonik";
+  if (n.includes("uno digital") || n.includes("uno bank")) return "uno";
+  if (n.includes("ownbank") || n.includes("own bank")) return "ownbank";
+  if (n.includes("ing bank") || n === "ing") return "ing";
+  if (n.includes("paymaya") || n === "maya" || n.startsWith("maya ")) return "maya";
+  if (n.includes("coins.ph") || n.includes("coinsph")) return "coinsph";
+  if (n.includes("shopeepay") || n.includes("shopee pay")) return "shopeepay";
+  if (n.includes("grabpay") || n.includes("grab pay")) return "grabpay";
   return null;
 }
 

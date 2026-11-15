@@ -1,5 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
-import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { renderProjectionChart } from '../charts.js';
 import { openMore, projectionInnerHtml, selectMonth, statsGridHtml } from './components.js';
@@ -216,6 +216,36 @@ export function refreshRealized() {
 // =============================
 export function toggleProjected() {
   setHideProjected(!getHideProjected());
+  renderBudget();
+}
+
+export function toggleArrange(parentId) {
+  toggleArranging(parentId);
+  renderBudget();
+}
+
+// Move a sub-expense one step up (dir = -1) or down (dir = 1) among the ones shown this month.
+export async function moveChild(who, parentId, childId, dir) {
+  const appData = getAppData();
+  const k = getSelectedKey();
+  const parent = getItems(who, "expenses").find((x) => x.id === parentId);
+  if (!appData || !parent || !Array.isArray(parent.children)) return;
+  const step = parseInt(dir, 10) < 0 ? -1 : 1;
+  const shown = getKids(parent, k).map((c) => c.id);
+  const at = shown.indexOf(childId);
+  const neighbor = shown[at + step];
+  if (at < 0 || neighbor == null) return;
+  // Swap the two children in the stored order (hidden ones keep their relative place).
+  const a = parent.children.findIndex((c) => c && c.id === childId);
+  const b = parent.children.findIndex((c) => c && c.id === neighbor);
+  if (a < 0 || b < 0) return;
+  [parent.children[a], parent.children[b]] = [parent.children[b], parent.children[a]];
+  renderBudget();
+  await syncSet(appData);
+}
+
+export function toggleExpenseSort() {
+  setExpenseSort(getExpenseSort() === "name" ? "default" : "name");
   renderBudget();
 }
 
