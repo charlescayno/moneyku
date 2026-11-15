@@ -15,6 +15,7 @@ import {
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { currentKey, $ } from "./utils.js";
+import { recordChange } from "./history.js";
 
 // =============================
 // Firebase config
@@ -128,6 +129,7 @@ export function getPendingEchoes() {
 }
 
 export async function syncSet(appData, onFail) {
+  try { recordChange(appData); } catch (err) { console.warn("History:", err); }
   pendingEchoes++;
   showSync();
   // Save local copy immediately for instant offline durability

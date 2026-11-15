@@ -137,7 +137,7 @@
 
       <!-- HEADER -->
       <header
-        class="px-5 sm:px-6 md:px-8 pt-6 pb-3 flex justify-between items-end bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex-shrink-0"
+        class="px-4 sm:px-6 md:px-8 pt-6 pb-3 flex justify-between items-end bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex-shrink-0"
       >
         <div class="min-w-0">
           <h1
@@ -152,7 +152,7 @@
             <span id="current-year-display">2026</span>
           </p>
         </div>
-        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           <button
             type="button"
             data-action="toggleDensityMode"
@@ -163,6 +163,8 @@
           >
             <span class="material-icons text-indigo-400 text-xl sm:text-2xl" id="density-icon">view_compact</span>
           </button>
+          <button type="button" id="undo-btn" data-action="histUndo" disabled title="Nothing to undo" aria-label="Undo" class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-xl sm:rounded-2xl transition-transform shadow-lg opacity-40"><span class="material-icons text-slate-300" style="font-size:20px">undo</span></button>
+          <button type="button" data-action="openHistory" title="History" aria-label="History" class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-xl sm:rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-300" style="font-size:20px">history</span></button>
           <button type="button" data-action="openSearch" title="Search" aria-label="Search" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-400">search</span></button>
           <button
             type="button"
@@ -418,6 +420,6 @@
     </div>
 
     <!-- Main Script -->
-    <script type="module" src="js/app.js?v=20261115_cardvis"></script>
+    <script type="module" src="js/app.js?v=20261115_history"></script>
   </body>
 </html>

@@ -5,6 +5,8 @@
 import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
 import { openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, startFreshAsk, startFreshGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
+import { initHistory, openHistory, histUndo, histRedo, histRestore } from "./ui/historyui.js";
+import { rebaseHistory } from "./history.js";
 import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay } from "./ui/cardui.js";
 
 import {
@@ -183,6 +185,8 @@ window.closeCalendarModal = closeCalendarModal;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;
 window.tabGo = tabGo;
+initHistory();
+Object.assign(window, { openHistory, histUndo, histRedo, histRestore });
 Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay });
 Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, startFreshAsk, startFreshGo, dismissTip });
 initExtras();
@@ -266,6 +270,7 @@ function startDataSync(user) {
   const cached = getLocalCachedData();
   if (cached) {
     setAppData(cached);
+    rebaseHistory(cached);
     clampSelected();
     renderAll();
   }
@@ -288,6 +293,7 @@ function startDataSync(user) {
         if (keep) { nextData = keep; uploadLocal = true; }
       }
       setAppData(nextData);
+      rebaseHistory(nextData);
 
       // Save offline copy
       try {
@@ -301,6 +307,7 @@ function startDataSync(user) {
         toast("Uploaded this device's data to the cloud");
       } else if (reconcileAutoPaid()) {
         syncSet(getAppData());
+        rebaseHistory(getAppData()); // automatic, so not something Undo should reverse
       }
 
       if (firstLoad) {
