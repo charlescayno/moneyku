@@ -3,8 +3,7 @@ import { applyChildOrder } from '../itemOps.js';
 import { choosePayment, applyPayment, refundPayment, recordPayment, accountName, nameOf } from '../payfrom.js';
 import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
-import { renderProjectionChart } from '../charts.js';
-import { openMore, projectionInnerHtml, selectMonth, statsGridHtml } from './components.js';
+import { openMore, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
 import { toast } from './core.js';
 
@@ -236,8 +235,6 @@ export function refreshRealized() {
   if (proj) proj.textContent = hideProjected ? '••••••' : peso(runningFundsAt(selectedKey));
   const stats = $("sum-stats");
   if (stats) stats.innerHTML = statsGridHtml(t);
-  const pi = $("projection-inner");
-  if (pi) pi.innerHTML = projectionInnerHtml();
 }
 
 // =============================
@@ -290,7 +287,7 @@ export function prevOverviewPage() {
 
 export function nextOverviewPage() {
   const p = getOverviewPage();
-  const maxPage = Math.ceil(HORIZON / 6) - 1;
+  const maxPage = Math.ceil(timeline().length / 6) - 1;
   if (p < maxPage) {
     setOverviewPage(p + 1);
     renderBudget();

@@ -37,8 +37,6 @@ export {
   statsGridHtml,
   installmentsCardHtml,
   recurringPaymentsCardHtml,
-  projectionInnerHtml,
-  projectionCardHtml,
   openMore,
   closeMore,
   selectMonth,

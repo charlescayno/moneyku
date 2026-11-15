@@ -3,8 +3,7 @@ import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, cu
 import { syncSet } from '../firebase.js';
 import { dueSoonCardHtml, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
-import { renderProjectionChart } from '../charts.js';
-import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, projectionCardHtml, statsGridHtml } from './components.js';
+import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 
 // =============================

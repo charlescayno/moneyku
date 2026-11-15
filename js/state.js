@@ -64,12 +64,16 @@ export function toggleArranging(parentId) {
 export function getOverviewPage() { return overviewPage; }
 export function setOverviewPage(p) { overviewPage = p; }
 
+// The timeline (and so the Overview) ends here
+const LAST_MONTH = "2046-12";
+
 // Timeline generator
 export function timeline() {
   if (!appData) return [];
   const out = [];
   let k = appData.startMonth || currentKey();
-  for (let i = 0; i < HORIZON; i++) { 
+  for (let i = 0; i < HORIZON; i++) {
+    if (cmpKey(k, LAST_MONTH) > 0) break; // nothing after 2046
     out.push(k); 
     k = addMonths(k, 1); 
   }

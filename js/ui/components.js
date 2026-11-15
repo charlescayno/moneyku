@@ -8,7 +8,6 @@ import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore } from '../insights.js';
 import { lastMonthOneTimes } from '../extras.js';
-import { renderProjectionChart } from '../charts.js';
 import { toast } from './core.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
 import { jumpOverviewYear, nextOverviewPage, prevOverviewPage, renderMonthStrip, scrollChipIntoView, toggleInvestments, togglePaidGroup, togglePaidQuick, updateHeader } from './actions.js';
@@ -985,39 +984,6 @@ export function recurringPaymentsCardHtml() {
   </details>`;
 }
 
-export function projectionInnerHtml() {
-  const keys = timeline();
-  let bal = accountsTotal();
-  const series = keys.map((k) => { const t = monthTotals(k); bal += t.netPending; return { k, bal, savings: t.savings, income: t.income }; });
-  const years = {};
-  series.forEach((s) => { const y = keyParts(s.k).y; years[y] = years[y] || { income: 0, savings: 0, endBal: s.bal }; years[y].income += s.income; years[y].savings += s.savings; years[y].endBal = s.bal; });
-  const yearCards = Object.entries(years).map(([y, v]) => `
-    <div class="bg-slate-900/50 rounded-lg p-1.5 flex items-center justify-between border border-white/[0.04]">
-      <div><p class="text-[11px] font-black text-white">${y}</p><p class="text-[8px] text-slate-500">end ${peso(v.endBal)}</p></div>
-      <div class="text-right"><p class="text-[7px] uppercase text-slate-500 font-bold">Saved</p><p class="text-[9px] font-black ${v.savings >= 0 ? "text-emerald-400" : "text-amber-400"}">${v.savings >= 0 ? "+" : ""}${peso(v.savings)}</p></div>
-    </div>`).join("");
-  return `
-    <div class="h-28 mb-1.5">
-      <canvas id="projectionChart" class="projection-chart-canvas w-full h-full"></canvas>
-    </div>
-    <div class="grid grid-cols-2 gap-1">${yearCards}</div>
-  `;
-}
-
-export function projectionCardHtml() {
-  const endBal = runningFundsAt(timeline()[HORIZON - 1]);
-  return `<details open class="glass-card rounded-xl overflow-hidden border border-indigo-500/10 w-full flex-shrink-0">
-    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
-      <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">trending_up</span></div>
-        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">5-Year Projection</h3><p class="text-[8px] text-slate-400">Balance &amp; savings</p></div>
-      </div>
-      <p class="text-xs font-black text-indigo-300">${peso(endBal)}</p>
-    </summary>
-    <div id="projection-inner" class="p-2.5 pt-0 space-y-2">${projectionInnerHtml()}</div>
-  </details>`;
-}
-
 export function openMore() {
   const body = $("more-body");
   const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
@@ -1025,15 +991,11 @@ export function openMore() {
     ${investmentsCardHtml()}
     ${monthOverviewCardHtml()}
     ${inst}
-    ${projectionCardHtml()}
   `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
   const ov = $("more-overlay");
   ov.classList.add("open");
   
-  setTimeout(() => {
-    renderProjectionChart();
-  }, 10);
   fetchInvestmentRates();
 }
 

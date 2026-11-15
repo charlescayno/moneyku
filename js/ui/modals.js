@@ -3,7 +3,6 @@ import { childAmt } from "../state.js";
 import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
-import { renderProjectionChart } from '../charts.js';
 import { toast } from './core.js';
 import { saveChildAndAddAnother, saveModal, spendSectionHtml, toggleField } from './components.js';
 import { renderAll } from './layout.js';
