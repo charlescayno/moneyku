@@ -1,4 +1,4 @@
-import { refundPayment } from "../payfrom.js";
+import { autoDeduct, paidMessage, refundPayment } from "../payfrom.js";
 import { chooseScope } from "../scope.js";
 import { isCardItem } from "../card.js";
 import { cardSectionHtml } from "./cardui.js";
@@ -1169,7 +1169,33 @@ export async function saveModal() {
   try { await saveModalInner(); } finally { saving = false; }
 }
 
+/** Set the paid flag from the edit popup. Turning it on charges a Maribank / GCash / BPI Debit account; turning it off gives the money back. */
+function setPaidFlag(appData, k, id, on) {
+  appData.paid[k] = appData.paid[k] || {};
+  const was = appData.paid[k][id] === true;
+  const moved = on && !was ? autoDeduct(k, id) : null;
+  appData.paid[k][id] = on;
+  if (!on) refundPayment(k, id);
+  return moved;
+}
+
+function savedToast(k, moved) {
+  if (!moved) return toast("Saved");
+  toast(paidMessage({}, [moved]), "ok", {
+    actionLabel: "Undo", duration: 4000,
+    onAction: async () => {
+      const d = getAppData();
+      if (d.paid?.[k]?.[moved.id] !== true) return;
+      d.paid[k][moved.id] = false;
+      refundPayment(k, moved.id);
+      await syncSet(d);
+      renderAll();
+    },
+  });
+}
+
 async function saveModalInner() {
+  let deducted = null;
   const activeEdit = getActiveEdit();
   if (!activeEdit) return;
   if (activeEdit.kind === "budgets") return window.saveBudgets?.();
@@ -1250,13 +1276,13 @@ async function saveModalInner() {
           if (changed) applyItemAmount(appData, parent.children, c, amount, scope, selectedKey, { recurring: parent.recurring });
         }
         const pf = $("f-paid");
-        if (pf) { appData.paid[selectedKey] = appData.paid[selectedKey] || {}; appData.paid[selectedKey][id] = pf.dataset.on === "true"; if (pf.dataset.on !== "true") refundPayment(selectedKey, id); }
+        if (pf) deducted = setPaidFlag(appData, selectedKey, id, pf.dataset.on === "true");
       } else {
         parent.children.push({ id: generateId(), name, amount });
       }
     }
     await syncSet(appData);
-    closeModal(); renderAll(); toast("Saved");
+    closeModal(); renderAll(); savedToast(selectedKey, deducted);
     return;
   }
 
@@ -1310,8 +1336,7 @@ async function saveModalInner() {
     const pf = $("f-paid");
     if (pf) {
       const on = pf.dataset.on === "true";
-      appData.paid[selectedKey] = appData.paid[selectedKey] || {};
-      appData.paid[selectedKey][id] = on; if (!on) refundPayment(selectedKey, id);
+      deducted = setPaidFlag(appData, selectedKey, id, on);
     }
   } else {
     const isGroup = $("f-group")?.dataset.on === "true";
@@ -1326,6 +1351,6 @@ async function saveModalInner() {
   }
   rememberPayMethod(payMethod);
   await syncSet(appData);
-  closeModal(); renderAll(); toast("Saved");
+  closeModal(); renderAll(); savedToast(selectedKey, deducted);
   budgetAlert(bb);
 }

@@ -2,10 +2,14 @@
 // "Paid from which account?" - choose an account when an expense is checked off,
 // deduct it from that account, and give it back when the check is removed.
 // Payments are remembered in appData.paidFrom[monthKey][itemId] = { a: accountId, amt }.
+// Expenses paid by Maribank / GCash / BPI Debit skip the chooser: the matching account
+// is charged straight away (autoAccountFor) and reversed from the same record.
 // =============================
 import { acctType, childFinal, getAppData, isPaid, itemFinal } from "./state.js";
 import { isCardItem } from "./card.js";
 import { ACCOUNT_PAYMENT_METHODS, BANK_DOMAINS, bankIconFor, escapeHtml, peso } from "./utils.js";
+
+const r2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 const LAST_KEY = "moneyku_pay_acct";
 
@@ -52,6 +56,16 @@ function paymentMethodOf(id) {
   return f && !f.income ? (f.item.paymentMethod || null) : null;
 }
 
+/**
+ * The account an expense is charged to automatically when paid, or null (cash, credit card,
+ * income, mixed/unknown, or no account whose name matches the method) which means "ask".
+ */
+export function autoAccountFor(id) {
+  const f = findExpenseLeaf(id);
+  if (!f || f.income) return null;
+  return accountForMethod(f.item.paymentMethod);
+}
+
 export function isIncomeId(id) { return !!findExpenseLeaf(id)?.income; }
 
 export function nameOf(id) {
@@ -63,8 +77,11 @@ export function nameOf(id) {
 export function recordPayment(k, id, acctId, amt) {
   const d = getAppData();
   const acct = (d.accounts || []).find((a) => a.id === acctId);
+  amt = r2(amt);
   if (!acct || !amt) return false;
-  acct.amount = Math.round(((Number(acct.amount) || 0) - amt + Number.EPSILON) * 100) / 100;
+  // A leftover record (e.g. paid flag cleared elsewhere) is given back first so the same bill is never taken twice
+  if (d?.paidFrom?.[k]?.[id]) refundPayment(k, id);
+  acct.amount = r2((Number(acct.amount) || 0) - amt);
   d.paidFrom = d.paidFrom || {};
   d.paidFrom[k] = d.paidFrom[k] || {};
   d.paidFrom[k][id] = { a: acctId, amt };
@@ -79,39 +96,80 @@ export function refundPayment(k, id) {
   delete d.paidFrom[k][id];
   const acct = (d.accounts || []).find((a) => a.id === rec.a);
   if (!acct) return null; // the account was deleted since, nothing to give back
-  acct.amount = Math.round(((Number(acct.amount) || 0) + rec.amt + Number.EPSILON) * 100) / 100;
-  return { acctId: acct.id, acctName: acct.name, amt: rec.amt };
+  acct.amount = r2((Number(acct.amount) || 0) + (Number(rec.amt) || 0));
+  return { acctId: acct.id, acctName: acct.name, amt: Number(rec.amt) || 0 };
 }
 
 /**
  * Ask where the money for these expenses came from.
- * Resolves to null if the user cancels, otherwise { acctId (or null = don't deduct), items: [{ id, amt }] }.
+ * Resolves to null if the user cancels, otherwise { acctId (or null = don't deduct), items: [{ id, amt, acctId? }], income }.
+ * Items paid by Maribank / GCash / BPI Debit that have a matching account carry their own acctId and are
+ * never asked about; only the rest (cash, no matching account, income) go to the chooser.
  * Nothing is asked when there is nothing to pay or no account to take it from.
  */
 export async function choosePayment(k, ids, label) {
-  const items = ids
+  const all = ids
     .filter((id) => !isPaid(id, k))
     .map((id) => ({ id, amt: amountDue(id, k) }))
     .filter((x) => x.amt != null && x.amt > 0);
-  if (!items.length || !payableAccounts().length) return { acctId: null, items: [] };
-  const income = isIncomeId(items[0].id);
-  const total = items.reduce((s, x) => s + x.amt, 0);
-  const methods = new Set(items.map((x) => paymentMethodOf(x.id)));
-  const preferred = methods.size === 1 ? accountForMethod([...methods][0]) : null;
-  const choice = await pickAccount(label, total, income, preferred);
-  if (choice === null) return null;
-  return { acctId: choice, items, income };
+  const auto = [], manual = [];
+  for (const x of all) {
+    const acct = autoAccountFor(x.id);
+    if (acct) auto.push({ ...x, acctId: acct.id }); else manual.push(x);
+  }
+  let acctId = null, income = false, picked = [];
+  if (manual.length && payableAccounts().length) {
+    income = isIncomeId(manual[0].id);
+    const total = manual.reduce((s, x) => s + x.amt, 0);
+    const methods = new Set(manual.map((x) => paymentMethodOf(x.id)));
+    const preferred = methods.size === 1 ? accountForMethod([...methods][0]) : null;
+    const choice = await pickAccount(auto.length ? `${label} (${manual.length} not on an account)` : label, total, income, preferred);
+    if (choice === null) return null;
+    acctId = choice;
+    picked = manual;
+  }
+  return { acctId, items: [...auto, ...picked], income, autoCount: auto.length };
 }
 
-/** Apply a plan from choosePayment. */
+/** Apply a plan from choosePayment. Returns [{ id, amt, acctId, auto }] for what was really moved. */
 export function applyPayment(k, plan) {
-  if (!plan || !plan.acctId) return [];
+  if (!plan) return [];
   const done = [];
   for (const x of plan.items) {
-    const amt = plan.income ? -x.amt : x.amt; // income is stored negative so a refund takes it back out
-    if (recordPayment(k, x.id, plan.acctId, amt)) done.push({ id: x.id, amt });
+    const acctId = x.acctId || plan.acctId;
+    if (!acctId) continue;
+    const amt = plan.income && !x.acctId ? -x.amt : x.amt; // income is stored negative so a refund takes it back out
+    if (recordPayment(k, x.id, acctId, amt)) done.push({ id: x.id, amt, acctId, auto: !!x.acctId });
   }
   return done;
+}
+
+/** Charge one expense to its method's account without asking (used where there is no chooser). Returns the move or null. */
+export function autoDeduct(k, id) {
+  const acct = autoAccountFor(id);
+  const amt = amountDue(id, k);
+  if (!acct || !(amt > 0) || isPaid(id, k)) return null;
+  return recordPayment(k, id, acct.id, amt) ? { id, amt, acctId: acct.id, auto: true } : null;
+}
+
+/** "PHP 320.00" - the format used by the automatic-deduction toast. */
+export function phpMoney(n) {
+  return `PHP ${(Math.round((Number(n) + Number.EPSILON) * 100) / 100).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Toast text for a finished plan (what actually moved). */
+export function paidMessage(plan, done) {
+  if (!done.length) return "";
+  const byAcct = new Map();
+  for (const x of done) byAcct.set(x.acctId, (byAcct.get(x.acctId) || 0) + x.amt);
+  const total = done.reduce((s, x) => s + x.amt, 0);
+  if (done.some((x) => x.auto)) {
+    if (byAcct.size === 1) return `Deducted ${phpMoney(total)} from ${accountName([...byAcct.keys()][0])}`;
+    return `Deducted ${phpMoney(total)} (${[...byAcct].map(([id, amt]) => `${phpMoney(amt)} from ${accountName(id)}`).join(", ")})`;
+  }
+  return plan.income
+    ? `Received into ${accountName(plan.acctId)} (+${peso(-total)})`
+    : `Paid from ${accountName(plan.acctId)} (-${peso(total)})`;
 }
 
 export function accountName(acctId) {

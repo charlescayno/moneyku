@@ -11,7 +11,7 @@ import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
 import { findItemAnywhere } from "./itemOps.js";
 import { cardOwedNow } from "./card.js";
-import { choosePayment, applyPayment, accountName } from "./payfrom.js";
+import { choosePayment, applyPayment, accountName, paidMessage } from "./payfrom.js";
 
 // ---------- shared ----------
 export function categoryTotals(k) {
@@ -177,8 +177,9 @@ export async function dueMarkPaid(id) {
   if (navigator.vibrate) navigator.vibrate(12);
   await syncSet(d);
   renderAll();
-  const from = paidNow.length ? ` from ${accountName(plan.acctId)} (-${peso(paidNow.reduce((s, x) => s + x.amt, 0))})` : "";
-  toast(`${f.item.name} paid${from}`, "ok", {
+  const auto = paidNow.some((x) => x.auto);
+  const from = paidNow.length && !auto ? ` from ${accountName(plan.acctId)} (-${peso(paidNow.reduce((s, x) => s + x.amt, 0))})` : "";
+  toast(auto ? paidMessage(plan, paidNow) : `${f.item.name} paid${from}`, "ok", {
     actionLabel: "Undo", duration: 5000,
     onAction: async () => { setAppData(snapshot); await syncSet(snapshot); renderAll(); },
   });

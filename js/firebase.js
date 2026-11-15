@@ -170,6 +170,19 @@ export function normalize(d) {
   d.overrides = d.overrides || {};
   d.spend = d.spend || {};
   d.settings = d.settings || {};
+  // paidFrom[month][itemId] = { a: accountId, amt }: what each paid item took from which account (so unpaying gives it back exactly)
+  const pf = d.paidFrom && typeof d.paidFrom === "object" ? d.paidFrom : {};
+  for (const m of Object.keys(pf)) {
+    const rec = pf[m];
+    if (!rec || typeof rec !== "object") { delete pf[m]; continue; }
+    for (const id of Object.keys(rec)) {
+      const r = rec[id];
+      const amt = Number(r && r.amt);
+      if (!r || typeof r !== "object" || !r.a || !isFinite(amt)) delete rec[id];
+      else rec[id] = { a: String(r.a), amt: Math.round((amt + Number.EPSILON) * 100) / 100 };
+    }
+  }
+  d.paidFrom = pf;
   d.cardStatements = Array.isArray(d.cardStatements) ? d.cardStatements : (d.cardStatements ? Object.values(d.cardStatements) : []);
   d.cardPayments = Array.isArray(d.cardPayments) ? d.cardPayments : (d.cardPayments ? Object.values(d.cardPayments) : []);
   return d;

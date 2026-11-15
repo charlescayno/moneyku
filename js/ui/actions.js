@@ -1,10 +1,11 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { applyChildOrder } from '../itemOps.js';
-import { choosePayment, applyPayment, refundPayment, recordPayment, accountName, nameOf } from '../payfrom.js';
+import { choosePayment, applyPayment, refundPayment, recordPayment, paidMessage, nameOf } from '../payfrom.js';
 import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { openMore, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
+import { cardSummaryHtml } from './cardui.js';
 import { toast } from './core.js';
 
 // =============================
@@ -73,17 +74,30 @@ export function renderMonthBanner() {
 // =============================
 // Quick Paid Interactions
 // =============================
+// One toggle at a time per item and month, so a double tap can never charge an account twice
+const paidBusy = new Set();
+
 export async function togglePaidQuick(event, id, kind) {
+  const busyKey = `${getSelectedKey()}|${id}`;
+  if (paidBusy.has(busyKey)) return;
+  paidBusy.add(busyKey);
+  try { await togglePaidQuickRun(event, id, kind); } finally { paidBusy.delete(busyKey); }
+}
+
+async function togglePaidQuickRun(event, id, kind) {
   const btn = event.target ? event.target.closest("[data-action]") : event;
-  const appData = getAppData();
   const selectedKey = getSelectedKey();
+  let appData = getAppData();
   appData.paid[selectedKey] = appData.paid[selectedKey] || {};
   const nowSettled = appData.paid[selectedKey][id] !== true;
-  // Checking off an expense: ask which account it came out of
+  // Checking off an expense: ask which account it came out of (not asked for Maribank / GCash / BPI Debit)
   let plan = null;
   if (nowSettled) {
     plan = await choosePayment(selectedKey, [id], nameOf(id));
     if (plan === null) return; // cancelled, leave it unpaid
+    appData = getAppData(); // a sync may have swapped the data while the chooser was open
+    appData.paid[selectedKey] = appData.paid[selectedKey] || {};
+    if ((appData.paid[selectedKey][id] === true) === nowSettled) return;
   }
   appData.paid[selectedKey][id] = nowSettled;
   const paidNow = nowSettled ? applyPayment(selectedKey, plan) : [];
@@ -110,15 +124,18 @@ export async function togglePaidQuick(event, id, kind) {
   if (moved) renderAll(); // account balances changed
   await syncSet(appData);
   const msg = nowSettled
-    ? (paidNow[0] ? (plan.income ? `Received into ${accountName(plan.acctId)} (+${peso(-paidNow[0].amt)})` : `Paid from ${accountName(plan.acctId)} (-${peso(paidNow[0].amt)})`) : kind === "income" ? "Marked received" : "Marked paid")
+    ? (paidNow[0] ? paidMessage(plan, paidNow) : kind === "income" ? "Marked received" : "Marked paid")
     : (given ? (given.amt < 0 ? `Marked unreceived - ${peso(-given.amt)} taken back from ${given.acctName}` : `Marked unpaid - ${peso(given.amt)} returned to ${given.acctName}`) : "Marked unpaid");
   toast(msg, "ok", {
     actionLabel: "Undo", duration: 4000,
     onAction: async () => {
-      appData.paid[selectedKey][id] = !nowSettled;
+      const d = getAppData();
+      d.paid[selectedKey] = d.paid[selectedKey] || {};
+      if ((d.paid[selectedKey][id] === true) !== nowSettled) return; // already changed again, nothing to undo
+      d.paid[selectedKey][id] = !nowSettled;
       if (paidNow[0]) refundPayment(selectedKey, id);
       else if (given) recordPayment(selectedKey, id, given.acctId, given.amt);
-      await syncSet(appData);
+      await syncSet(d);
       renderAll();
     },
   });
@@ -128,18 +145,22 @@ export async function togglePaidGroup(event, idsStr, k, kind) {
   event.stopPropagation();
   const ids = idsStr.split(",");
   if (!ids.length) return;
-  const appData = getAppData();
+  let appData = getAppData();
   
   appData.paid[k] = appData.paid[k] || {};
   const allPaid = ids.every(id => appData.paid[k][id] === true);
   const targetState = !allPaid;
   
-  // Marking every expense paid: ask once which account it all came out of
+  // Marking every expense paid: Maribank / GCash / BPI Debit items are charged to their own account,
+  // the rest are asked about once
   let plan = null;
   if (targetState) {
     plan = await choosePayment(k, ids, "All items");
     if (plan === null) return;
+    appData = getAppData();
+    appData.paid[k] = appData.paid[k] || {};
   }
+  const changed = ids.filter((id) => (appData.paid[k][id] === true) !== targetState);
   const refunded = [];
   for (const id of ids) {
     appData.paid[k][id] = targetState;
@@ -151,7 +172,21 @@ export async function togglePaidGroup(event, idsStr, k, kind) {
   renderAll();
   await syncSet(appData);
   const total = (paidNow.length ? paidNow : refunded).reduce((s, x) => s + x.amt, 0);
-  if (paidNow.length) toast(plan.income ? `Received into ${accountName(plan.acctId)} (+${peso(-total)})` : `Paid from ${accountName(plan.acctId)} (-${peso(total)})`);
+  if (paidNow.length) {
+    toast(paidMessage(plan, paidNow), "ok", {
+      actionLabel: "Undo", duration: 4000,
+      onAction: async () => {
+        const d = getAppData();
+        for (const id of changed) {
+          if (d.paid?.[k]?.[id] !== true) continue;
+          d.paid[k][id] = false;
+          refundPayment(k, id);
+        }
+        await syncSet(d);
+        renderAll();
+      },
+    });
+  }
   else if (refunded.length) toast(total < 0 ? `${peso(-total)} taken back from ${refunded[0].acctName}` : `${peso(total)} returned to ${refunded[0].acctName}`);
 }
 
@@ -235,6 +270,8 @@ export function refreshRealized() {
   if (proj) proj.textContent = hideProjected ? '••••••' : peso(runningFundsAt(selectedKey));
   const stats = $("sum-stats");
   if (stats) stats.innerHTML = statsGridHtml(t);
+  const cardSlot = $("card-summary-slot");
+  if (cardSlot) cardSlot.innerHTML = cardSummaryHtml();
 }
 
 // =============================
@@ -347,4 +384,4 @@ export function toggleDensityMode() {
   localStorage.setItem("moneyku_density", next);
   applyDensityMode(next);
   toast(`Switched to ${next.charAt(0).toUpperCase() + next.slice(1)} Mode`, "info");
-}
+}
