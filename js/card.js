@@ -152,7 +152,8 @@ export function keysForMonth(k) {
     const st = statement(s);
     const has = st.charges.length || st.payments.length || st.isManual;
     if (!has) continue;
-    if (st.dueKey === k || s === k || (st.remaining > 0.005 && cmpKey(st.dueKey, k) <= 0)) keys.push(s);
+    // also any statement holding a charge made in this month, so a purchase never disappears
+    if (st.dueKey === k || s === k || st.charges.some((c) => c.month === k) || (st.remaining > 0.005 && cmpKey(st.dueKey, k) <= 0)) keys.push(s);
   }
   return keys;
 }
