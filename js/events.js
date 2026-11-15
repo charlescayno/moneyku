@@ -8,6 +8,7 @@ import {
   getActiveView,
 } from "./state.js";
 import { selectMonth } from "./ui/index.js";
+import { initEdgeSwipe, EDGE_ZONE } from "./edgeswipe.js";
 
 // Touch state
 let touchStartX = 0;
@@ -35,6 +36,8 @@ function initRowSwipe() {
     startedOnRow = !!row; active = false; dx = 0;
     if (!row) return;
     sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    // Touches that begin in the screen-edge zone belong to the edge swipe (change month), not the row
+    if (sx <= EDGE_ZONE || sx >= window.innerWidth - EDGE_ZONE) { row = null; startedOnRow = false; }
   }, { passive: true });
   document.addEventListener('touchmove', (e) => {
     if (!row) return;
@@ -61,6 +64,7 @@ function initRowSwipe() {
 
 export function initGestures() {
   initRowSwipe();
+  initEdgeSwipe();
   document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;

@@ -1267,3 +1267,32 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 /* left:50% leaves a toast only half the screen to grow into, so long messages with an Undo button wrapped to four lines */
 #toast { width: max-content; max-width: calc(100vw - 2rem); }
 #toast-text { min-width: 0; }
+
+/* Edge swipe (touch devices): swiping in from the screen edge changes the month.
+   The strips only claim vertical panning there, so the browser leaves horizontal drags to the app. */
+.edge-strip { position: fixed; top: 0; bottom: 0; width: 24px; z-index: 30; touch-action: pan-y; background: transparent; -webkit-tap-highlight-color: transparent; }
+.edge-strip-l { left: 0; }
+.edge-strip-r { right: 0; }
+@media (hover: hover) and (pointer: fine) { .edge-strip { display: none; } }
+
+#edge-hint { position: fixed; top: 50%; z-index: 45; width: 36px; height: 56px; display: flex; align-items: center; justify-content: center; color: #fff; background: rgba(79, 70, 229, 0.55); pointer-events: none; opacity: 0; visibility: hidden; transition: background 0.15s ease; }
+#edge-hint .material-icons { font-size: 28px; }
+#edge-hint[data-side="l"] { left: 0; border-radius: 0 28px 28px 0; }
+#edge-hint[data-side="r"] { right: 0; border-radius: 28px 0 0 28px; }
+#edge-hint.show { visibility: visible; }
+#edge-hint.ready { background: rgba(79, 70, 229, 0.95); }
+#edge-hint.unavailable { background: rgba(100, 116, 139, 0.5); }
+
+@keyframes month-out-next { to { transform: translateX(-28px); opacity: 0; } }
+@keyframes month-in-next { from { transform: translateX(28px); opacity: 0; } }
+@keyframes month-out-prev { to { transform: translateX(28px); opacity: 0; } }
+@keyframes month-in-prev { from { transform: translateX(-28px); opacity: 0; } }
+html[data-month-dir] #budget-body { view-transition-name: month-body; }
+html[data-month-dir="next"]::view-transition-old(month-body) { animation: month-out-next 0.2s ease both; }
+html[data-month-dir="next"]::view-transition-new(month-body) { animation: month-in-next 0.24s ease both; }
+html[data-month-dir="prev"]::view-transition-old(month-body) { animation: month-out-prev 0.2s ease both; }
+html[data-month-dir="prev"]::view-transition-new(month-body) { animation: month-in-prev 0.24s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  #edge-hint { transition: none; }
+  html[data-month-dir]::view-transition-old(month-body), html[data-month-dir]::view-transition-new(month-body) { animation: none; }
+}
