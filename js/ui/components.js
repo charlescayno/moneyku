@@ -1,4 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
 import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
@@ -617,8 +618,8 @@ export function accountsCardHtml() {
 export function investmentsCardHtml() {
   const appData = getAppData();
   const inv = appData?.investments || { customPowiPrice: null, customUsdPhp: null, cachedPowi: 53.18, cachedUsdPhp: 58.20 };
-  const shares = 99;
-  const pendingShares = 36;
+  const shares = sharesOf(inv, "shares", DEFAULT_SHARES);
+  const pendingShares = sharesOf(inv, "pendingShares", DEFAULT_PENDING_SHARES);
   const isCustomPrice = !!inv.customPowiPrice;
   const isCustomRate = !!inv.customUsdPhp;
   const price = parseFloat(inv.customPowiPrice) || parseFloat(inv.cachedPowi) || 53.18;
@@ -662,7 +663,7 @@ export function investmentsCardHtml() {
         <div class="flex justify-between items-center">
           <div>
             <p class="text-[11px] font-bold text-slate-300">Vested</p>
-            <p class="text-[8px] text-slate-500">Power Integrations (${shares} shs)</p>
+            <p class="text-[8px] text-slate-500">Power Integrations (${fmtShares(shares)} shs)</p>
           </div>
           <div class="text-right">
             <p class="text-xs font-black text-white">${hideInvestments ? '••••••' : peso(totalPhp)}</p>
@@ -672,7 +673,7 @@ export function investmentsCardHtml() {
         <div class="pt-1.5 border-t border-white/5 flex justify-between items-center">
           <div class="flex items-center gap-1">
             <span class="material-icons text-emerald-400" style="font-size:11px">hourglass_top</span>
-            <p class="text-[10px] font-bold text-emerald-400">Apr 2027 (+${pendingShares})</p>
+            <p class="text-[10px] font-bold text-emerald-400">Apr 2027 (+${fmtShares(pendingShares)})</p>
           </div>
           <p class="text-[11px] font-black text-emerald-400">${hideInvestments ? '••••••' : peso(pendingPhp)}</p>
         </div>
@@ -698,7 +699,7 @@ export function investmentsCardHtml() {
           <span class="material-icons" style="font-size:16px">sync</span>Update Now
         </button>
         <button data-action="openInvestmentModal" class="flex-1 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl font-bold text-amber-400 text-[11px] flex items-center justify-center gap-1.5 transition-all active:scale-95">
-          <span class="material-icons" style="font-size:16px">edit</span>Edit Rates
+          <span class="material-icons" style="font-size:16px">edit</span>Edit Shares &amp; Rates
         </button>
       </div>
     </div>
@@ -1208,8 +1209,15 @@ async function saveModalInner() {
   if (activeEdit.kind === "investment") {
     const powiVal = $("mod-powi").value;
     const rateVal = $("mod-rate").value;
+    const sharesVal = $("mod-shares").value.trim();
+    const pendingVal = $("mod-pending").value.trim();
+    if ((sharesVal !== "" && !(parseFloat(sharesVal) >= 0)) || (pendingVal !== "" && !(parseFloat(pendingVal) >= 0))) {
+      return toast("Shares must be 0 or more", "error");
+    }
     
     if (!appData.investments) appData.investments = {};
+    appData.investments.shares = sharesVal === "" ? null : parseFloat(sharesVal);
+    appData.investments.pendingShares = pendingVal === "" ? null : parseFloat(pendingVal);
     appData.investments.customPowiPrice = powiVal ? parseFloat(powiVal) : null;
     appData.investments.customUsdPhp = rateVal ? parseFloat(rateVal) : null;
     

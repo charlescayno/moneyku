@@ -95,6 +95,15 @@ export const BRAND_DOMAINS = {
 };
 export const BANK_DOMAINS = BRAND_DOMAINS;
 
+// POWI holdings used until you set your own in Investments -> Edit
+export const DEFAULT_SHARES = 99;
+export const DEFAULT_PENDING_SHARES = 36;
+export function sharesOf(inv, key, fallback) {
+  const n = parseFloat(inv && inv[key]);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+export const fmtShares = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 4 });
+
 export const generateId = () => Math.random().toString(36).slice(2, 11);
 export const $ = (id) => document.getElementById(id);
 

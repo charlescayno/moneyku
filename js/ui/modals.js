@@ -1,4 +1,4 @@
-import { PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
@@ -284,11 +284,24 @@ export function openInvestmentModal() {
   const appData = getAppData();
   const inv = appData?.investments || {};
   setActiveEdit({ kind: "investment" });
-  $("modal-title").textContent = "Edit Rates";
+  $("modal-title").textContent = "Edit Shares & Rates";
   $("modal-title").className = "text-lg font-black uppercase tracking-tight text-amber-400";
+  const shares = sharesOf(inv, "shares", DEFAULT_SHARES);
+  const pending = sharesOf(inv, "pendingShares", DEFAULT_PENDING_SHARES);
+  const fieldCls = "w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-amber-500 transition-colors";
   
   $("modal-body").innerHTML = `
     <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[10px] font-black tracking-widest text-slate-400 uppercase mb-1">Vested shares</label>
+          <input type="number" id="mod-shares" min="0" step="any" inputmode="decimal" class="${fieldCls}" value="${shares}">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black tracking-widest text-slate-400 uppercase mb-1">Next vest (Apr 2027)</label>
+          <input type="number" id="mod-pending" min="0" step="any" inputmode="decimal" class="${fieldCls}" value="${pending}">
+        </div>
+      </div>
       <div>
         <label class="block text-[10px] font-black tracking-widest text-slate-400 uppercase mb-1">Custom POWI Price (USD)</label>
         <input type="number" id="mod-powi" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-amber-500 transition-colors" placeholder="Leave empty for auto" value="${inv.customPowiPrice || ''}">
