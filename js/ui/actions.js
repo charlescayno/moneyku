@@ -111,8 +111,8 @@ export async function togglePaidQuick(event, id, kind) {
   if (moved) renderAll(); // account balances changed
   await syncSet(appData);
   const msg = nowSettled
-    ? (paidNow[0] ? `Paid from ${accountName(plan.acctId)} (-${peso(paidNow[0].amt)})` : kind === "income" ? "Marked received" : "Marked paid")
-    : (given ? `Marked unpaid - ${peso(given.amt)} returned to ${given.acctName}` : "Marked unpaid");
+    ? (paidNow[0] ? (plan.income ? `Received into ${accountName(plan.acctId)} (+${peso(-paidNow[0].amt)})` : `Paid from ${accountName(plan.acctId)} (-${peso(paidNow[0].amt)})`) : kind === "income" ? "Marked received" : "Marked paid")
+    : (given ? (given.amt < 0 ? `Marked unreceived - ${peso(-given.amt)} taken back from ${given.acctName}` : `Marked unpaid - ${peso(given.amt)} returned to ${given.acctName}`) : "Marked unpaid");
   toast(msg, "ok", {
     actionLabel: "Undo", duration: 4000,
     onAction: async () => {
@@ -137,7 +137,7 @@ export async function togglePaidGroup(event, idsStr, k, kind) {
   
   // Marking every expense paid: ask once which account it all came out of
   let plan = null;
-  if (targetState && kind !== "income") {
+  if (targetState) {
     plan = await choosePayment(k, ids, "All items");
     if (plan === null) return;
   }
@@ -152,8 +152,8 @@ export async function togglePaidGroup(event, idsStr, k, kind) {
   renderAll();
   await syncSet(appData);
   const total = (paidNow.length ? paidNow : refunded).reduce((s, x) => s + x.amt, 0);
-  if (paidNow.length) toast(`Paid from ${accountName(plan.acctId)} (-${peso(total)})`);
-  else if (refunded.length) toast(`${peso(total)} returned to ${refunded[0].acctName}`);
+  if (paidNow.length) toast(plan.income ? `Received into ${accountName(plan.acctId)} (+${peso(-total)})` : `Paid from ${accountName(plan.acctId)} (-${peso(total)})`);
+  else if (refunded.length) toast(total < 0 ? `${peso(-total)} taken back from ${refunded[0].acctName}` : `${peso(total)} returned to ${refunded[0].acctName}`);
 }
 
 export function updateParentBadge(childId) {

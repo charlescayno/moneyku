@@ -17,17 +17,19 @@ export function payableAccounts() {
 function findExpenseLeaf(id) {
   const d = getAppData();
   for (const who of ["charlie", "debt"]) {
-    for (const it of d?.items?.[who]?.expenses || []) {
-      if (it.id === id) return { item: it, child: null };
-      for (const c of Array.isArray(it.children) ? it.children : []) {
-        if (c && c.id === id) return { item: it, child: c };
+    for (const kind of ["expenses", "income"]) {
+      for (const it of d?.items?.[who]?.[kind] || []) {
+        if (it.id === id) return { item: it, child: null, income: kind === "income" };
+        for (const c of Array.isArray(it.children) ? it.children : []) {
+          if (c && c.id === id) return { item: it, child: c, income: kind === "income" };
+        }
       }
     }
   }
   return null;
 }
 
-/** What this expense costs for month k, or null if the id is not an expense. */
+/** What this expense costs (or income pays) for month k, or null if the id is not an expense. */
 export function amountDue(id, k) {
   const f = findExpenseLeaf(id);
   if (!f) return null;
@@ -35,16 +37,18 @@ export function amountDue(id, k) {
   return Number(amt) || 0;
 }
 
+export function isIncomeId(id) { return !!findExpenseLeaf(id)?.income; }
+
 export function nameOf(id) {
   const f = findExpenseLeaf(id);
   return f ? (f.child || f.item).name : "";
 }
 
-/** Subtract an expense from an account and remember it so it can be given back. */
+/** Subtract an expense from an account (income: pass a negative amt to add it) and remember it. */
 export function recordPayment(k, id, acctId, amt) {
   const d = getAppData();
   const acct = (d.accounts || []).find((a) => a.id === acctId);
-  if (!acct || !(amt > 0)) return false;
+  if (!acct || !amt) return false;
   acct.amount = Math.round(((Number(acct.amount) || 0) - amt + Number.EPSILON) * 100) / 100;
   d.paidFrom = d.paidFrom || {};
   d.paidFrom[k] = d.paidFrom[k] || {};
@@ -75,17 +79,21 @@ export async function choosePayment(k, ids, label) {
     .map((id) => ({ id, amt: amountDue(id, k) }))
     .filter((x) => x.amt != null && x.amt > 0);
   if (!items.length || !payableAccounts().length) return { acctId: null, items: [] };
+  const income = isIncomeId(items[0].id);
   const total = items.reduce((s, x) => s + x.amt, 0);
-  const choice = await pickAccount(label, total);
+  const choice = await pickAccount(label, total, income);
   if (choice === null) return null;
-  return { acctId: choice, items };
+  return { acctId: choice, items, income };
 }
 
 /** Apply a plan from choosePayment. */
 export function applyPayment(k, plan) {
   if (!plan || !plan.acctId) return [];
   const done = [];
-  for (const x of plan.items) if (recordPayment(k, x.id, plan.acctId, x.amt)) done.push(x);
+  for (const x of plan.items) {
+    const amt = plan.income ? -x.amt : x.amt; // income is stored negative so a refund takes it back out
+    if (recordPayment(k, x.id, plan.acctId, amt)) done.push({ id: x.id, amt });
+  }
   return done;
 }
 
@@ -96,7 +104,7 @@ export function accountName(acctId) {
 // ---------- the chooser ----------
 let open = false;
 
-function pickAccount(label, total) {
+function pickAccount(label, total, income) {
   if (open) return Promise.resolve(null);
   open = true;
   const accts = payableAccounts();
@@ -116,7 +124,7 @@ function pickAccount(label, total) {
       const icon = bank
         ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[bank] || ""}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
         : `<span class="text-sm font-black text-white">${escapeHtml((a.name || "?").trim().charAt(0).toUpperCase() || "?")}</span>`;
-      const after = (Number(a.amount) || 0) - total;
+      const after = (Number(a.amount) || 0) + (income ? total : -total);
       return `<button type="button" data-acct="${escapeHtml(a.id)}" class="w-full flex items-center gap-3 p-3 rounded-xl border ${a === pre ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-900/60"} text-left">
         <span class="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600">${icon}</span>
         <span class="flex-1 min-w-0"><span class="block text-sm font-bold text-white truncate">${escapeHtml(a.name)}</span>
@@ -125,12 +133,12 @@ function pickAccount(label, total) {
     };
     el.innerHTML = `<div class="bg-slate-800 w-full max-w-sm rounded-2xl p-5 border border-white/5 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
       <div>
-        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Paid from which account?</p>
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">${income ? "Received into which account?" : "Paid from which account?"}</p>
         <p class="text-base font-black text-white mt-1 truncate">${escapeHtml(label)}</p>
-        <p class="text-sm font-black text-rose-400">${peso(total)}</p>
+        <p class="text-sm font-black ${income ? "text-emerald-400" : "text-rose-400"}">${income ? "+" : ""}${peso(total)}</p>
       </div>
       <div class="space-y-2">${accts.map(row).join("")}</div>
-      <button type="button" data-skip class="w-full py-3 text-xs font-bold text-slate-300 bg-slate-700/50 rounded-xl">Mark paid without deducting</button>
+      <button type="button" data-skip class="w-full py-3 text-xs font-bold text-slate-300 bg-slate-700/50 rounded-xl">${income ? "Mark received without adding" : "Mark paid without deducting"}</button>
       <button type="button" data-cancel class="w-full py-2 text-xs font-bold text-slate-500">Cancel</button>
     </div>`;
 
