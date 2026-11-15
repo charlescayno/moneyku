@@ -1,3 +1,4 @@
+import { refundPayment } from "../payfrom.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
 import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
@@ -1268,7 +1269,7 @@ async function saveModalInner() {
         const c = parent.children.find((x) => x.id === id);
         if (c) { c.name = name; c.amount = amount; }
         const pf = $("f-paid");
-        if (pf) { appData.paid[selectedKey] = appData.paid[selectedKey] || {}; appData.paid[selectedKey][id] = pf.dataset.on === "true"; }
+        if (pf) { appData.paid[selectedKey] = appData.paid[selectedKey] || {}; appData.paid[selectedKey][id] = pf.dataset.on === "true"; if (pf.dataset.on !== "true") refundPayment(selectedKey, id); }
       } else {
         parent.children.push({ id: generateId(), name, amount });
       }
@@ -1320,7 +1321,7 @@ async function saveModalInner() {
     if (pf) {
       const on = pf.dataset.on === "true";
       appData.paid[selectedKey] = appData.paid[selectedKey] || {};
-      appData.paid[selectedKey][id] = on;
+      appData.paid[selectedKey][id] = on; if (!on) refundPayment(selectedKey, id);
     }
   } else {
     const isGroup = $("f-group")?.dataset.on === "true";

@@ -1,5 +1,6 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { applyChildOrder } from '../itemOps.js';
+import { choosePayment, applyPayment, refundPayment, recordPayment, accountName, nameOf } from '../payfrom.js';
 import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { renderProjectionChart } from '../charts.js';
@@ -79,7 +80,16 @@ export async function togglePaidQuick(event, id, kind) {
   const selectedKey = getSelectedKey();
   appData.paid[selectedKey] = appData.paid[selectedKey] || {};
   const nowSettled = appData.paid[selectedKey][id] !== true;
+  // Checking off an expense: ask which account it came out of
+  let plan = null;
+  if (nowSettled) {
+    plan = await choosePayment(selectedKey, [id], nameOf(id));
+    if (plan === null) return; // cancelled, leave it unpaid
+  }
   appData.paid[selectedKey][id] = nowSettled;
+  const paidNow = nowSettled ? applyPayment(selectedKey, plan) : [];
+  const given = nowSettled ? null : refundPayment(selectedKey, id);
+  const moved = paidNow[0] || given;
   applyPaidVisual(btn, nowSettled);
   updateInstallmentBar(btn, id);
   updateParentBadge(id);
@@ -98,11 +108,17 @@ export async function togglePaidQuick(event, id, kind) {
   }
   refreshRealized();
   if (navigator.vibrate) navigator.vibrate(12);
+  if (moved) renderAll(); // account balances changed
   await syncSet(appData);
-  toast(nowSettled ? (kind === "income" ? "Marked received" : "Marked paid") : "Marked unpaid", "ok", {
+  const msg = nowSettled
+    ? (paidNow[0] ? `Paid from ${accountName(plan.acctId)} (-${peso(paidNow[0].amt)})` : kind === "income" ? "Marked received" : "Marked paid")
+    : (given ? `Marked unpaid - ${peso(given.amt)} returned to ${given.acctName}` : "Marked unpaid");
+  toast(msg, "ok", {
     actionLabel: "Undo", duration: 4000,
     onAction: async () => {
       appData.paid[selectedKey][id] = !nowSettled;
+      if (paidNow[0]) refundPayment(selectedKey, id);
+      else if (given) recordPayment(selectedKey, id, given.acctId, given.amt);
       await syncSet(appData);
       renderAll();
     },
@@ -119,13 +135,25 @@ export async function togglePaidGroup(event, idsStr, k, kind) {
   const allPaid = ids.every(id => appData.paid[k][id] === true);
   const targetState = !allPaid;
   
+  // Marking every expense paid: ask once which account it all came out of
+  let plan = null;
+  if (targetState && kind !== "income") {
+    plan = await choosePayment(k, ids, "All items");
+    if (plan === null) return;
+  }
+  const refunded = [];
   for (const id of ids) {
     appData.paid[k][id] = targetState;
+    if (!targetState) { const g = refundPayment(k, id); if (g) refunded.push(g); }
   }
+  const paidNow = targetState ? applyPayment(k, plan) : [];
   
   refreshRealized();
   renderAll();
   await syncSet(appData);
+  const total = (paidNow.length ? paidNow : refunded).reduce((s, x) => s + x.amt, 0);
+  if (paidNow.length) toast(`Paid from ${accountName(plan.acctId)} (-${peso(total)})`);
+  else if (refunded.length) toast(`${peso(total)} returned to ${refunded[0].acctName}`);
 }
 
 export function updateParentBadge(childId) {

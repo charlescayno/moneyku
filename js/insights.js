@@ -9,6 +9,7 @@ import { closeModal, openModalShell } from "./ui/modals.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
 import { findItemAnywhere } from "./itemOps.js";
+import { choosePayment, applyPayment, accountName } from "./payfrom.js";
 
 // ---------- shared ----------
 export function categoryTotals(k) {
@@ -162,15 +163,20 @@ export async function dueMarkPaid(id) {
   const f = findItemAnywhere(d, id);
   if (!f) return;
   const k = getSelectedKey();
-  const snapshot = JSON.parse(JSON.stringify(d));
   const ids = getKids(f.item, k).length ? getKids(f.item, k).map((c) => c.id) : [id];
+  // Ask which account it comes out of before anything changes
+  const plan = await choosePayment(k, ids, f.item.name);
+  if (plan === null) return;
+  const snapshot = JSON.parse(JSON.stringify(d));
   d.paid = d.paid || {};
   d.paid[k] = d.paid[k] || {};
   ids.forEach((x) => { d.paid[k][x] = true; });
+  const paidNow = applyPayment(k, plan);
   if (navigator.vibrate) navigator.vibrate(12);
   await syncSet(d);
   renderAll();
-  toast(`${f.item.name} marked paid`, "ok", {
+  const from = paidNow.length ? ` from ${accountName(plan.acctId)} (-${peso(paidNow.reduce((s, x) => s + x.amt, 0))})` : "";
+  toast(`${f.item.name} paid${from}`, "ok", {
     actionLabel: "Undo", duration: 5000,
     onAction: async () => { setAppData(snapshot); await syncSet(snapshot); renderAll(); },
   });
