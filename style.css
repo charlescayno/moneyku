@@ -1160,3 +1160,19 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 .arr-row.arr-dragging { z-index: 20; background: #262d4a; border-radius: 0.75rem; box-shadow: 0 8px 24px rgba(0,0,0,.45); transition: none; }
 .arr-handle { cursor: grab; }
 .arr-handle:active { cursor: grabbing; background: rgba(99,102,241,.35); }
+
+/* BPI card box: iOS Safari gives native date inputs an intrinsic width that ignores w-full */
+#bpi-cc-box > div { min-width: 0; }
+#bpi-cc-box input[type="date"] {
+  display: block;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 2.65rem;
+  text-align: center;
+}
+#bpi-cc-box input[type="date"]::-webkit-date-and-time-value { text-align: center; min-width: 0; margin: 0 auto; }
+#bpi-cc-box input[type="date"]::-webkit-datetime-edit { padding: 0; }
