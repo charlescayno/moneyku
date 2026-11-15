@@ -1,4 +1,5 @@
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { cardSettings } from "../card.js";
 import { childAmt } from "../state.js";
 import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
@@ -52,8 +53,11 @@ export function updateBpiCcMonth(isExistingInit = false) {
     cutoffDate = new Date(y, m + 1, cutoff);
   }
 
-  const dueDate = new Date(cutoffDate.getTime());
-  dueDate.setDate(dueDate.getDate() + 20);
+  // Due on the card's due day (29th by default), the first one after the cut-off
+  const dueDay = cardSettings().dueDay;
+  const dueIn = (yy, mm) => new Date(yy, mm, Math.min(dueDay, new Date(yy, mm + 1, 0).getDate()));
+  let dueDate = dueIn(cutoffDate.getFullYear(), cutoffDate.getMonth());
+  if (dueDate <= cutoffDate) dueDate = dueIn(cutoffDate.getFullYear(), cutoffDate.getMonth() + 1);
 
   const targetK = mkKey(dueDate.getFullYear(), dueDate.getMonth());
 

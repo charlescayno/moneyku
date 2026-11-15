@@ -4,10 +4,10 @@
 // Expenses tagged "bpi_platinum" (charlie's expenses) are NOT counted in the normal
 // monthly totals any more. Instead the card makes one bill per statement, counted in
 // the month its due date falls in. Data (all in appData):
-//   card            { cutoffDay, dueDays }                 defaults 14 / 20
+//   card            { cutoffDay, dueDay }                  defaults 14 / 29
 //   cardStatements  [{ key:"YYYY-MM", cutoff, due, amount, note }]   manual overrides
 //   cardPayments    [{ id, key, amount, acctId, date }]    key = statement key
-// A statement without an override uses cutoff = cutoffDay of its month, due = cutoff + dueDays.
+// A statement without an override uses cutoff = cutoffDay of its month, due = the next dueDay (the 29th) after the cutoff.
 // =============================
 import { addMonths, cmpKey, currentKey, generateId } from "./utils.js";
 import { getAppData, getItems, itemActiveIn, itemAmts, timeline } from "./state.js";
@@ -39,23 +39,30 @@ export function cardSettings() {
     const fromItem = cardItems().map((it) => parseInt(it.cutoffDay, 10)).find((x) => x >= 1 && x <= 31);
     cutoffDay = fromItem || 14;
   }
-  let dueDays = parseInt(c.dueDays, 10);
-  if (!(dueDays >= 0 && dueDays <= 90)) dueDays = 20;
-  return { cutoffDay, dueDays };
+  let dueDay = parseInt(c.dueDay, 10);
+  if (!(dueDay >= 1 && dueDay <= 31)) dueDay = 29;
+  return { cutoffDay, dueDay };
 }
 
-export function saveCardSettings({ cutoffDay, dueDays }) {
+export function saveCardSettings({ cutoffDay, dueDay }) {
   const d = getAppData();
-  d.card = { cutoffDay: parseInt(cutoffDay, 10) || 14, dueDays: Math.max(0, parseInt(dueDays, 10) || 0) };
+  d.card = { cutoffDay: parseInt(cutoffDay, 10) || 14, dueDay: parseInt(dueDay, 10) || 29 };
+}
+
+/** The due date for a statement cut on `cutoff`: the first `dueDay` that comes after it (short months use their last day). */
+export function dueFor(cutoff, dueDay) {
+  const k = cutoff.slice(0, 7);
+  const same = dateOf(k, dueDay);
+  return same > cutoff ? same : dateOf(addMonths(k, 1), dueDay);
 }
 
 function manual(key) { return (getAppData()?.cardStatements || []).find((s) => s && s.key === key) || null; }
 
 export function stmtDates(key) {
   const m = manual(key);
-  const { cutoffDay, dueDays } = cardSettings();
+  const { cutoffDay, dueDay } = cardSettings();
   const cutoff = (m && m.cutoff) || dateOf(key, cutoffDay);
-  const due = (m && m.due) || addDays(cutoff, dueDays);
+  const due = (m && m.due) || dueFor(cutoff, dueDay);
   return { cutoff, due };
 }
 

@@ -184,16 +184,16 @@ export function cardSettingsOpen() {
   const s = cardSettings();
   const el = dialog(`${title("Card settings", CARD_NAME)}
     ${field("Statement (cutoff) day of the month", `<input id="cg-cutoff" type="number" min="1" max="31" inputmode="numeric" value="${s.cutoffDay}" class="${inputCls}" />`)}
-    ${field("Days from cutoff to due date", `<input id="cg-due" type="number" min="0" max="90" inputmode="numeric" value="${s.dueDays}" class="${inputCls}" />`)}
-    <p class="text-[10px] text-slate-500 px-1">Used for every statement without your own dates. Edit a single statement to match your real BPI statement.</p>
+    ${field("Payment due day of the month", `<input id="cg-due" type="number" min="1" max="31" inputmode="numeric" value="${s.dueDay}" class="${inputCls}" />`)}
+    <p class="text-[10px] text-slate-500 px-1">The due date is the next time that day comes after the cutoff. Used for every statement without your own dates. Edit a single statement to match your real BPI statement.</p>
     <button type="button" data-go class="w-full py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl">Save</button>
     <button type="button" data-cancel class="w-full py-2 text-xs font-bold text-slate-500">Cancel</button>`,
   async (e, close) => {
     if (!e.target.closest("[data-go]")) return;
-    const cutoffDay = parseInt(el.querySelector("#cg-cutoff").value, 10), dueDays = parseInt(el.querySelector("#cg-due").value, 10);
+    const cutoffDay = parseInt(el.querySelector("#cg-cutoff").value, 10), dueDay = parseInt(el.querySelector("#cg-due").value, 10);
     if (!(cutoffDay >= 1 && cutoffDay <= 31)) return toast("Cutoff day must be 1 to 31", "error");
-    if (!(dueDays >= 0 && dueDays <= 90)) return toast("Days to due must be 0 to 90", "error");
-    saveCardSettings({ cutoffDay, dueDays });
+    if (!(dueDay >= 1 && dueDay <= 31)) return toast("Due day must be 1 to 31", "error");
+    saveCardSettings({ cutoffDay, dueDay });
     close();
     await commit("Card settings saved");
   });
