@@ -24,6 +24,7 @@ export function showSheet(title, bodyHtml, actionsHtml) {
   $("ql-body").innerHTML = bodyHtml;
   $("ql-actions").innerHTML = actionsHtml;
   const o = $("ql-overlay");
+  o.classList.add("open");
   o.style.opacity = "1";
   o.style.pointerEvents = "auto";
   $("ql-sheet").style.transform = "translateY(0)";
@@ -33,6 +34,7 @@ export function qlClose() {
   runId++; // abandon any in-flight request
   const o = $("ql-overlay");
   if (!o) return;
+  o.classList.remove("open");
   o.style.opacity = "0";
   o.style.pointerEvents = "none";
   $("ql-sheet").style.transform = "";
@@ -222,8 +224,6 @@ export async function qlConfirm() {
   const snapshot = JSON.parse(JSON.stringify(d));
   const bb = budgetBefore();
   rows.forEach((r) => r.apply(d));
-  const input = $("ql-input");
-  if (input) input.value = "";
   qlClose();
   await syncSet(d);
   renderAll();
@@ -240,14 +240,29 @@ export async function qlConfirm() {
   });
 }
 
+// Hides the floating add button while the on-screen keyboard is up (a text field is focused and the visual viewport shrank)
+function watchKeyboard() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const root = document.documentElement;
+  let maxH = 0, lastW = 0;
+  const update = () => {
+    if (window.innerWidth !== lastW) { lastW = window.innerWidth; maxH = 0; }
+    maxH = Math.max(maxH, window.innerHeight, vv.height);
+    const el = document.activeElement;
+    const typing = !!el && el.matches?.("input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, [contenteditable='true']");
+    root.classList.toggle("kb-open", typing && maxH - vv.height > 140);
+  };
+  vv.addEventListener("resize", update);
+  document.addEventListener("focusin", update);
+  document.addEventListener("focusout", () => setTimeout(update, 0));
+  update();
+}
+
 export function initQuickLog() {
-  const form = $("ql-form");
-  if (!form || form.dataset.bound) return;
-  form.dataset.bound = "1";
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const text = $("ql-input").value.trim();
-    if (text) runQuickLog(text);
-  });
-  $("ql-overlay").addEventListener("click", (e) => { if (e.target === $("ql-overlay")) qlClose(); });
+  const overlay = $("ql-overlay");
+  if (!overlay || overlay.dataset.bound) return;
+  overlay.dataset.bound = "1";
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) qlClose(); });
+  watchKeyboard();
 }

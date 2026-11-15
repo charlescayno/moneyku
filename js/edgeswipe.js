@@ -17,7 +17,7 @@ const QUICK_MS = 700;            // slower than this needs CLEAR_DX of travel
 const CLEAR_DX = 110;
 const HINT_MAX = 56;             // px the edge indicator follows the finger
 
-const BLOCK_TARGETS = "input, textarea, select, [contenteditable='true'], #ql-form, [data-drag-handle]";
+const BLOCK_TARGETS = "input, textarea, select, [contenteditable='true'], #fab-add, [data-drag-handle]";
 const OVERLAYS = "#modal-overlay.open, #confirm-overlay.open, #calendar-overlay.open, #more-overlay.open, #month-picker.open, [role='dialog'][aria-modal='true']";
 
 let bound = false;
@@ -26,7 +26,7 @@ function blocked(target) {
   if (target?.closest?.(BLOCK_TARGETS)) return true;
   if (document.querySelector(OVERLAYS)) return true;
   const ql = document.getElementById("ql-overlay");
-  if (ql && ql.style.pointerEvents === "auto") return true;
+  if (ql && (ql.classList.contains("open") || ql.style.pointerEvents === "auto")) return true;
   if (document.querySelector(".arr-dragging")) return true;
   const app = document.getElementById("app");
   if (!app || getComputedStyle(app).opacity === "0") return true;

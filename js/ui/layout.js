@@ -80,7 +80,7 @@ export function renderBudget() {
   `;
 
   $("budget-body").innerHTML = `
-    <div class="w-full flex flex-col gap-2 pb-[calc(9rem+env(safe-area-inset-bottom))]">
+    <div class="w-full flex flex-col gap-2 budget-pad">
       ${kpiBar}
       <div id="card-summary-slot" class="contents">${cardSummaryHtml()}</div>
       ${tipCardHtml()}

@@ -211,6 +211,7 @@ export function enterApp() {
   }
   setAuthError("");
   if (app) app.style.opacity = "1";
+  document.documentElement.classList.add("app-ready");
   initParticles();
 }
 

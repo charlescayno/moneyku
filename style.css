@@ -1296,3 +1296,76 @@ html[data-month-dir="prev"]::view-transition-new(month-body) { animation: month-
   #edge-hint { transition: none; }
   html[data-month-dir]::view-transition-old(month-body), html[data-month-dir]::view-transition-new(month-body) { animation: none; }
 }
+
+/* Floating add button. Bottom-right, above the mobile tab bar, anchored inside the app column on wide screens.
+   --fab-sab can be overridden to emulate an iPhone home-indicator inset. */
+:root { --fab-sab: env(safe-area-inset-bottom, 0px); --fab-size: 4rem; --fab-gap: 1.75rem; }
+.fab-add {
+  position: fixed;
+  z-index: 40;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  right: max(calc(var(--fab-gap) + env(safe-area-inset-right, 0px)), calc(50% - 24rem + var(--fab-gap)));
+  bottom: calc(3.25rem + var(--fab-sab) + 1.25rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 12px 28px -6px rgba(99, 102, 241, 0.7),
+    0 4px 10px rgba(2, 6, 23, 0.55);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(14px) scale(0.6);
+  transition: transform 0.16s ease, box-shadow 0.2s ease, opacity 0.2s ease, visibility 0s linear 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.fab-add svg { display: block; filter: drop-shadow(0 1px 1px rgba(30, 27, 75, 0.35)); transition: transform 0.25s ease; }
+@media (min-width: 640px) {
+  .fab-add { bottom: calc(var(--fab-sab) + 1.75rem); }
+}
+html.app-ready .fab-add {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition: transform 0.16s ease, box-shadow 0.2s ease, opacity 0.2s ease, visibility 0s;
+  animation: fab-in 0.55s cubic-bezier(0.2, 1.2, 0.35, 1) 0.25s backwards;
+}
+@keyframes fab-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.55); }
+  to { opacity: 1; transform: none; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .fab-add:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 16px 34px -6px rgba(124, 58, 237, 0.75), 0 6px 14px rgba(2, 6, 23, 0.55); }
+  .fab-add:hover svg { transform: rotate(90deg); }
+}
+html.app-ready .fab-add:active { transform: scale(0.94); transition-duration: 0.08s; }
+.fab-add:focus { outline: none; }
+.fab-add:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+/* Out of the way while a sheet/dialog is open or the on-screen keyboard is up */
+html.app-ready body:has(#modal-overlay.open, #confirm-overlay.open, #calendar-overlay.open, #more-overlay.open, #month-picker.open, #ql-overlay.open, [role="dialog"][aria-modal="true"]) .fab-add,
+html.app-ready.kb-open .fab-add {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.85);
+  transition: transform 0.16s ease, opacity 0.16s ease, visibility 0s linear 0.16s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab-add, .fab-add svg, html.app-ready .fab-add { transition: none !important; animation: none !important; }
+  .fab-add:hover svg { transform: none; }
+}
+
+/* Room under the last card so the floating add button (and the mobile tab bar) never cover it */
+.budget-pad { padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px)); }

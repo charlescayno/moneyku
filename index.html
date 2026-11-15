@@ -37,7 +37,7 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20261115_edgeswipe" />
+    <link rel="stylesheet" href="style.css?v=20261115_fab" />
   </head>
   <body
     class="bg-slate-900 text-slate-100 font-sans select-none"
@@ -229,20 +229,10 @@
       </main>
     </div>
 
-    <!-- QUICK LOG PILL -->
-    <div id="ql-bar" class="fixed bottom-[calc(3.25rem+env(safe-area-inset-bottom))] sm:bottom-0 left-0 right-0 z-40 px-3 pt-6 pb-2 sm:pb-3 pointer-events-none bg-gradient-to-t from-slate-900 via-slate-900/70 to-transparent">
-      <form id="ql-form" class="pointer-events-auto max-w-2xl mx-auto flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-full shadow-xl pl-3.5 pr-1.5 py-1.5">
-        <button type="button" data-action="qlAddChooser" aria-label="Add income or expense" title="Add" class="w-8 h-8 -ml-1.5 flex items-center justify-center rounded-full bg-slate-700 text-white flex-shrink-0"><span class="material-icons" style="font-size:18px">add</span></button>
-        <span class="material-icons text-indigo-400" style="font-size:18px">auto_awesome</span>
-        <input id="ql-input" type="text" autocomplete="off" enterkeyhint="send" placeholder="Log anything, or ask..." class="flex-1 min-w-0 bg-transparent text-white placeholder-slate-500 text-sm outline-none py-1.5" />
-        <button type="button" data-action="openSettings" aria-label="Settings" title="Settings" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-300">
-          <span class="material-icons" style="font-size:18px">settings</span>
-        </button>
-        <button type="submit" aria-label="Send" class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-600 text-white">
-          <span class="material-icons" style="font-size:18px">arrow_upward</span>
-        </button>
-      </form>
-    </div>
+    <!-- ADD BUTTON (floating) -->
+    <button type="button" id="fab-add" class="fab-add" data-action="qlAddChooser" aria-label="Add income or expense" title="Add">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
 
     <!-- MOBILE TAB BAR -->
     <nav id="tabbar" aria-label="Sections" class="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-slate-900/95 border-t border-white/10 flex" style="padding-bottom:env(safe-area-inset-bottom)">
@@ -420,6 +410,6 @@
     </div>
 
     <!-- Main Script -->
-    <script type="module" src="js/app.js?v=20261115_edgeswipe"></script>
+    <script type="module" src="js/app.js?v=20261115_fab"></script>
   </body>
 </html>
