@@ -4,19 +4,40 @@
 import { addMonths, cmpKey, generateId } from "./utils.js";
 
 /** Change an item's amount honouring the scope: "all" | "future" | "month". */
-export function applyItemAmount(appData, list, it, amount, scope, k) {
+/** Move everything stored per month for `fromId` (from month k on) to `toId`. */
+function moveMonthData(appData, fromId, toId, k) {
+  for (const field of ["paid", "paidFrom", "spend", "overrides", "deleted"]) {
+    const obj = appData[field];
+    if (!obj) continue;
+    for (const m of Object.keys(obj)) {
+      if (cmpKey(m, k) < 0 || !obj[m] || !(fromId in obj[m])) continue;
+      if (field === "overrides" && m === k) { delete obj[m][fromId]; continue; } // the new amount replaces it
+      obj[m][toId] = obj[m][fromId];
+      delete obj[m][fromId];
+    }
+  }
+}
+
+/**
+ * Change an amount honouring the scope. Works for items and for sub-items
+ * (pass { recurring } for a sub-item, which follows its parent).
+ */
+export function applyItemAmount(appData, list, it, amount, scope, k, opts = {}) {
   appData.overrides = appData.overrides || {};
-  if (it.recurring && scope === "month") {
+  const recurring = opts.recurring !== undefined ? opts.recurring : it.recurring;
+  if (recurring && scope === "month") {
     appData.overrides[k] = appData.overrides[k] || {};
     appData.overrides[k][it.id] = amount;
-  } else if (it.recurring && scope === "future" && cmpKey(k, it.start) > 0) {
+  } else if (recurring && scope === "future" && (!it.start || cmpKey(k, it.start) > 0)) {
     const prevMonth = addMonths(k, -1);
     const clone = JSON.parse(JSON.stringify(it));
     clone.id = generateId();
     clone.start = k;
     clone.amount = amount;
-    list.push(clone);
+    const at = list.indexOf(it);
+    if (at >= 0) list.splice(at + 1, 0, clone); else list.push(clone);
     it.end = prevMonth;
+    moveMonthData(appData, it.id, clone.id, k);
   } else {
     it.amount = amount;
     if (appData.overrides[k]) delete appData.overrides[k][it.id];

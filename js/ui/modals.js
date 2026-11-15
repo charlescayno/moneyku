@@ -1,4 +1,5 @@
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { childAmt } from "../state.js";
 import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
@@ -197,15 +198,6 @@ export function openItemModal(who, kind, id, presetDay) {
   more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Auto-completes on day <span class="text-slate-600">(1-31, optional)</span></label>
     <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" /></div>`;
 
-  if (!isNew && recurring && !kids.length) {
-    more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Apply amount to</label>
-      <select id="f-scope" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">
-        <option value="all">All months</option>
-        <option value="future">This and future months</option>
-        <option value="month" ${hasOverride(id, selectedKey) ? "selected" : ""}>${monthName(selectedKey)} ${keyParts(selectedKey).y} only</option>
-      </select></div>`;
-  }
-
   if (!isNew && !kids.length) {
     if (kind === "expenses") {
       more += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
@@ -263,7 +255,7 @@ export function openChildModal(who, parentId, childId) {
   const settledNow = c ? isPaid(c.id, selectedKey) : false;
   let body = `<p class="text-[11px] text-slate-500 mb-1">Under <span class="font-bold text-slate-300">${escapeHtml(parent.name)}</span></p>`;
   body += inputBlock("Name", "f-name", c ? c.name : "", "text", 'placeholder="e.g. Electricity"');
-  body += inputBlock("Estimate (₱)", "f-amount", c ? c.amount : "", "text", 'inputmode="text" placeholder="0"');
+  body += inputBlock("Estimate (₱)", "f-amount", c ? childAmt(c, selectedKey) : "", "text", 'inputmode="text" placeholder="0"');
   if (!isNew) {
     body += `<div id="spend-section">${spendSectionHtml(c)}</div>`;
     body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">

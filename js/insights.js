@@ -4,6 +4,7 @@
 import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
 import { accountsTotal, amountIn, getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline } from "./state.js";
 import { syncSet } from "./firebase.js";
+import { childAmt } from "./state.js";
 import { SPEND_CATS, catInfo, categoryOf } from "./categories.js";
 import { closeModal, openModalShell } from "./ui/modals.js";
 import { toast } from "./ui/core.js";
@@ -228,7 +229,7 @@ export function cardOwed() {
         if (!charged) continue;
         const kids = getKids(it, m);
         const amt = kids.length
-          ? kids.reduce((s, c) => s + (isPaid(c.id, m) ? 0 : Number(c.amount) || 0), 0)
+          ? kids.reduce((s, c) => s + (isPaid(c.id, m) ? 0 : childAmt(c, m)), 0)
           : isPaid(it.id, m) ? 0 : amountIn(it, m);
         if (amt > 0) { byMonth[m] = (byMonth[m] || 0) + amt; total += amt; }
       }

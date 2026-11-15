@@ -1,4 +1,6 @@
 import { refundPayment } from "../payfrom.js";
+import { chooseScope } from "../scope.js";
+import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
 import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
@@ -44,7 +46,7 @@ export function rowIconHtml(name, sz, kind = "expenses", noBg = false) {
 
 export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null) {
   const paid = isPaid(c.id, k);
-  const est = Number(c.amount) || 0;
+  const est = childAmt(c, k);
   const spent = spentIn(c.id, k);
   const hasSpend = getSpendList(c.id, k).length > 0;
   const over = spent > est;
@@ -1267,7 +1269,17 @@ async function saveModalInner() {
       if (!Array.isArray(parent.children)) parent.children = [];
       if (id) {
         const c = parent.children.find((x) => x.id === id);
-        if (c) { c.name = name; c.amount = amount; }
+        if (c) {
+          // A repeating sub-expense: ask which months the new amount applies to
+          let scope = "all";
+          const changed = amount !== childAmt(c, selectedKey);
+          if (changed && parent.recurring) {
+            scope = await chooseScope(c.name, { monthLabel: `${monthName(selectedKey)} ${keyParts(selectedKey).y}`, canFuture: !c.start || cmpKey(selectedKey, c.start) > 0, detail: `${peso(childAmt(c, selectedKey))} \u2192 ${peso(amount)}` });
+            if (scope === null) return;
+          }
+          c.name = name;
+          if (changed) applyItemAmount(appData, parent.children, c, amount, scope, selectedKey, { recurring: parent.recurring });
+        }
         const pf = $("f-paid");
         if (pf) { appData.paid[selectedKey] = appData.paid[selectedKey] || {}; appData.paid[selectedKey][id] = pf.dataset.on === "true"; if (pf.dataset.on !== "true") refundPayment(selectedKey, id); }
       } else {
@@ -1297,6 +1309,16 @@ async function saveModalInner() {
   const txDate = $("f-txdate") ? $("f-txdate").value : null;
   const category = $("f-category") ? $("f-category").value : "";
 
+  // A repeating item whose amount changed: ask which months it applies to
+  let scope = "all";
+  if (id) {
+    const it0 = list.find((x) => x.id === id);
+    if (it0 && it0.recurring && recurring && !getKids(it0).length && amount !== amountIn(it0, selectedKey)) {
+      scope = await chooseScope(it0.name, { monthLabel: `${monthName(selectedKey)} ${keyParts(selectedKey).y}`, canFuture: !it0.start || cmpKey(selectedKey, it0.start) > 0, detail: `${peso(amountIn(it0, selectedKey))} \u2192 ${peso(amount)}` });
+      if (scope === null) return;
+    }
+  }
+
   if (id) {
     const it = list.find((x) => x.id === id);
     if (it) {
@@ -1310,7 +1332,6 @@ async function saveModalInner() {
       it.cutoffDay = cutoffDay;
       if (txDate) it.txDate = txDate; else delete it.txDate;
       if ($("f-category")) { if (category) it.category = category; else delete it.category; }
-      const scope = $("f-scope") ? $("f-scope").value : "all";
       if (getKids(it).length) {
         // Amount is sum of children
       } else {

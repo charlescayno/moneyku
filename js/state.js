@@ -102,6 +102,12 @@ export function amountIn(it, k) {
   return ov != null ? Number(ov) : Number(it.amount) || 0;
 }
 
+// A sub-expense's amount for month k (a "this month only" change is stored as an override)
+export function childAmt(c, k) {
+  const ov = appData?.overrides?.[k]?.[c.id];
+  return ov != null ? Number(ov) : Number(c.amount) || 0;
+}
+
 export function hasOverride(id, k) { 
   return appData?.overrides?.[k]?.[id] != null; 
 }
@@ -144,7 +150,7 @@ export function spentIn(childId, k) {
 
 export function childFinal(c, k) {
   const list = getSpendList(c.id, k);
-  return list.length ? spentIn(c.id, k) : (Number(c.amount) || 0);
+  return list.length ? spentIn(c.id, k) : childAmt(c, k);
 }
 
 export function itemFinal(it, k) {
@@ -155,7 +161,7 @@ export function itemFinal(it, k) {
 export function itemTotal(it, k) {
   const kids = getKids(it, k);
   if (!kids.length) return isPaid(it.id, k) ? itemFinal(it, k) : amountIn(it, k);
-  return kids.reduce((s, c) => s + (isPaid(c.id, k) ? childFinal(c, k) : (Number(c.amount) || 0)), 0);
+  return kids.reduce((s, c) => s + (isPaid(c.id, k) ? childFinal(c, k) : childAmt(c, k)), 0);
 }
 
 export function itemAmts(it, k) {
@@ -167,7 +173,7 @@ export function itemAmts(it, k) {
   let total = 0, paid = 0;
   for (const c of kids) {
     const settled = isPaid(c.id, k);
-    const amt = settled ? childFinal(c, k) : (Number(c.amount) || 0);
+    const amt = settled ? childFinal(c, k) : childAmt(c, k);
     total += amt;
     if (settled) paid += amt;
   }
