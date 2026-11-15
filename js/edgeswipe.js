@@ -27,7 +27,7 @@ function blocked(target) {
   if (document.querySelector(OVERLAYS)) return true;
   const ql = document.getElementById("ql-overlay");
   if (ql && (ql.classList.contains("open") || ql.style.pointerEvents === "auto")) return true;
-  if (document.querySelector(".arr-dragging")) return true;
+  if (document.querySelector(".arr-row, .arr-dragging")) return true; // Arrange mode (sub-expense reordering) is on
   const app = document.getElementById("app");
   if (!app || getComputedStyle(app).opacity === "0") return true;
   return false;
