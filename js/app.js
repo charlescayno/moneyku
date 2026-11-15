@@ -7,7 +7,7 @@ import { openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth,
 import { tabGo, initTabs } from "./tabs.js";
 import { initHistory, openHistory, histUndo, histRedo, histRestore } from "./ui/historyui.js";
 import { rebaseHistory } from "./history.js";
-import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay } from "./ui/cardui.js";
+import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo } from "./ui/cardui.js";
 
 import {
   onValue,
@@ -187,7 +187,7 @@ window.saveBudgets = saveBudgets;
 window.tabGo = tabGo;
 initHistory();
 Object.assign(window, { openHistory, histUndo, histRedo, histRestore });
-Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay });
+Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo });
 Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, startFreshAsk, startFreshGo, dismissTip });
 initExtras();
 initTabs();

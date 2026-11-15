@@ -155,6 +155,31 @@ export function cardOwedNow() {
   return out;
 }
 
+/**
+ * Everything the main-screen card summary needs: what is owed now, and the statements that still
+ * have something left to pay (earliest due first, so unpaid[0] is the "next" one).
+ */
+export function cardSummary() {
+  const owed = cardOwedNow();
+  const out = { any: owed.any, owedNow: owed.total, unpaid: [], hasActivity: false };
+  const tl = timeline();
+  if (!owed.any || !tl.length) return out;
+  const last = addMonths(currentKey(), 1);
+  for (let s = addMonths(tl[0], -1); cmpKey(s, last) <= 0; s = addMonths(s, 1)) {
+    const st = statement(s);
+    if (st.total > 0.005 || st.payments.length) out.hasActivity = true;
+    if (st.total > 0.005 && st.remaining > 0.005) out.unpaid.push(st);
+  }
+  out.unpaid.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : a.key < b.key ? -1 : 1));
+  return out;
+}
+
+/** Whole days from today until a YYYY-MM-DD date (negative once it has passed). */
+export function daysUntil(dateStr, today = todayStr()) {
+  const t = (s) => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+  return Math.round((t(dateStr) - t(today)) / 86400000);
+}
+
 /** Statement keys worth showing for month k, oldest first. */
 export function keysForMonth(k) {
   const keys = [];

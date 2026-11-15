@@ -5,6 +5,7 @@ import { dueSoonCardHtml, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
 import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
+import { cardSummaryHtml } from './cardui.js';
 
 // =============================
 // Dashboard Main Renderer
@@ -81,6 +82,7 @@ export function renderBudget() {
   $("budget-body").innerHTML = `
     <div class="w-full flex flex-col gap-2 pb-[calc(9rem+env(safe-area-inset-bottom))]">
       ${kpiBar}
+      <div id="card-summary-slot" class="contents">${cardSummaryHtml()}</div>
       ${tipCardHtml()}
       ${dueSoonCardHtml()}
       <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->

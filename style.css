@@ -1218,3 +1218,52 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
     border-radius: 1rem !important;
   }
 }
+
+/* ---- BPI Platinum summary on the main screen ---- */
+.cs-card { width: 100%; min-width: 0; box-sizing: border-box; flex-shrink: 0; border-radius: 0.75rem; border: 1px solid rgba(99, 102, 241, 0.22); background: rgba(15, 23, 42, 0.8); padding: 0.5rem 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; }
+.cs-tone-soon { border-color: rgba(245, 158, 11, 0.38); }
+.cs-tone-overdue { border-color: rgba(244, 63, 94, 0.45); }
+.cs-tone-paid { border-color: rgba(16, 185, 129, 0.3); }
+.cs-tone-empty { border-color: rgba(255, 255, 255, 0.06); background: rgba(15, 23, 42, 0.6); }
+.cs-body { display: flex; flex-direction: column; gap: 0.375rem; cursor: pointer; min-width: 0; -webkit-tap-highlight-color: transparent; }
+.cs-body:focus-visible { outline: 2px solid rgba(129, 140, 248, 0.7); outline-offset: 2px; border-radius: 0.5rem; }
+.cs-row { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.cs-between { justify-content: space-between; }
+.cs-grow { flex: 1 1 0%; min-width: 0; }
+.cs-icon { width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #6366f1, #7c3aed); }
+.cs-tone-empty .cs-icon { opacity: 0.6; }
+.cs-label { font-size: 8px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #a5b4fc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-owed { font-size: 0.875rem; line-height: 1.2; font-weight: 900; color: #fff; }
+.cs-muted { color: #94a3b8; font-size: 10px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.cs-owed.cs-muted { font-size: 0.875rem; font-weight: 900; }
+.cs-empty { flex: 1 1 0%; min-width: 0; font-size: 11px; font-weight: 700; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-empty .cs-label { margin-right: 0.375rem; opacity: 0.8; }
+.cs-allpaid { display: flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; font-weight: 900; color: #6ee7b7; }
+.cs-badge { flex-shrink: 0; white-space: nowrap; font-size: 9px; font-weight: 900; line-height: 1; padding: 0.3rem 0.5rem; border-radius: 999px; border: 1px solid; }
+.cs-badge-overdue { color: #fecdd3; background: rgba(244, 63, 94, 0.2); border-color: rgba(244, 63, 94, 0.45); }
+.cs-badge-soon { color: #fde68a; background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.45); }
+.cs-badge-neutral { color: #cbd5e1; background: rgba(51, 65, 85, 0.55); border-color: rgba(100, 116, 139, 0.5); }
+.cs-next { font-size: 10px; font-weight: 700; color: #cbd5e1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-status { flex-shrink: 0; font-size: 9px; font-weight: 900; padding: 0.125rem 0.375rem; border-radius: 0.25rem; border: 1px solid; white-space: nowrap; }
+.cs-bar { height: 0.375rem; border-radius: 999px; background: rgba(51, 65, 85, 0.65); overflow: hidden; }
+.cs-fill { height: 100%; border-radius: 999px; background: #34d399; transition: width 0.4s ease; }
+.cs-fill-late { background: #fb7185; }
+.cs-nums { font-size: 10px; font-weight: 700; color: #94a3b8; }
+.cs-nums b { font-weight: 900; }
+.cs-paid { color: #6ee7b7; }
+.cs-left { color: #fff; }
+.cs-late { color: #fda4af; }
+.cs-trunc { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-nowrap { flex-shrink: 0; white-space: nowrap; }
+.cs-pay { flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.3rem 0.75rem; border-radius: 0.5rem; background: #4f46e5; color: #fff; font-size: 10px; font-weight: 700; }
+.cs-pay:active { background: #4338ca; }
+.cs-more { font-size: 9px; font-weight: 700; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@keyframes cardFocus { 0% { box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.7); } 40% { box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.45); } 100% { box-shadow: 0 0 0 0 rgba(129, 140, 248, 0); } }
+.card-focus { animation: cardFocus 1.5s ease-out; border-radius: 0.75rem; }
+
+/* The card dialogs use z-[78], which the prebuilt tailwind.css does not contain: without it they sat under the quick-log bar */
+.z-\[78\] { z-index: 78; }
+
+/* left:50% leaves a toast only half the screen to grow into, so long messages with an Undo button wrapped to four lines */
+#toast { width: max-content; max-width: calc(100vw - 2rem); }
+#toast-text { min-width: 0; }

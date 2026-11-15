@@ -2,13 +2,14 @@
 // BPI Platinum Rewards: the separate card section in Expenses, statements,
 // "Pay card" and reconciliation.
 // =============================
-import { CARD_NAME, cardSettings, clearStatement, isCardItem, keysForMonth, payCard, removeCardPayment, saveCardSettings, saveStatement, statement } from "../card.js";
-import { getAppData, getItems } from "../state.js";
+import { CARD_NAME, cardSettings, cardSummary, clearStatement, daysUntil, isCardItem, keysForMonth, payCard, removeCardPayment, saveCardSettings, saveStatement, statement } from "../card.js";
+import { getAppData, getItems, getSelectedKey, setSelectedKey, timeline } from "../state.js";
 import { syncSet } from "../firebase.js";
 import { escapeHtml, parseMathAmount, peso } from "../utils.js";
 import { payableAccounts } from "../payfrom.js";
 import { toast } from "./core.js";
 import { renderAll } from "./layout.js";
+import { scrollChipIntoView } from "./actions.js";
 
 const fmtDate = (s) => {
   if (!s) return "";
@@ -43,7 +44,7 @@ function statementHtml(key, k) {
   const diffLine = st.statementAmount != null && Math.abs(st.diff) > 0.005
     ? `<p class="text-[10px] font-bold text-amber-300 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">Statement is ${peso(Math.abs(st.diff))} ${st.diff > 0 ? "higher" : "lower"} than your tracked charges. ${st.diff > 0 ? "A charge may be missing (or interest/fees)." : "A tracked charge may not have posted yet."}</p>`
     : st.statementAmount != null ? `<p class="text-[10px] font-bold text-emerald-300 px-2">Matches your tracked charges.</p>` : "";
-  return `<details ${st.status !== "paid" || key === k ? "open" : ""} class="group rounded-xl bg-slate-900/50 border border-white/[0.05]">
+  return `<details data-stmt="${key}" ${st.status !== "paid" || key === k ? "open" : ""} class="group rounded-xl bg-slate-900/50 border border-white/[0.05]">
     <summary class="flex items-center gap-2 px-2.5 py-2 cursor-pointer list-none select-none">
       <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
       <div class="flex-1 min-w-0"><p class="text-xs font-black text-white truncate">Cut ${fmtDate(st.cutoff)} &middot; due ${fmtDate(st.due)}</p>
@@ -76,7 +77,7 @@ export function cardSectionHtml(k) {
   const count = getItems("charlie", "expenses").filter(isCardItem).length;
   const empty = `<div class="px-3 py-3 text-center"><p class="text-[11px] font-bold text-slate-500">${count ? "No card statements to show for this month." : "No card expenses yet."}</p>
       <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p></div>`;
-  return `<div class="border-t border-white/[0.04] pt-2">
+  return `<div id="sec-card" class="border-t border-white/[0.04] pt-2" style="scroll-margin-top:5.5rem">
     <details open data-persist="sec-card" class="group">
       <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
         <div class="flex items-center gap-1">
@@ -91,6 +92,84 @@ export function cardSectionHtml(k) {
       <div class="space-y-1.5 mt-1">${blocks || empty}</div>
     </details>
   </div>`;
+}
+
+// ---------- main-screen summary ----------
+const dueBadge = (days) => {
+  if (days < 0) return [`overdue by ${-days} day${days === -1 ? "" : "s"}`, "overdue"];
+  if (days === 0) return ["due today", "soon"];
+  return [`due in ${days} day${days === 1 ? "" : "s"}`, days <= 7 ? "soon" : "neutral"];
+};
+
+/** Compact BPI Platinum summary shown under the month totals on the main screen. Empty string when the card is not in use. */
+export function cardSummaryHtml() {
+  const sm = cardSummary();
+  if (!sm.any) return "";
+  const shell = (tone, inner) => `<div id="card-summary" class="cs-card cs-tone-${tone}">${inner}</div>`;
+  const icon = `<span class="cs-icon"><span class="material-icons" style="font-size:14px">credit_card</span></span>`;
+  const next = sm.unpaid[0];
+  if (!next) {
+    if (!sm.hasActivity) {
+      return shell("empty", `<div class="cs-row">${icon}<p class="cs-empty"><span class="cs-label">BPI Platinum</span> No card balance</p></div>`);
+    }
+    return shell("paid", `<div class="cs-row">${icon}
+      <div class="cs-grow"><p class="cs-label">BPI Platinum</p>
+        <p class="cs-allpaid"><span class="material-icons" style="font-size:16px">check_circle</span>All paid</p></div>
+      <span class="cs-muted">${peso(sm.owedNow)} owed</span></div>`);
+  }
+  const days = daysUntil(next.due);
+  const [badgeTxt, badgeTone] = dueBadge(days);
+  const [statusLabel, statusCls] = STATUS[next.status] || STATUS.open;
+  const pct = next.total > 0 ? Math.max(0, Math.min(100, Math.round((Math.min(next.paid, next.total) / next.total) * 100))) : 0;
+  const more = sm.unpaid.slice(1);
+  const moreLeft = more.reduce((s, x) => s + x.remaining, 0);
+  const late = next.status === "overdue";
+  return shell(late ? "overdue" : badgeTone === "soon" ? "soon" : "ok", `<div data-action="cardSummaryGo" data-arg0="${next.key}" role="button" tabindex="0" aria-label="Open BPI Platinum statement due ${fmtDate(next.due)}" class="cs-body">
+    <div class="cs-row">${icon}
+      <div class="cs-grow"><p class="cs-label">BPI Platinum &middot; owed now</p>
+        <p class="cs-owed ${sm.owedNow > 0.005 ? "" : "cs-muted"}">${peso(sm.owedNow)}</p></div>
+      <span class="cs-badge cs-badge-${badgeTone}">${badgeTxt}</span>
+    </div>
+    <div class="cs-row cs-between">
+      <p class="cs-next">Next statement &middot; due ${fmtDate(next.due)}</p>
+      <span class="cs-status ${statusCls}">${statusLabel}</span>
+    </div>
+    <div class="cs-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Paid ${pct}%"><div class="cs-fill ${late ? "cs-fill-late" : ""}" style="width:${pct}%"></div></div>
+    <div class="cs-row">
+      <div class="cs-grow cs-row cs-between cs-nums">
+        <span class="cs-trunc">Paid <b class="cs-paid">${peso(next.paid)}</b> of ${peso(next.total)}</span>
+        <span class="cs-nowrap">Left <b class="${late ? "cs-late" : "cs-left"}">${peso(next.remaining)}</b></span>
+      </div>
+      <button type="button" data-action="cardPayOpen" data-arg0="${next.key}" class="cs-pay"><span class="material-icons" style="font-size:12px">payments</span>Pay</button>
+    </div>
+    ${more.length ? `<p class="cs-more">+${more.length} more statement${more.length === 1 ? "" : "s"} &middot; ${peso(moreLeft)} left</p>` : ""}
+  </div>`);
+}
+
+document.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target?.matches?.("#card-summary [data-action='cardSummaryGo']")) { e.preventDefault(); e.target.click(); }
+});
+
+/** Open the BPI Platinum section on the month the statement falls due, with that statement open. */
+export function cardSummaryGo(key) {
+  const st = statement(key);
+  if (timeline().includes(st.dueKey) && getSelectedKey() !== st.dueKey) {
+    setSelectedKey(st.dueKey);
+    renderAll();
+    scrollChipIntoView();
+  }
+  const sec = document.getElementById("sec-card");
+  if (!sec) return;
+  const outer = sec.querySelector("details[data-persist='sec-card']");
+  if (outer && !outer.open) outer.open = true;
+  const stmt = sec.querySelector(`details[data-stmt="${key}"]`);
+  if (stmt && !stmt.open) stmt.open = true;
+  const target = stmt || sec;
+  requestAnimationFrame(() => {
+    (stmt ? stmt : sec).scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.remove("card-focus"); void target.offsetWidth; target.classList.add("card-focus");
+    setTimeout(() => target.classList.remove("card-focus"), 1600);
+  });
 }
 
 // ---------- dialogs ----------
