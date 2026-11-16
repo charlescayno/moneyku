@@ -6,6 +6,8 @@ import { $, addMonths, dueDayFor, escapeHtml, generateId, monthShort, peso } fro
 import { exportData } from "./ui/actions.js";
 import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, setAppData } from "./state.js";
 import { normalize, syncSet } from "./firebase.js";
+import { addItemData } from "./itemOps.js";
+import { CARD_METHOD, charges } from "./card.js";
 import { catInfo, categoryOf } from "./categories.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
@@ -135,6 +137,7 @@ export function openSettings() {
      ${row("exportMonthCsv", "table_view", "Export this month (CSV)")}
      ${row("exportData", "download", "Full backup (JSON)")}
      ${row("openRestore", "settings_backup_restore", "Restore from a backup")}
+     ${row("importCardAsk", "credit_card", "Import BPI Platinum charges (Oct 15 - Nov 13)")}
      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 pt-2">Quick log</p>
      ${row("qlOpenKey", "key", "Gemini API key")}`, CLOSE_BTN);
 }
@@ -216,6 +219,79 @@ export async function restoreSnapshot(day) {
   const s = readSnaps().find((x) => x.day === day);
   if (!s) return toast("Backup not found", "error");
   await restoreData(s.data, `Restored the ${day} backup`);
+}
+// ---------- One-time import of BPI Platinum Rewards charges (Oct 15 - Nov 13, 2026), skipping duplicates ----------
+const CARD_IMPORT = [
+  "10-15|Move It|55",
+  "10-15|Move It|63",
+  "10-15|TikTok Shop (e-Credit)|69",
+  "10-16|Sukiya SM East|392.57",
+  "10-16|Contis SM East|947.63",
+  "10-18|432 Pasig|187.40",
+  "10-18|SM Store East Ortigas|139",
+  "10-18|Watsons SM City East|2934",
+  "10-19|Shell Presam Ortigas|1000",
+  "10-19|Vikings Antipolo|5836.29",
+  "10-19|TikTok Shop|149",
+  "10-19|Apple.com/Bill (e-Credit)|200.99",
+  "10-19|Apple.com/Bill (e-Credit)|303",
+  "10-20|SM Supermarket East|7833.79",
+  "10-21|Google One|604.99",
+  "10-23|Petron Pasig|521.04",
+  "10-25|Xdt*Philippine Campus (donation)|1000",
+  "10-26|SM Supermarket East|4330.33",
+  "10-26|TikTok Shop|142",
+  "10-29|TikTok Shop (e-Credit)|147",
+  "10-31|Move It|80",
+  "11-01|Grab|144.65",
+  "11-02|SM Supermarket East|7236.77",
+  "11-03|Petron Pasig|486.39",
+  "11-03|Jollibee|110.71",
+  "11-03|Jollibee|751",
+  "11-04|Grab|183.33",
+  "11-04|TikTok Shop (e-Credit)|98",
+  "11-04|TikTok Shop (e-Credit)|763.22",
+  "11-04|TikTok Shop (e-Credit)|285.02",
+  "11-07|Dailybeer Arcovia|1421.52",
+  "11-08|Jollibee C. Raymundo|437",
+  "11-08|Grab|174",
+  "11-08|TikTok Shop (e-Credit)|226.80",
+  "11-09|SM Supermarket East|6240.71",
+  "11-13|SM Appliance installment 21/24|1444.59",
+].map((s) => { const [md, name, amt] = s.split("|"); return { date: "2026-" + md, name, amount: Number(amt) }; });
+let importPlan = null;
+
+function planCardImport() {
+  const have = [...charges("2026-10"), ...charges("2026-11")];
+  const fresh = [], dups = [];
+  for (const r of CARD_IMPORT) {
+    const days = (a, b) => Math.abs(Date.parse(a) - Date.parse(b)) / 864e5;
+    // Same amount (recurring installment, or within 3 days), or same day within PHP 1
+    const hit = have.find((c) => (Math.abs(c.amt - r.amount) < 0.01 && (c.item.recurring || days(c.date, r.date) <= 3)) || (c.date === r.date && Math.abs(c.amt - r.amount) <= 1));
+    if (hit) dups.push({ ...r, as: hit.item.name }); else { fresh.push(r); have.push({ amt: r.amount, date: r.date, item: { name: r.name } }); }
+  }
+  return { fresh, dups };
+}
+
+export function importCardAsk() {
+  importPlan = planCardImport();
+  const { fresh, dups } = importPlan;
+  const sum = fresh.reduce((s, r) => s + r.amount, 0);
+  const dupHtml = dups.length ? `<p class="text-[11px] font-bold text-slate-400 mt-1">Skipped as already in the app:</p>` + dups.map((d) => `<p class="text-[11px] text-slate-500">${d.date.slice(5)} &middot; ${escapeHtml(d.name)} ${peso(d.amount)} <span class="text-slate-600">(matches ${escapeHtml(d.as)})</span></p>`).join("") : "";
+  showSheet("Import BPI Platinum charges",
+    `<p class="text-sm text-slate-300">${fresh.length} new charge${fresh.length === 1 ? "" : "s"} to add (${peso(sum)}), ${dups.length} skipped as duplicates. Dates run Oct 15 to Nov 13, 2026.</p>${dupHtml}<p class="text-[11px] text-slate-500 mt-1">The -0.99 net carryover line is not added. You can Undo right after.</p>`,
+    fresh.length ? `<button type="button" data-action="importCardGo" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-indigo-600">Add ${fresh.length} charges</button><button type="button" data-action="qlClose" class="px-4 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Cancel</button>` : CLOSE_BTN);
+}
+
+export async function importCardGo() {
+  qlClose();
+  const plan = importPlan; importPlan = null;
+  if (!plan || !plan.fresh.length) return;
+  await applyWithUndo((d) => {
+    for (const r of plan.fresh) {
+      addItemData(d, { who: "charlie", kind: "expenses", name: r.name, amount: r.amount, start: r.date.slice(0, 7), recurring: false, paymentMethod: CARD_METHOD, txDay: Number(r.date.slice(8)), cutoffDay: 14, txDate: r.date });
+    }
+  }, `Added ${plan.fresh.length} card charges`);
 }
 // ---------- First-run tip ----------
 export function tipCardHtml() {
