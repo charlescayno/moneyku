@@ -67,6 +67,15 @@ export function renderBudget() {
         ${owedBreak ? `<p class="text-[9px] text-slate-500 text-right">${owedBreak}</p>` : ""}` : ""}
         <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rm.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rm.afterAll)}</span></div>
       </div>
+      <details data-persist="kpi-how" class="group/h mt-1.5 rounded-lg bg-black/20">
+        <summary class="flex items-center gap-1 px-2.5 py-1.5 cursor-pointer list-none select-none text-[11px] font-bold text-indigo-300"><span class="material-icons" style="font-size:14px">help_outline</span>How is this calculated?<span class="material-icons ml-auto transition-transform group-open/h:rotate-180" style="font-size:14px">expand_more</span></summary>
+        <div class="px-2.5 pb-2 space-y-1.5 text-[11px] leading-snug text-slate-400">
+          <p><b class="text-white">Real money</b> = Cash &amp; bank (${peso(rm.cash)}) &minus; BPI Platinum owed (${peso(rm.owed.total)}) = <b class="text-white">${sp(rm.real)}</b>. It is what you would have left if you paid the card in full today. Income you have not received yet and bills not yet paid are not counted.</p>
+          <p><b class="text-white">BPI Platinum owed</b> = card charges made so far (billed statements plus this cycle's charges up to today) that you have not paid with Pay card.</p>
+          <p><b class="text-white">After remaining income &amp; bills</b> = Real money + income still to receive this month (${peso(rm.toReceive)}) &minus; the other bills still to pay (${peso(Math.max(0, t.toPay - (rm.owed.byMonth[k] || 0)))}) = <b class="text-white">${sp(rm.afterAll)}</b>.</p>
+          <p><b class="text-white">Projected</b> = Cash &amp; bank + income to receive &minus; bills to pay (card bill included) &plus; debts, from this month up to the month you are viewing. It assumes everything arrives and is paid on time.</p>
+        </div>
+      </details>
       <div class="flex-1 min-w-0 grid grid-cols-2 gap-1.5 items-center mt-1.5">
         <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
           <span class="text-[8px] font-bold uppercase text-slate-400">Current</span>
