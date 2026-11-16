@@ -7,6 +7,7 @@ import { getAppData, getItems, getSelectedKey, monthsPaidCount, setSelectedKey, 
 import { syncSet } from "../firebase.js";
 import { escapeHtml, monthShort, monthsInclusive, parseMathAmount, peso } from "../utils.js";
 import { payableAccounts } from "../payfrom.js";
+import { catInfo, categoryOf } from "../categories.js";
 import { toast } from "./core.js";
 import { renderAll } from "./layout.js";
 import { scrollChipIntoView } from "./actions.js";
@@ -37,13 +38,37 @@ function statementHtml(key, k) {
   const [label, cls] = STATUS[st.status];
   const accounts = getAppData().accounts || [];
   const acctName = (id) => accounts.find((a) => a.id === id)?.name || "account";
-  const chargeRows = st.charges.length
-    ? st.charges.map((c) => `<div data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" data-arg2="${c.id}" class="item-row flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer ${c.posted ? "opacity-60" : ""}">
+  const rowHtml = (c) => `<div data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" data-arg2="${c.id}" class="item-row flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer ${c.posted ? "opacity-60" : ""}">
         <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark posted to the card" class="paid-check ${c.posted ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"><span class="material-icons check-icon text-white" style="font-size:14px">check</span></button>
         <div class="flex-1 min-w-0"><p class="text-xs font-bold text-slate-200 truncate ${c.posted ? "line-through" : ""}">${escapeHtml(c.item.name)}</p><p class="text-[9px] font-bold text-slate-500">${fmtDate(c.date)}${recurNote(c.item)}</p></div>
-        <p class="text-xs font-black text-white flex-shrink-0">${peso(c.amt)}</p></div>`).join("")
-    : `<p class="text-[10px] text-slate-500 px-2 py-1">No charges in this statement yet.</p>`;
-  const payRows = st.payments.map((p) => `<div class="flex items-center gap-2 px-2 py-1 text-[10px] font-bold text-slate-400">
+        <p class="text-xs font-black text-white flex-shrink-0">${peso(c.amt)}</p></div>`;
+  // Long statements are grouped by category (collapsed, biggest first) to keep the list short
+  const groupHtml = () => {
+    const groups = new Map();
+    for (const c of st.charges) {
+      const id = categoryOf(c.item);
+      if (!groups.has(id)) groups.set(id, []);
+      groups.get(id).push(c);
+    }
+    return [...groups.entries()]
+      .map(([id, list]) => ({ id, list, total: list.reduce((s, c) => s + c.amt, 0), info: catInfo(id) }))
+      .sort((a, b) => b.total - a.total)
+      .map((g) => {
+        const left = g.list.filter((c) => !c.posted).length;
+        return `<details data-persist="cardcat-${key}-${g.id}" class="group/c rounded-lg bg-slate-800/40">
+          <summary class="flex items-center gap-2 px-2 py-2 cursor-pointer list-none select-none">
+            <span class="material-icons" style="font-size:16px;color:${g.info.color}">${g.info.icon}</span>
+            <div class="flex-1 min-w-0"><p class="text-xs font-black text-white truncate">${g.info.label}</p>
+              <p class="text-[10px] font-bold text-slate-500">${g.list.length} charge${g.list.length === 1 ? "" : "s"}${left < g.list.length ? ` &middot; ${g.list.length - left} posted` : ""}</p></div>
+            <p class="text-xs font-black text-white flex-shrink-0">${peso(g.total)}</p>
+            <span class="material-icons text-slate-500 transition-transform group-open/c:rotate-180" style="font-size:16px">expand_more</span>
+          </summary>
+          <div class="pb-1 space-y-0.5">${g.list.map(rowHtml).join("")}</div></details>`;
+      }).join("");
+  };
+  const chargeRows = !st.charges.length
+    ? `<p class="text-[10px] text-slate-500 px-2 py-1">No charges in this statement yet.</p>`
+    : st.charges.length > 6 ? groupHtml() : st.charges.map(rowHtml).join("");  const payRows = st.payments.map((p) => `<div class="flex items-center gap-2 px-2 py-1 text-[10px] font-bold text-slate-400">
       <span class="material-icons text-emerald-400" style="font-size:13px">south_west</span>
       <span class="flex-1 min-w-0 truncate">${fmtDate(p.date)} &middot; from ${escapeHtml(acctName(p.acctId))}</span>
       <span class="text-emerald-300">${peso(p.amount)}</span>
