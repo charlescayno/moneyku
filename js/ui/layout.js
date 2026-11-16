@@ -6,6 +6,7 @@ import { tipCardHtml } from '../extras.js';
 import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 import { cardSummaryHtml } from './cardui.js';
+import { cardDueIn } from '../card.js';
 
 // =============================
 // Dashboard Main Renderer
@@ -21,6 +22,18 @@ export function renderBudget() {
 
   const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
   const rm = realMoney();
+  // Future months: the projection already deducts every BPI Platinum bill due up to that month, i.e. it assumes they are paid in full. Say so.
+  let cardNote = "";
+  if (!hideProjected && cmpKey(k, currentKey()) > 0) {
+    const parts = [];
+    let cardTotal = 0;
+    for (const m of timeline()) {
+      const due = cardDueIn(m); const left = Math.max(0, due.total - due.paid);
+      if (left > 0.005) { parts.push(`${monthShort(m)} ${peso(left)}`); cardTotal += left; }
+      if (m === k) break;
+    }
+    if (cardTotal > 0.005) cardNote = `<p id="proj-card-note" class="text-[10px] font-semibold text-amber-300/90 leading-snug mt-0.5">Assumes BPI Platinum bills are paid in full: ${peso(cardTotal)} (${parts.join(" &middot; ")})</p>`;
+  }
   const owedBreak = Object.entries(rm.owed.byMonth).sort(([a], [b]) => (a < b ? -1 : 1)).map(([m, v]) => `${monthShort(m)} ${peso(v)}`).join(" · ");
   const kpiBar = `
     <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-2 flex flex-col items-stretch gap-2 shadow-md flex-shrink-0">
@@ -37,6 +50,7 @@ export function renderBudget() {
             </button>
           </div>
           <p id="sum-projected" class="text-sm sm:text-base font-black text-white leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
+          ${cardNote}
         </div>
       </div>
 
