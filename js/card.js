@@ -79,8 +79,8 @@ export function charges(key) {
     const date = it.txDate;
     if (date <= prev || date > cutoff) continue;
     const r = itemAmts(it, it.start);
-    if (!(r.total > 0)) continue;
-    out.push({ id: it.id, item: it, month: date.slice(0, 7), date, amt: r.total, posted: r.paid >= r.total - 0.005 });
+    if (!r.total) continue; // negative = a credit (e.g. carryover)
+    out.push({ id: it.id, item: it, month: date.slice(0, 7), date, amt: r.total, posted: r.total < 0 ? r.paid < 0 : r.paid >= r.total - 0.005 });
   }
   for (let m = prev.slice(0, 7); cmpKey(m, cutoff.slice(0, 7)) <= 0; m = addMonths(m, 1)) {
     for (const it of items) {
@@ -89,8 +89,8 @@ export function charges(key) {
       const date = dateOf(m, it.txDay);
       if (date <= prev || date > cutoff) continue;
       const r = itemAmts(it, m);
-      if (!(r.total > 0)) continue;
-      out.push({ id: it.id, item: it, month: m, date, amt: r.total, posted: r.paid >= r.total - 0.005 });
+      if (!r.total) continue; // negative = a credit (e.g. carryover)
+      out.push({ id: it.id, item: it, month: m, date, amt: r.total, posted: r.total < 0 ? r.paid < 0 : r.paid >= r.total - 0.005 });
     }
   }
   return out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));

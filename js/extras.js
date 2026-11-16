@@ -258,6 +258,7 @@ const CARD_IMPORT = [
   "11-08|TikTok Shop (e-Credit)|226.80",
   "11-09|SM Supermarket East|6240.71",
   "11-13|SM Appliance installment 21/24|1444.59",
+  "11-13|Net carryover (credit)|-0.99",
 ].map((s) => { const [md, name, amt] = s.split("|"); return { date: "2026-" + md, name, amount: Number(amt) }; });
 let importPlan = null;
 
@@ -276,12 +277,12 @@ function planCardImport() {
 /** Runs the card import once, automatically, the first time the app opens with this version (flag is stored in the synced data). */
 async function autoImportCard() {
   const d = getAppData();
-  if (!d || d.imports?.card_oct_nov_2026) return;
+  if (!d || d.imports?.card_oct_nov_2026_b) return;
   const plan = planCardImport();
-  if (!plan.fresh.length) { d.imports = { ...(d.imports || {}), card_oct_nov_2026: true }; await syncSet(d); return; }
+  if (!plan.fresh.length) { d.imports = { ...(d.imports || {}), card_oct_nov_2026_b: true }; await syncSet(d); return; }
   await applyWithUndo((x) => {
     for (const r of plan.fresh) addItemData(x, { who: "charlie", kind: "expenses", name: r.name, amount: r.amount, start: r.date.slice(0, 7), recurring: false, paymentMethod: CARD_METHOD, txDay: Number(r.date.slice(8)), cutoffDay: 14, txDate: r.date });
-    x.imports = { ...(x.imports || {}), card_oct_nov_2026: true };
+    x.imports = { ...(x.imports || {}), card_oct_nov_2026_b: true };
   }, `Added ${plan.fresh.length} BPI Platinum charges (${plan.dups.length} duplicates skipped)`);
 }
 export function importCardAsk() {
