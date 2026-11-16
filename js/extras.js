@@ -3,10 +3,9 @@
 // offline badge, double-tap guard, first-run tip
 // =============================
 import { $, addMonths, dueDayFor, escapeHtml, generateId, monthShort, peso } from "./utils.js";
-import { startFreshAt } from "./itemOps.js";
 import { exportData } from "./ui/actions.js";
 import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, setAppData } from "./state.js";
-import { syncSet } from "./firebase.js";
+import { normalize, syncSet } from "./firebase.js";
 import { catInfo, categoryOf } from "./categories.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
@@ -135,7 +134,7 @@ export function openSettings() {
      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 pt-2">Data</p>
      ${row("exportMonthCsv", "table_view", "Export this month (CSV)")}
      ${row("exportData", "download", "Full backup (JSON)")}
-     ${row("startFreshAsk", "restart_alt", "Start fresh from November 2026")}
+     ${row("openRestore", "settings_backup_restore", "Restore from a backup")}
      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 pt-2">Quick log</p>
      ${row("qlOpenKey", "key", "Gemini API key")}`, CLOSE_BTN);
 }
@@ -166,26 +165,58 @@ export function exportMonthCsv() {
   toast("CSV exported");
 }
 
-// ---------- Start fresh (drop everything before November 2026) ----------
-const FRESH_START = "2026-11";
+// ---------- Automatic daily backups + restore ----------
+const SNAP_KEY = "moneyku_snapshots";
+const SNAP_KEEP = 7;
+const dayStr = () => new Date().toISOString().slice(0, 10);
+const countItems = (d) => ["charlie", "debt"].reduce((n, w) => n + ["income", "expenses"].reduce((m, k) => m + ((d.items?.[w]?.[k] || []).length), 0), 0);
+const readSnaps = () => { try { return JSON.parse(lsGet(SNAP_KEY, "[]")) || []; } catch { return []; } };
 
-export function startFreshAsk() {
-  showSheet("Start fresh from November 2026",
-    `<p class="text-sm text-slate-300">The timeline will begin in <b>November 2026</b>. Everything recorded for earlier months (paid marks, spending, edits) is removed, and items that only existed before then are deleted.</p>
-     <p class="text-sm text-slate-300">Your accounts, recurring items and running installments stay. A backup file downloads first, and you can tap Undo right after.</p>`,
-    `<button type="button" data-action="startFreshGo" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-rose-600">Back up &amp; start fresh</button>
-     <button type="button" data-action="qlClose" class="px-4 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Cancel</button>`);
+/** Keep the first state seen each day (never overwritten later that day), last 7 days. */
+export function takeDailySnapshot() {
+  const d = getAppData();
+  if (!d || !d.items) return;
+  const day = dayStr();
+  const snaps = readSnaps();
+  if (snaps.some((s) => s.day === day)) return;
+  snaps.push({ day, at: new Date().toISOString(), n: countItems(d), data: JSON.parse(JSON.stringify(d)) });
+  let keep = snaps.slice(-SNAP_KEEP);
+  while (keep.length) {
+    try { localStorage.setItem(SNAP_KEY, JSON.stringify(keep)); return; } catch { keep.shift(); }
+  }
 }
 
-export async function startFreshGo() {
+export function openRestore() {
+  const snaps = readSnaps().slice().reverse();
+  const rows = snaps.length
+    ? snaps.map((s) => `<button type="button" data-action="restoreSnapshot" data-arg0="${s.day}" class="w-full flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-700 text-left"><span class="text-sm font-bold text-white">${s.day}</span><span class="text-[11px] font-bold text-slate-400">${s.n} items &middot; tap to restore</span></button>`).join("")
+    : `<p class="text-sm text-slate-400">No automatic backups on this device yet. One is saved the first time you open the app each day.</p>`;
+  showSheet("Restore from a backup",
+    `<p class="text-[11px] text-slate-400">Automatic daily backups on this device (last ${SNAP_KEEP} days). Restoring replaces your current data. You can Undo right after.</p>
+     <div class="space-y-1.5">${rows}</div>
+     <label class="block w-full text-center py-2.5 text-sm font-bold rounded-xl text-slate-200 bg-slate-700/60 cursor-pointer">Load a backup file&hellip;<input id="rs-file" type="file" accept="application/json,.json" class="hidden" /></label>`, CLOSE_BTN);
+  $("rs-file")?.addEventListener("change", async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!data || typeof data !== "object" || !data.items) throw new Error("bad");
+      await restoreData(data, `Restored from ${f.name}`);
+    } catch { toast("That file isn't a valid backup", "error"); }
+  });
+}
+
+async function restoreData(data, message) {
   qlClose();
-  try { exportData(); } catch { /* the Undo below still protects the data */ }
-  let res = { items: 0, months: 0 };
-  await applyWithUndo((d) => { res = startFreshAt(d, FRESH_START); }, "Started fresh from November 2026");
-  const sel = getSelectedKey();
-  if (sel && sel < FRESH_START) { window.selectMonth?.(FRESH_START); }
+  const fresh = normalize(JSON.parse(JSON.stringify(data)));
+  await applyWithUndo((d) => { Object.keys(d).forEach((k) => delete d[k]); Object.assign(d, fresh); }, message);
 }
 
+export async function restoreSnapshot(day) {
+  const s = readSnaps().find((x) => x.day === day);
+  if (!s) return toast("Backup not found", "error");
+  await restoreData(s.data, `Restored the ${day} backup`);
+}
 // ---------- First-run tip ----------
 export function tipCardHtml() {
   if (lsGet("moneyku_tip_seen")) return "";
@@ -199,6 +230,9 @@ export function dismissTip() { lsSet("moneyku_tip_seen", "1"); document.getEleme
 // ---------- boot ----------
 export function initExtras() {
   applyTextSize();
+  // Daily safety backup: first state of each day, kept for a week (waits for data to load)
+  const snapTimer = setInterval(() => { if (getAppData()) { takeDailySnapshot(); clearInterval(snapTimer); } }, 3000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) takeDailySnapshot(); });
   // Offline badge
   const badge = document.createElement("div");
   badge.id = "net-badge";
