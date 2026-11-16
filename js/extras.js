@@ -77,9 +77,17 @@ export function qlAddChooser() {
   const b = (cls, kind, label) => `<button type="button" data-action="addNew" data-arg0="${kind}" class="flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-1 ${cls}"><span class="material-icons" style="font-size:16px">add</span>${label}</button>`;
   showSheet("Add", `<p class="text-sm text-slate-300">What do you want to add?</p>`,
     b("text-emerald-300 bg-emerald-500/15 border border-emerald-500/25", "income", "Income") +
-    b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "Expense"));
+    b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "Bill") +
+    `<button type="button" data-action="qlSpendPick" class="flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-1 text-sky-300 bg-sky-500/15 border border-sky-500/25"><span class="material-icons" style="font-size:16px">payments</span>Spend</button>`);
 }
-export function addNew(kind) { qlClose(); setTimeout(() => openItemModal("charlie", kind), 120); }
+
+/** Quick spend: pick the bill/budget this month, then log the amount in its spending section. */
+export function qlSpendPick() {
+  const k = getSelectedKey();
+  const list = getItems("charlie", "expenses").filter((it) => itemActiveIn(it, k) && !(it.paymentMethod === CARD_METHOD));
+  const rows = list.map((it) => `<button type="button" data-action="srOpen" data-arg0="charlie" data-arg1="expenses" data-arg2="${it.id}" data-arg3="" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/50 text-left"><span class="text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span><span class="text-xs font-black text-slate-400 flex-shrink-0">${peso(itemTotal(it, k))}</span></button>`).join("");
+  showSheet(`Spend in ${monthShort(k)}`, `<p class="text-[11px] text-slate-400 mb-1">Pick where the money goes, then add the amount under "Spending".</p>${rows || `<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`}`, CLOSE_BTN);
+}export function addNew(kind) { qlClose(); setTimeout(() => openItemModal("charlie", kind), 120); }
 
 // ---------- 3. Duplicate / copy last month ----------
 const cloneItem = (it, patch = {}) => {

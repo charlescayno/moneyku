@@ -129,6 +129,21 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
   </details>`;
 }
 
+/** Due state of an unpaid expense: overdue, due within 7 days, or later (future months and items without a due day are never flagged). */
+export function dueStatus(it, k) {
+  const dd = dueDayFor(it);
+  if (dd == null || isPaid(it.id, k)) return null;
+  const c = cmpKey(k, currentKey());
+  if (c > 0) return null;
+  if (c < 0) return { state: "overdue", days: 0 };
+  const [y, m] = k.split("-").map(Number);
+  const day = Math.min(dd, new Date(y, m, 0).getDate());
+  const diff = day - new Date().getDate();
+  if (diff < 0) return { state: "overdue", days: -diff };
+  if (diff <= 7) return { state: "week", days: diff };
+  return { state: "later", days: diff };
+}
+
 export function itemRowHtml(it, k, kind, who, opts = {}) {
   if (getKids(it, k).length) return parentRowHtml(it, k, kind, who, opts);
   const settled = isPaid(it.id, k);
@@ -167,6 +182,9 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event</span>${it.txDate}</span>`);
   }
   
+  const ds = kind === "expenses" ? dueStatus(it, k) : null;
+  if (ds && ds.state === "overdue") tags.unshift(`<span class="due-chip due-overdue text-[9px] font-black text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/40 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">error_outline</span>Overdue${ds.days ? ` ${ds.days}d` : ""}</span>`);
+  else if (ds && ds.state === "week") tags.unshift(`<span class="due-chip due-soon text-[9px] font-black text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">schedule</span>${ds.days === 0 ? "Due today" : `Due in ${ds.days}d`}</span>`);
   if (installment) tags.push(`<span class="text-[9px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
   else if (it.recurring && dd != null) tags.push(`<span class="text-[9px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
   else if (it.recurring) tags.push(`<span class="text-[9px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
@@ -276,7 +294,26 @@ export function bankGroupHtml(bank, list, k, kind, who) {
   </div>`;
 }
 
+const dueHeader = (label, cls, icon, n) => `<p class="due-group flex items-center gap-1 px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-[0.15em] ${cls}"><span class="material-icons" style="font-size:13px">${icon}</span>${label}<span class="opacity-60">· ${n}</span></p>`;
+
+/** Expenses of the current/past months: Overdue and This week come first, everything else is Later. */
 export function groupedRowsHtml(items, k, kind, who) {
+  if (kind !== "expenses" || who === "debt" || !items.length) return groupedRowsInner(items, k, kind, who);
+  const over = [], week = [], later = [];
+  for (const it of items) {
+    const ds = getKids(it, k).length ? null : dueStatus(it, k);
+    if (ds && ds.state === "overdue") over.push(it); else if (ds && ds.state === "week") week.push(it); else later.push(it);
+  }
+  if (!over.length && !week.length) return groupedRowsInner(items, k, kind, who);
+  const rows = (list) => list.sort((a, b) => (dueDayFor(a) || 0) - (dueDayFor(b) || 0)).map((it) => itemRowHtml(it, k, kind, who)).join("");
+  let html = "";
+  if (over.length) html += dueHeader("Overdue", "text-rose-400", "error_outline", over.length) + rows(over);
+  if (week.length) html += dueHeader("This week", "text-amber-300", "schedule", week.length) + rows(week);
+  if (later.length) html += dueHeader("Later", "text-slate-500", "event", later.length) + groupedRowsInner(later, k, kind, who);
+  return html;
+}
+
+function groupedRowsInner(items, k, kind, who) {
   if (!items.length) {
     const isInc = kind === "income";
     return `<div class="empty-state flex flex-col items-center gap-1 px-3 py-4 text-center">
