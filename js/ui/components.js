@@ -1000,6 +1000,7 @@ export function yearOutlookCardHtml() {
         <div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide text-slate-500"><span>Month</span><span class="text-right">In</span><span class="text-right">Out</span><span class="text-right">Net</span><span class="text-right">Balance</span></div>
         ${tr}
       </div>
+      <button type="button" data-action="exportOutlookCsv" class="w-full py-2 text-[11px] font-bold text-indigo-300 rounded-lg bg-slate-800/60 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">download</span>Export outlook (CSV)</button>
       <p class="text-[10px] text-slate-500 leading-snug">Uses everything currently planned: recurring income and bills, installments, debts you are owed, and each BPI Platinum bill in the month it falls due. One-time items you have not added yet are not included.</p>
     </div>
   </details>`;

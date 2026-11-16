@@ -2,12 +2,12 @@
 // Extras: search, add chooser, duplicate, copy last month, settings (text size, CSV),
 // offline badge, double-tap guard, first-run tip
 // =============================
-import { $, addMonths, dueDayFor, escapeHtml, generateId, monthShort, peso } from "./utils.js";
+import { $, addMonths, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso } from "./utils.js";
 import { exportData } from "./ui/actions.js";
-import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, setAppData } from "./state.js";
+import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, runningFundsAt, setAppData, timeline } from "./state.js";
 import { normalize, syncSet } from "./firebase.js";
 import { addItemData } from "./itemOps.js";
-import { CARD_METHOD, charges } from "./card.js";
+import { CARD_METHOD, charges, statement } from "./card.js";
 import { catInfo, categoryOf } from "./categories.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
@@ -134,7 +134,7 @@ export function openSettings() {
     `<p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Text size</p>
      <div class="flex gap-2">${seg("normal", "Normal", !large)}${seg("large", "Large", large)}</div>
      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 pt-2">Data</p>
-     ${row("exportMonthCsv", "table_view", "Export this month (CSV)")}
+     ${row("openExport", "ios_share", "Export data (CSV / backup)&hellip;")}
      ${row("exportData", "download", "Full backup (JSON)")}
      ${row("openRestore", "settings_backup_restore", "Restore from a backup")}
      ${row("importCardAsk", "credit_card", "Import BPI Platinum charges (Oct 15 - Nov 13)")}
@@ -168,6 +168,69 @@ export function exportMonthCsv() {
   toast("CSV exported");
 }
 
+// ---------- Export ----------
+function downloadCsv(filename, rows) {
+  const csv = "\uFEFF" + rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(`${filename} exported`);
+}
+const stamp = () => new Date().toISOString().slice(0, 10);
+
+export function openExport() {
+  const row = (action, icon, label, sub) => `<button type="button" data-action="${action}" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-900/50 text-left"><span class="material-icons text-indigo-300" style="font-size:20px">${icon}</span><span class="flex-1 min-w-0"><span class="block text-sm font-bold text-slate-100">${label}</span><span class="block text-[11px] text-slate-500">${sub}</span></span><span class="material-icons text-slate-500" style="font-size:18px">download</span></button>`;
+  showSheet("Export",
+    `<div class="space-y-1.5">
+      ${row("exportMonthCsv", "table_view", "This month", "Income and expenses of the month you are viewing (CSV)")}
+      ${row("exportOutlookCsv", "insights", "12-month outlook", "Income, spending, net and balance per month (CSV)")}
+      ${row("exportItemsCsv", "list_alt", "All income &amp; expenses", "Every item with dates, amounts and category (CSV)")}
+      ${row("exportCardCsv", "credit_card", "BPI Platinum charges", "Every statement and its charges (CSV)")}
+      ${row("exportData", "backup", "Full backup", "Everything, to restore later (JSON)")}
+     </div>
+     <p class="text-[10px] text-slate-500">CSV files open in Excel, Numbers and Google Sheets.</p>`, CLOSE_BTN);
+}
+
+export function exportOutlookCsv() {
+  const start = timeline().includes(currentKey()) ? currentKey() : timeline()[0];
+  const rows = [["Month", "Income", "Expenses", "Net", "Projected balance"]];
+  for (let i = 0; i < 13; i++) {
+    const m = addMonths(start, i);
+    if (!timeline().includes(m)) break;
+    const t = monthTotals(m);
+    const inc = t.income + t.dI, out = t.expenses + t.dE;
+    rows.push([m, inc.toFixed(2), out.toFixed(2), (inc - out).toFixed(2), runningFundsAt(m).toFixed(2)]);
+  }
+  downloadCsv(`moneyku_outlook_${stamp()}.csv`, rows);
+}
+
+export function exportItemsCsv() {
+  const rows = [["Type", "Group", "Name", "Parent", "Amount", "Starts", "Ends", "Recurring", "Due day", "Payment method", "Category", "Date"]];
+  for (const who of ["charlie", "debt"]) {
+    for (const kind of ["income", "expenses"]) {
+      for (const it of getItems(who, kind)) {
+        const cat = kind === "expenses" ? catInfo(categoryOf(it)).label : "";
+        rows.push([kind, who, it.name, "", it.amount ?? 0, it.start || "", it.end || "", it.recurring ? "yes" : "no", dueDayFor(it) ?? "", it.paymentMethod || "", cat, it.txDate || ""]);
+        for (const c of getKids(it)) rows.push([kind, who, c.name, it.name, c.amount ?? 0, c.start || it.start || "", c.end || it.end || "", it.recurring ? "yes" : "no", "", it.paymentMethod || "", cat, ""]);
+      }
+    }
+  }
+  downloadCsv(`moneyku_items_${stamp()}.csv`, rows);
+}
+
+export function exportCardCsv() {
+  const tl = timeline();
+  const rows = [["Statement cut-off", "Due date", "Charge date", "Name", "Category", "Amount", "Posted", "Statement total", "Paid", "Left"]];
+  if (tl.length) {
+    for (let s = addMonths(tl[0], -1); s <= addMonths(currentKey(), 2); s = addMonths(s, 1)) {
+      const st = statement(s);
+      for (const c of st.charges) rows.push([st.cutoff, st.due, c.date, c.item.name, catInfo(categoryOf(c.item)).label, c.amt.toFixed(2), c.posted ? "yes" : "no", st.total.toFixed(2), st.paid.toFixed(2), st.remaining.toFixed(2)]);
+    }
+  }
+  downloadCsv(`moneyku_bpi_platinum_${stamp()}.csv`, rows);
+}
 // ---------- Automatic daily backups + restore ----------
 const SNAP_KEY = "moneyku_snapshots";
 const SNAP_KEEP = 7;
