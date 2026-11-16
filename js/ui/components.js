@@ -944,6 +944,66 @@ export function installmentsCardHtml() {
   </details>`;
 }
 
+/** 13-month outlook (this month + 12): income, spending, net and balance per month, with plain-language findings. */
+export function yearOutlookCardHtml() {
+  const start = currentKey();
+  const tl = timeline();
+  if (!tl.length) return "";
+  const keys = [];
+  for (let i = 0; i < 13; i++) { const m = addMonths(start, i); if (tl.includes(m)) keys.push(m); }
+  if (!keys.length) return "";
+  const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  let totIn = 0, totOut = 0, low = null, neg = [], peak = null;
+  const rows = keys.map((m) => {
+    const t = monthTotals(m);
+    const inc = t.income + t.dI, out = t.expenses + t.dE, net = inc - out, bal = runningFundsAt(m);
+    totIn += inc; totOut += out;
+    if (!low || bal < low.bal) low = { m, bal };
+    if (bal < 0) neg.push(m);
+    if (!peak || out > peak.out) peak = { m, out };
+    return { m, inc, out, net, bal };
+  });
+  const last = keys[keys.length - 1];
+  const insts = allInstallments().filter((i) => cmpKey(i.end, start) >= 0 && cmpKey(i.end, last) <= 0).sort((a, b) => cmpKey(a.end, b.end));
+  const freed = insts.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const net = totIn - totOut;
+  const end = rows[rows.length - 1].bal;
+  const maxBal = Math.max(1, ...rows.map((r) => Math.abs(r.bal)));
+  const finding = (icon, tone, html) => `<div class="flex items-start gap-2 text-[11px] leading-snug"><span class="material-icons ${tone}" style="font-size:15px;margin-top:1px">${icon}</span><p class="text-slate-300">${html}</p></div>`;
+  const finds = [
+    finding(net >= 0 ? "trending_up" : "trending_down", net >= 0 ? "text-emerald-400" : "text-rose-400", `Over ${keys.length} months you take in <b class="text-white">${peso(totIn)}</b> and spend <b class="text-white">${peso(totOut)}</b>: net <b class="${net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(net)}</b> (${totIn > 0 ? Math.round((net / totIn) * 100) : 0}% of income).`),
+    finding("flag", "text-indigo-300", `Projected balance goes from <b class="text-white">${sp(rows[0].bal)}</b> in ${monthShort(rows[0].m)} to <b class="text-white">${sp(end)}</b> in ${monthShort(last)}.`),
+    neg.length
+      ? finding("warning", "text-rose-400", `Balance dips below zero in <b class="text-rose-300">${neg.length} month${neg.length === 1 ? "" : "s"}</b> (${neg.slice(0, 4).map(monthShort).join(", ")}${neg.length > 4 ? "…" : ""}). Lowest: <b class="text-rose-300">${sp(low.bal)}</b> in ${monthShort(low.m)}.`)
+      : finding("check_circle", "text-emerald-400", `Balance stays above zero. Lowest point: <b class="text-white">${sp(low.bal)}</b> in ${monthShort(low.m)}.`),
+    finding("local_fire_department", "text-amber-300", `Heaviest month: <b class="text-white">${monthShort(peak.m)}</b> with ${peso(peak.out)} going out.`),
+    insts.length ? finding("hourglass_bottom", "text-fuchsia-300", `${insts.length} installment${insts.length === 1 ? "" : "s"} finish in this window (${insts.slice(0, 4).map((i) => `${escapeHtml(i.name)} ${monthShort(i.end)}`).join(", ")}${insts.length > 4 ? "…" : ""}), freeing about <b class="text-white">${peso(freed)}</b> a month.`) : "",
+  ].join("");
+  const tr = rows.map((r) => `<div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 items-center py-1 text-[10px] font-bold border-t border-white/[0.04] ${r.m === start ? "bg-indigo-500/10 rounded" : ""}">
+      <span class="text-slate-300">${monthShort(r.m)}</span>
+      <span class="text-right text-emerald-300">${peso(r.inc)}</span>
+      <span class="text-right text-slate-300">${peso(r.out)}</span>
+      <span class="text-right ${r.net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(r.net)}</span>
+      <span class="text-right font-black ${r.bal >= 0 ? "text-white" : "text-rose-400"}">${sp(r.bal)}</span></div>
+    <div class="h-[3px] rounded-full bg-slate-800 mb-0.5"><div class="h-full rounded-full ${r.bal >= 0 ? "bg-indigo-400/70" : "bg-rose-500/70"}" style="width:${Math.max(2, Math.round((Math.abs(r.bal) / maxBal) * 100))}%"></div></div>`).join("");
+  return `<details open data-persist="outlook" class="glass-card rounded-xl overflow-hidden w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">insights</span></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">12-month outlook</h3><p class="text-[10px] text-slate-400">${monthShort(keys[0])} &rarr; ${monthShort(last)}</p></div>
+      </div>
+      <p class="text-xs font-black ${end >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(end)}</p>
+    </summary>
+    <div class="px-3 pb-3 space-y-2.5">
+      <div class="space-y-1.5">${finds}</div>
+      <div class="rounded-lg bg-black/20 px-2 py-1.5">
+        <div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide text-slate-500"><span>Month</span><span class="text-right">In</span><span class="text-right">Out</span><span class="text-right">Net</span><span class="text-right">Balance</span></div>
+        ${tr}
+      </div>
+      <p class="text-[10px] text-slate-500 leading-snug">Uses everything currently planned: recurring income and bills, installments, debts you are owed, and each BPI Platinum bill in the month it falls due. One-time items you have not added yet are not included.</p>
+    </div>
+  </details>`;
+}
 /** Timeline of recurring money coming IN with an end month (e.g. Kuya Rey's iPhone): one row per month from this month to the last. */
 export function owedScheduleCardHtml() {
   const now = currentKey();
@@ -1039,6 +1099,7 @@ export function openMore() {
   const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
   body.innerHTML = `
     ${investmentsCardHtml()}
+    ${yearOutlookCardHtml()}
     ${monthOverviewCardHtml()}
     ${owedScheduleCardHtml()}
     ${inst}
