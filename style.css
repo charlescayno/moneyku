@@ -1369,3 +1369,11 @@ html.app-ready.kb-open .fab-add {
 
 /* Room under the last card so the floating add button (and the mobile tab bar) never cover it */
 .budget-pad { padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px)); }
+
+/* Phones: 8 header buttons must fit on one row, so make them a little smaller */
+@media (max-width: 400px) {
+  header.app-header .app-header-tools button,
+  body[data-density="compact"] header.app-header .app-header-tools button { width: 2.25rem !important; height: 2.25rem !important; min-width: 2rem; border-radius: 0.75rem !important; }
+  header.app-header .app-header-tools button.app-header-add,
+  body[data-density="compact"] header.app-header .app-header-tools button.app-header-add { width: 2.6rem !important; height: 2.6rem !important; min-width: 2.25rem; }
+}
