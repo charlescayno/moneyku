@@ -273,6 +273,17 @@ function planCardImport() {
   return { fresh, dups };
 }
 
+/** Runs the card import once, automatically, the first time the app opens with this version (flag is stored in the synced data). */
+async function autoImportCard() {
+  const d = getAppData();
+  if (!d || d.imports?.card_oct_nov_2026) return;
+  const plan = planCardImport();
+  if (!plan.fresh.length) { d.imports = { ...(d.imports || {}), card_oct_nov_2026: true }; await syncSet(d); return; }
+  await applyWithUndo((x) => {
+    for (const r of plan.fresh) addItemData(x, { who: "charlie", kind: "expenses", name: r.name, amount: r.amount, start: r.date.slice(0, 7), recurring: false, paymentMethod: CARD_METHOD, txDay: Number(r.date.slice(8)), cutoffDay: 14, txDate: r.date });
+    x.imports = { ...(x.imports || {}), card_oct_nov_2026: true };
+  }, `Added ${plan.fresh.length} BPI Platinum charges (${plan.dups.length} duplicates skipped)`);
+}
 export function importCardAsk() {
   importPlan = planCardImport();
   const { fresh, dups } = importPlan;
@@ -307,7 +318,7 @@ export function dismissTip() { lsSet("moneyku_tip_seen", "1"); document.getEleme
 export function initExtras() {
   applyTextSize();
   // Daily safety backup: first state of each day, kept for a week (waits for data to load)
-  const snapTimer = setInterval(() => { if (getAppData()) { takeDailySnapshot(); clearInterval(snapTimer); } }, 3000);
+  const snapTimer = setInterval(() => { if (getAppData()) { takeDailySnapshot(); clearInterval(snapTimer); autoImportCard(); } }, 3000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) takeDailySnapshot(); });
   // Offline badge
   const badge = document.createElement("div");
