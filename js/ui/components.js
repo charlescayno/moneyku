@@ -921,11 +921,11 @@ export function installmentsCardHtml() {
     const pct = total ? Math.round((monthsPaid / total) * 100) : 0;
     grandRemaining += remaining; if (monthsLeft > 0) grandMonthly += monthly;
     const urgency = monthsLeft === 0 ? "text-emerald-400 bg-emerald-500/15" : monthsLeft <= 6 ? "text-rose-400 bg-rose-500/15" : monthsLeft <= 12 ? "text-amber-400 bg-amber-500/15" : "text-slate-400 bg-slate-500/15";
-    return `<div class="px-2.5 py-1.5 rounded-lg space-y-1 bg-slate-900/30">
+    return `<div data-action="openItemModal" data-arg0="${it.who}" data-arg1="expenses" data-arg2="${it.id}" class="item-row px-2.5 py-1.5 rounded-lg space-y-1 bg-slate-900/30 cursor-pointer">
       <div class="flex items-center justify-between gap-2">
         <div class="min-w-0">
           <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p><span class="text-[8px] font-bold uppercase ${o.text}">${o.label}</span></div>
-          <p class="text-[9px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left</p>
+          <p class="text-[9px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left · <span class="text-indigo-300">tap to edit</span></p>
         </div>
         <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${urgency} uppercase flex-shrink-0">${monthsLeft === 0 ? "Done" : monthsLeft + " mo left"}</span>
       </div>
@@ -944,6 +944,49 @@ export function installmentsCardHtml() {
   </details>`;
 }
 
+/** Timeline of recurring money coming IN with an end month (e.g. Kuya Rey's iPhone): one row per month from this month to the last. */
+export function owedScheduleCardHtml() {
+  const now = currentKey();
+  const list = [];
+  for (const who of ["debt", "charlie"]) {
+    for (const it of getItems(who, "income")) {
+      if (it.recurring && it.end && cmpKey(it.end, now) >= 0) list.push({ it, who });
+    }
+  }
+  if (!list.length) return "";
+  let grand = 0;
+  const blocks = list.map(({ it, who }) => {
+    const first = cmpKey(it.start, now) > 0 ? it.start : now;
+    const months = monthsInclusive(first, it.end);
+    let left = 0, rows = "";
+    for (let i = 0; i < months; i++) {
+      const m = addMonths(first, i);
+      const amt = itemTotal(it, m);
+      const done = isPaid(it.id, m);
+      if (!done) left += amt;
+      rows += `<div class="flex items-center justify-between gap-2 py-1 px-1 text-[11px] font-bold ${done ? "text-slate-500" : "text-slate-200"}">
+        <span class="flex items-center gap-1.5"><span class="material-icons ${done ? "text-emerald-400" : "text-slate-600"}" style="font-size:14px">${done ? "check_circle" : "radio_button_unchecked"}</span>${monthShort(m)}${m === now ? ` <span class="text-[9px] text-indigo-300">this month</span>` : ""}</span>
+        <span class="${done ? "line-through" : "text-emerald-300"}">${peso(amt)}</span></div>`;
+    }
+    grand += left;
+    return `<details class="rounded-lg bg-slate-900/30"><summary class="flex items-center justify-between gap-2 px-2.5 py-2 cursor-pointer list-none">
+        <div class="min-w-0"><p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p>
+          <p class="text-[10px] text-slate-500">${monthShort(first)} → ${monthShort(it.end)} &middot; ${months} month${months === 1 ? "" : "s"} &middot; ${peso(Number(it.amount) || 0)}/mo</p></div>
+        <p class="text-xs font-black text-emerald-300 flex-shrink-0">${peso(left)}</p></summary>
+      <div class="px-2.5 pb-2 border-t border-white/[0.04]">${rows}
+        <button type="button" data-action="openItemModal" data-arg0="${who}" data-arg1="income" data-arg2="${it.id}" class="w-full mt-1 py-1.5 text-[11px] font-bold text-indigo-300 rounded-lg bg-slate-800/60">Edit</button></div></details>`;
+  }).join("");
+  return `<details open class="glass-card rounded-xl overflow-hidden w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">south_west</span></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">Payments to receive</h3><p class="text-[10px] text-slate-400">${list.length} running &middot; tap one to see every month</p></div>
+      </div>
+      <p class="text-xs font-black text-emerald-300">${peso(grand)}</p>
+    </summary>
+    <div class="p-2.5 pt-0 space-y-1">${blocks}</div>
+  </details>`;
+}
 export function recurringPaymentsCardHtml() {
   const k = getSelectedKey();
   const recurring = allRecurring(k);
@@ -997,6 +1040,7 @@ export function openMore() {
   body.innerHTML = `
     ${investmentsCardHtml()}
     ${monthOverviewCardHtml()}
+    ${owedScheduleCardHtml()}
     ${inst}
   `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
