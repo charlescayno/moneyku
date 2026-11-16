@@ -218,11 +218,20 @@ export function monthTotals(k) {
   };
 }
 
+/**
+ * Projected funds at the end of month k: cash and bank now, plus what is still to come from the current
+ * month up to k (income left to receive minus bills left to pay, debts included).
+ * Months before the current one are not carried forward: your balances already reflect them, so their
+ * leftover unpaid items would be counted twice. A past month just shows its own outstanding amount.
+ */
 export function runningFundsAt(k) {
   let bal = accountsTotal();
-  for (const mk of timeline()) { 
-    bal += monthTotals(mk).netPending; 
-    if (mk === k) break; 
+  const now = currentKey();
+  if (cmpKey(k, now) < 0) return bal + monthTotals(k).netPending;
+  for (const mk of timeline()) {
+    if (cmpKey(mk, now) < 0) continue;
+    bal += monthTotals(mk).netPending;
+    if (mk === k) break;
   }
   return bal;
 }

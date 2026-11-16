@@ -28,6 +28,7 @@ export function renderBudget() {
     const parts = [];
     let cardTotal = 0;
     for (const m of timeline()) {
+      if (cmpKey(m, currentKey()) < 0) continue;
       const due = cardDueIn(m); const left = Math.max(0, due.total - due.paid);
       if (left > 0.005) { parts.push(`${monthShort(m)} ${peso(left)}`); cardTotal += left; }
       if (m === k) break;
