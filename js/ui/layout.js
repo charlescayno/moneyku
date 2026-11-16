@@ -30,12 +30,19 @@ export function renderBudget() {
     for (const m of timeline()) {
       if (cmpKey(m, currentKey()) < 0) continue;
       const due = cardDueIn(m); const left = Math.max(0, due.total - due.paid);
-      if (left > 0.005) { parts.push(`${monthShort(m)} ${peso(left)}`); cardTotal += left; }
+      if (left > 0.005) { parts.push([m, left]); cardTotal += left; }
       if (m === k) break;
     }
-    if (cardTotal > 0.005) cardNote = `<p id="proj-card-note" class="text-[10px] font-semibold text-amber-300/90 leading-snug mt-0.5">Assumes BPI Platinum bills are paid in full: ${peso(cardTotal)} (${parts.join(" &middot; ")})</p>`;
-  }
-  const owedBreak = Object.entries(rm.owed.byMonth).sort(([a], [b]) => (a < b ? -1 : 1)).map(([m, v]) => `${monthShort(m)} ${peso(v)}`).join(" · ");
+    if (cardTotal > 0.005) cardNote = `<details data-persist="proj-card" id="proj-card-note" class="group/p mt-1.5 rounded-lg bg-indigo-500/10 border border-indigo-400/20">
+        <summary class="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer list-none select-none">
+          <span class="material-icons text-indigo-300" style="font-size:15px">credit_card</span>
+          <span class="flex-1 min-w-0 text-[11px] font-bold text-indigo-100 leading-tight">Assumes BPI Platinum bills are paid in full</span>
+          <span class="text-[11px] font-black text-rose-300 flex-shrink-0">-${peso(cardTotal)}</span>
+          <span class="material-icons text-indigo-300/70 transition-transform group-open/p:rotate-180" style="font-size:16px">expand_more</span>
+        </summary>
+        <div class="px-2.5 pb-2 grid grid-cols-2 gap-x-4 gap-y-1">${parts.map(([m, v]) => `<div class="flex items-center justify-between text-[10px]"><span class="font-bold text-slate-400">${monthShort(m)}</span><span class="font-black text-slate-200">${peso(v)}</span></div>`).join("")}</div>
+      </details>`;
+  }  const owedBreak = Object.entries(rm.owed.byMonth).sort(([a], [b]) => (a < b ? -1 : 1)).map(([m, v]) => `${monthShort(m)} ${peso(v)}`).join(" · ");
   const kpiBar = `
     <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-2 flex flex-col items-stretch gap-2 shadow-md flex-shrink-0">
       <!-- Projected Hero Stat -->
@@ -51,9 +58,9 @@ export function renderBudget() {
             </button>
           </div>
           <p id="sum-projected" class="text-sm sm:text-base font-black text-white leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
-          ${cardNote}
         </div>
       </div>
+      ${cardNote}
 
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
       <details data-persist="kpi" class="group">
