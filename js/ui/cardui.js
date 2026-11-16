@@ -3,9 +3,9 @@
 // "Pay card" and reconciliation.
 // =============================
 import { CARD_NAME, cardSettings, cardSummary, clearStatement, daysUntil, isCardItem, keysForMonth, payCard, removeCardPayment, saveCardSettings, saveStatement, statement } from "../card.js";
-import { getAppData, getItems, getSelectedKey, setSelectedKey, timeline } from "../state.js";
+import { getAppData, getItems, getSelectedKey, monthsPaidCount, setSelectedKey, timeline } from "../state.js";
 import { syncSet } from "../firebase.js";
-import { escapeHtml, parseMathAmount, peso } from "../utils.js";
+import { escapeHtml, monthShort, monthsInclusive, parseMathAmount, peso } from "../utils.js";
 import { payableAccounts } from "../payfrom.js";
 import { toast } from "./core.js";
 import { renderAll } from "./layout.js";
@@ -24,6 +24,14 @@ const STATUS = {
   overdue: ["Overdue", "text-rose-300 bg-rose-500/15 border-rose-500/30"],
 };
 
+/** "Monthly until Mar '27 (3/12 paid)" for recurring charges, so you can see when the payments stop. */
+function recurNote(it) {
+  if (!it.recurring) return "";
+  if (!it.end) return ` &middot; <span class="text-indigo-300/90">Monthly, no end date</span>`;
+  const total = monthsInclusive(it.start, it.end);
+  return ` &middot; <span class="text-amber-300/90">Monthly until ${monthShort(it.end)} &middot; ${monthsPaidCount(it)}/${total} paid</span>`;
+}
+
 function statementHtml(key, k) {
   const st = statement(key);
   const [label, cls] = STATUS[st.status];
@@ -32,7 +40,7 @@ function statementHtml(key, k) {
   const chargeRows = st.charges.length
     ? st.charges.map((c) => `<div data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" data-arg2="${c.id}" class="item-row flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer ${c.posted ? "opacity-60" : ""}">
         <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark posted to the card" class="paid-check ${c.posted ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"><span class="material-icons check-icon text-white" style="font-size:14px">check</span></button>
-        <div class="flex-1 min-w-0"><p class="text-xs font-bold text-slate-200 truncate ${c.posted ? "line-through" : ""}">${escapeHtml(c.item.name)}</p><p class="text-[9px] font-bold text-slate-500">${fmtDate(c.date)}</p></div>
+        <div class="flex-1 min-w-0"><p class="text-xs font-bold text-slate-200 truncate ${c.posted ? "line-through" : ""}">${escapeHtml(c.item.name)}</p><p class="text-[9px] font-bold text-slate-500">${fmtDate(c.date)}${recurNote(c.item)}</p></div>
         <p class="text-xs font-black text-white flex-shrink-0">${peso(c.amt)}</p></div>`).join("")
     : `<p class="text-[10px] text-slate-500 px-2 py-1">No charges in this statement yet.</p>`;
   const payRows = st.payments.map((p) => `<div class="flex items-center gap-2 px-2 py-1 text-[10px] font-bold text-slate-400">
