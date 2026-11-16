@@ -1,7 +1,13 @@
-const CACHE_NAME = 'moneyku-cache-v88';
+const CACHE_NAME = 'moneyku-cache-v90';
 const urlsToCache = [
   './',
   './index.html',
+  './manifest.json',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/money-icon.png',
+  './assets/avatar-charlie.jpg',
+  './assets/avatar-karla.jpg',
   './style.css',
   './tailwind.css',
   './js/app.js',
@@ -27,7 +33,11 @@ const urlsToCache = [
   './js/ui/layout.js',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdn.jsdelivr.net/npm/morphdom@2.7.0/dist/morphdom-umd.min.js',
-  'https://fonts.googleapis.com/icon?family=Material+Icons'
+  'https://fonts.googleapis.com/icon?family=Material+Icons',
+  // Firebase SDK modules (imported by js/firebase.js), so the app can start offline after one online visit
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js'
 ];
 
 self.addEventListener('install', event => {
@@ -58,16 +68,21 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request, new URL(event.request.url).origin === self.location.origin ? { cache: 'no-cache' } : undefined)
       .then(response => {
-        // If network succeeds, save a clone to the cache for future offline use
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
-        });
+        // Save good responses (and opaque CDN ones) for offline use; never cache errors
+        if (response && (response.ok || response.type === 'opaque')) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+        }
         return response;
       })
-      .catch(() => {
-        // If network fails, serve from cache
-        return caches.match(event.request);
+      .catch(async () => {
+        // Offline: exact match, then ignore ?v= cache-busters, then the app shell for page loads
+        return (
+          (await caches.match(event.request)) ||
+          (await caches.match(event.request, { ignoreSearch: true })) ||
+          (event.request.mode === 'navigate' ? await caches.match('./index.html') : undefined) ||
+          Response.error()
+        );
       })
   );
 });

@@ -1,0 +1,9 @@
+{
+  "name": "moneyku",
+  "private": true,
+  "type": "module",
+  "description": "Moneyku personal finance PWA",
+  "scripts": {
+    "test": "node --test"
+  }
+}

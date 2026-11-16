@@ -72,7 +72,7 @@ export function dueSoonCardHtml() {
       <p class="text-xs font-black text-white flex-shrink-0">${peso(r.amt)}</p>
       ${r.next ? "" : `<button type="button" data-action="dueMarkPaid" data-arg0="${r.it.id}" title="Mark paid" aria-label="Mark ${escapeHtml(r.it.name)} paid" class="w-7 h-7 rounded-lg border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-400"><span class="material-icons" style="font-size:16px">check</span></button>`}</div>`).join("") + (rows.length > 6 ? `<p class="text-[10px] text-slate-500 text-center">+${rows.length - 6} more</p>` : "");
   return cardShell("due", overdue ? "border-rose-500/30" : "border-amber-500/25", "notifications_active", overdue ? "from-rose-500 to-red-600" : "from-amber-500 to-orange-600",
-    "Due soon", `${rows.length} unpaid in the next 7 days${overdue ? ` · ${overdue} overdue` : ""}`, `<p class="text-sm font-black text-white">${peso(total)}</p>`, body);
+    "Today", `${overdue ? `${overdue} overdue · ` : ""}${rows.length - overdue} due in the next 7 days`, `<p class="text-sm font-black text-white">${peso(total)}</p>`, body);
 }
 
 // ---------- 9. Category budgets ----------

@@ -1,6 +1,6 @@
 /**
  * Remove duplicate PC / PC Payment recurring expenses (ids from moneyku dump).
- * Usage: node remove_pc_expenses.js [path-to-json]
+ * Usage: node remove_pc_expenses.cjs [path-to-json]
  * Default path: ./db_dump.json (does not touch Firebase unless you upload the result).
  */
 const fs = require("fs");

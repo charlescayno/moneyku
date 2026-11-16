@@ -1,16 +1,19 @@
-﻿{
+{
+  "id": "./index.html",
   "name": "Moneyku",
   "short_name": "Moneyku",
+  "description": "Personal Financial Ledger",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
+  "lang": "en",
+  "categories": ["finance", "productivity"],
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "description": "Personal Financial Ledger",
   "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

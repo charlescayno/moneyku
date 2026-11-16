@@ -1377,3 +1377,7 @@ html.app-ready.kb-open .fab-add {
   header.app-header .app-header-tools button.app-header-add,
   body[data-density="compact"] header.app-header .app-header-tools button.app-header-add { width: 2.6rem !important; height: 2.6rem !important; min-width: 2.25rem; }
 }
+/* iOS zooms the page when a focused field is under 16px. Pinch-zoom is allowed now (accessibility), so keep fields at 16px there. */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea { font-size: 16px !important; }
+}
