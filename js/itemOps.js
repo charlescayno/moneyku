@@ -34,12 +34,14 @@ export function applyItemAmount(appData, list, it, amount, scope, k, opts = {}) 
     clone.id = generateId();
     clone.start = k;
     clone.amount = amount;
+    delete clone.perMonday; // a manual amount replaces the per-Monday rate
     const at = list.indexOf(it);
     if (at >= 0) list.splice(at + 1, 0, clone); else list.push(clone);
     it.end = prevMonth;
     moveMonthData(appData, it.id, clone.id, k);
   } else {
     it.amount = amount;
+    delete it.perMonday;
     if (appData.overrides[k]) delete appData.overrides[k][it.id];
   }
 }

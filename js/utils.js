@@ -156,9 +156,18 @@ export function mkKey(y, m /* 0-11 */) {
   return `${y}-${String(m + 1).padStart(2, "0")}`; 
 }
 
-export function keyParts(k) { 
-  const [y, m] = (k || "").split("-").map(Number); 
-  return { y: y || 2026, m: (m || 1) - 1 }; 
+export function keyParts(k) {
+  const [y, m] = (k || "").split("-").map(Number);
+  return { y: y || 2026, m: (m || 1) - 1 };
+}
+
+/** Number of Mondays in month key "YYYY-MM" (4 or 5). */
+export function mondaysInMonth(k) {
+  const { y, m } = keyParts(k);
+  const days = new Date(y, m + 1, 0).getDate();
+  let n = 0;
+  for (let d = 1; d <= days; d++) if (new Date(y, m, d).getDay() === 1) n++;
+  return n;
 }
 
 export function addMonths(k, n) { 

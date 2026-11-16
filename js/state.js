@@ -8,6 +8,7 @@ import {
   addMonths,
   cmpKey,
   keyParts,
+  mondaysInMonth,
   monthsInclusive,
   parseDueDay,
   dueDayFor,
@@ -108,9 +109,12 @@ export function amountIn(it, k) {
 }
 
 // A sub-expense's amount for month k (a "this month only" change is stored as an override)
+// A sub-expense with `perMonday` (e.g. weekly grocery) costs perMonday x the number of Mondays in that month.
 export function childAmt(c, k) {
   const ov = appData?.overrides?.[k]?.[c.id];
-  return ov != null ? Number(ov) : Number(c.amount) || 0;
+  if (ov != null) return Number(ov);
+  if (c.perMonday != null && k) return Number(c.perMonday) * mondaysInMonth(k);
+  return Number(c.amount) || 0;
 }
 
 export function hasOverride(id, k) { 
