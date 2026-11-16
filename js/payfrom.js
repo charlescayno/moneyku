@@ -5,7 +5,7 @@
 // Expenses paid by Maribank / GCash / BPI Debit skip the chooser: the matching account
 // is charged straight away (autoAccountFor) and reversed from the same record.
 // =============================
-import { acctType, childFinal, getAppData, isPaid, itemFinal } from "./state.js";
+import { acctType, childFinal, getAppData, getSpendList, isPaid, itemFinal } from "./state.js";
 import { isCardItem } from "./card.js";
 import { ACCOUNT_PAYMENT_METHODS, BANK_DOMAINS, bankIconFor, escapeHtml, peso } from "./utils.js";
 
@@ -41,7 +41,9 @@ export function amountDue(id, k) {
   // Card purchases are paid when the card bill is paid, not from an account here
   if (!f.income && isCardItem(f.item)) return null;
   const amt = f.child ? childFinal(f.child, k) : itemFinal(f.item, k);
-  return Number(amt) || 0;
+  // Spending entries already taken from an account (ded) must not be taken again when the item is paid
+  const already = f.income ? 0 : getSpendList(id, k).reduce((s, e) => s + (e && e.ded && e.acct ? Number(e.amount) || 0 : 0), 0);
+  return Math.max(0, r2((Number(amt) || 0) - already));
 }
 
 /** The account a payment method points at (Maribank, GCash, BPI Debit Card), matched by name; null for cash/cards/no match. */

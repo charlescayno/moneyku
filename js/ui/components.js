@@ -1193,7 +1193,7 @@ export function spendSectionHtml(it) {
     </div>
     ${rows ? `<div class="space-y-1.5">${rows}</div>` : `<p class="text-[11px] text-slate-600 text-center py-1">No spending logged yet.</p>`}
     <div class="spend-add flex items-center gap-2">
-      <select id="f-spend-acct" title="Which account did this come from?" aria-label="Account" class="flex-shrink-0 w-[7.5rem] bg-slate-900 rounded-xl py-3 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select>
+      <select id="f-spend-acct" title="Subtracted from this account&#39;s balance" aria-label="Account" class="flex-shrink-0 w-[7.5rem] bg-slate-900 rounded-xl py-3 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select>
       <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Add spending  ₱0" class="spend-amt bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" />
       <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 flex items-center justify-center active:scale-95 transition-transform"><span class="material-icons" style="font-size:22px">add</span></button>
     </div>
@@ -1216,14 +1216,17 @@ export async function addSpend() {
   const cur = getSpendList(id, k);
   const acct = $("f-spend-acct")?.value || "";
   try { localStorage.setItem("moneyku_spend_acct", acct); } catch { /* ignore */ }
-  cur.push(acct ? { id: generateId(), amount, acct } : { id: generateId(), amount });
+  // Taking it from an account subtracts it from that balance now (and Delete gives it back)
+  const account = acct ? (appData.accounts || []).find((a) => a.id === acct) : null;
+  if (account) account.amount = Math.round(((Number(account.amount) || 0) - amount + Number.EPSILON) * 100) / 100;
+  cur.push(account ? { id: generateId(), amount, acct, ded: true } : { id: generateId(), amount });
   appData.spend = appData.spend || {};
   appData.spend[k] = appData.spend[k] || {};
   appData.spend[k][id] = cur;
   await syncSet(appData);
   refreshSpendSection(id);
   renderAll();
-  toast("Logged");
+  toast(account ? `Logged - ${peso(amount)} taken from ${account.name}` : "Logged");
   setTimeout(() => $("f-spend-amount")?.focus(), 60);
 }
 
@@ -1232,6 +1235,11 @@ export async function deleteSpend(entryId) {
   if (!activeEdit || !activeEdit.id) return;
   const { id } = activeEdit, k = getSelectedKey();
   const appData = getAppData();
+  const gone = getSpendList(id, k).find((e) => e.id === entryId);
+  if (gone && gone.ded) {
+    const acct = (appData.accounts || []).find((a) => a.id === gone.acct);
+    if (acct) acct.amount = Math.round(((Number(acct.amount) || 0) + (Number(gone.amount) || 0) + Number.EPSILON) * 100) / 100;
+  }
   const cur = getSpendList(id, k).filter((e) => e.id !== entryId);
   appData.spend = appData.spend || {};
   appData.spend[k] = appData.spend[k] || {};
