@@ -77,7 +77,7 @@ function statementHtml(key, k) {
   const diffLine = st.statementAmount != null && Math.abs(st.diff) > 0.005
     ? `<p class="text-[10px] font-bold text-amber-300 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">Statement is ${peso(Math.abs(st.diff))} ${st.diff > 0 ? "higher" : "lower"} than your tracked charges. ${st.diff > 0 ? "A charge may be missing (or interest/fees)." : "A tracked charge may not have posted yet."}</p>`
     : st.statementAmount != null ? `<p class="text-[10px] font-bold text-emerald-300 px-2">Matches your tracked charges.</p>` : "";
-  return `<details data-stmt="${key}" ${st.status !== "paid" || key === k ? "open" : ""} class="group rounded-xl bg-slate-900/50 border border-white/[0.05]">
+  return `<details data-stmt="${key}" data-persist="cardstmt-v2-${key}" class="group rounded-xl bg-slate-900/50 border border-white/[0.05]">
     <summary class="flex items-center gap-2 px-2.5 py-2 cursor-pointer list-none select-none">
       <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
       <div class="flex-1 min-w-0"><p class="text-xs font-black text-white truncate">Cut ${fmtDate(st.cutoff)} &middot; due ${fmtDate(st.due)}</p>
@@ -111,7 +111,7 @@ export function cardSectionHtml(k) {
   const empty = `<div class="px-3 py-3 text-center"><p class="text-[11px] font-bold text-slate-500">${count ? "No card statements to show for this month." : "No card expenses yet."}</p>
       <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p></div>`;
   return `<div id="sec-card" class="border-t border-white/[0.04] pt-2" style="scroll-margin-top:5.5rem">
-    <details open data-persist="sec-card" class="group">
+    <details data-persist="sec-card-v2" class="group">
       <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
         <div class="flex items-center gap-1">
           <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
@@ -193,7 +193,7 @@ export function cardSummaryGo(key) {
   }
   const sec = document.getElementById("sec-card");
   if (!sec) return;
-  const outer = sec.querySelector("details[data-persist='sec-card']");
+  const outer = sec.querySelector("details[data-persist='sec-card-v2']");
   if (outer && !outer.open) outer.open = true;
   const stmt = sec.querySelector(`details[data-stmt="${key}"]`);
   if (stmt && !stmt.open) stmt.open = true;
