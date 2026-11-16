@@ -1,4 +1,4 @@
-import { autoDeduct, paidMessage, refundPayment } from "../payfrom.js";
+import { accountForMethod, accountName, autoDeduct, paidMessage, payableAccounts, refundPayment } from "../payfrom.js";
 import { chooseScope } from "../scope.js";
 import { isCardItem } from "../card.js";
 import { cardSectionHtml } from "./cardui.js";
@@ -1159,6 +1159,14 @@ export function toggleMonthPicker() {
 // =============================
 // Spending Tracker per Item
 // =============================
+/** Account choices for a spending entry: last one used, else the item's own account, else the first. */
+function spendAccountOptions(it) {
+  const accts = payableAccounts();
+  let last = ""; try { last = localStorage.getItem("moneyku_spend_acct") || ""; } catch { /* ignore */ }
+  const own = accountForMethod(it?.paymentMethod)?.id || "";
+  const pick = [last, own].find((id) => id && accts.some((a) => a.id === id)) || accts[0]?.id || "";
+  return `<option value="">No account</option>` + accts.map((a) => `<option value="${escapeHtml(a.id)}" ${a.id === pick ? "selected" : ""}>${escapeHtml(a.name)}</option>`).join("");
+}
 export function spendSectionHtml(it) {
   const k = getSelectedKey();
   const list = getSpendList(it.id, k);
@@ -1170,7 +1178,7 @@ export function spendSectionHtml(it) {
   const rows = list.map((e, i) => `
     <div class="flex items-center gap-2 py-2 px-3 bg-slate-900/60 rounded-xl">
       <span class="material-icons text-emerald-400" style="font-size:16px">payments</span>
-      <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}</span>
+      <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}${e.acct ? ` <span class="text-indigo-300">&middot; from ${escapeHtml(accountName(e.acct))}</span>` : ""}</span>
       <span class="text-[13px] font-black text-white">${peso(e.amount)}</span>
       <button type="button" data-action="deleteSpend" data-arg0="${e.id}" title="Remove" class="text-slate-500 hover:text-rose-400 flex-shrink-0"><span class="material-icons" style="font-size:16px">close</span></button>
     </div>`).join("");
@@ -1185,6 +1193,7 @@ export function spendSectionHtml(it) {
     </div>
     ${rows ? `<div class="space-y-1.5">${rows}</div>` : `<p class="text-[11px] text-slate-600 text-center py-1">No spending logged yet.</p>`}
     <div class="spend-add flex items-center gap-2">
+      <select id="f-spend-acct" title="Which account did this come from?" aria-label="Account" class="flex-shrink-0 w-[7.5rem] bg-slate-900 rounded-xl py-3 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select>
       <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Add spending  ₱0" class="spend-amt bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" />
       <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 flex items-center justify-center active:scale-95 transition-transform"><span class="material-icons" style="font-size:22px">add</span></button>
     </div>
@@ -1205,7 +1214,9 @@ export async function addSpend() {
   const { id } = activeEdit, k = getSelectedKey();
   const appData = getAppData();
   const cur = getSpendList(id, k);
-  cur.push({ id: generateId(), amount });
+  const acct = $("f-spend-acct")?.value || "";
+  try { localStorage.setItem("moneyku_spend_acct", acct); } catch { /* ignore */ }
+  cur.push(acct ? { id: generateId(), amount, acct } : { id: generateId(), amount });
   appData.spend = appData.spend || {};
   appData.spend[k] = appData.spend[k] || {};
   appData.spend[k][id] = cur;
