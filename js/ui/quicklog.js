@@ -7,6 +7,7 @@ import { syncSet } from "../firebase.js";
 import { askGemini, GeminiError } from "../gemini.js";
 import { addItemData, applyItemAmount, findItemAnywhere, setPaidData } from "../itemOps.js";
 import { toast } from "./core.js";
+import { autoDeduct, refundPayment } from "../payfrom.js";
 import { renderAll } from "./layout.js";
 import { budgetAlertText, budgetBefore } from "../insights.js";
 
@@ -138,7 +139,11 @@ function toRow(a, k) {
       return {
         ok: true, icon: "task_alt", tone: "text-emerald-400",
         label: `Mark ${item.name} ${paid ? "paid" : "unpaid"}`, sub: monthShort(month),
-        apply: (d) => setPaidData(d, item.id, month, paid),
+        apply: (d) => {
+          // Maribank / GCash / BPI Debit bills are charged to their account (and given back when unpaid), like the check button does
+          if (paid) autoDeduct(month, item.id); else refundPayment(month, item.id);
+          setPaidData(d, item.id, month, paid);
+        },
       };
     }
     const newName = a.name && String(a.name).trim() && a.name !== item.name ? String(a.name).trim() : null;

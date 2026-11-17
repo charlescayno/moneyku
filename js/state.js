@@ -244,7 +244,8 @@ export function currentMoneyAt() {
   return accountsTotal(); 
 }
 
-export function reconcileAutoPaid() {
+/** `onPaid(monthKey, id)` runs just before an item is flagged paid, so the caller can charge its account. */
+export function reconcileAutoPaid(onPaid) {
   if (!appData) return false;
   let changed = false;
   const curK = currentKey();
@@ -261,6 +262,7 @@ export function reconcileAutoPaid() {
         if (d != null && today >= d) {
           appData.paid[curK] = appData.paid[curK] || {};
           if (appData.paid[curK][it.id] === undefined) { 
+            if (onPaid && !getKids(it, curK).length) onPaid(curK, it.id);
             appData.paid[curK][it.id] = true; 
             changed = true; 
           }
