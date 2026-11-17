@@ -8,6 +8,7 @@ import { tabGo, initTabs } from "./tabs.js";
 import { initHistory, openHistory, histUndo, histRedo, histRestore } from "./ui/historyui.js";
 import { rebaseHistory } from "./history.js";
 import { migrateGroceryPerMonday } from "./migrations.js";
+import { autoDeduct } from "./payfrom.js";
 import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo } from "./ui/cardui.js";
 
 import {
@@ -307,7 +308,7 @@ function startDataSync(user) {
       if (uploadLocal) {
         syncSet(getAppData());
         toast("Uploaded this device's data to the cloud");
-      } else if (reconcileAutoPaid() || migrated) {
+      } else if (reconcileAutoPaid(autoDeduct) || migrated) {
         syncSet(getAppData());
         rebaseHistory(getAppData()); // automatic, so not something Undo should reverse
       }
