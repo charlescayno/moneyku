@@ -75,12 +75,8 @@ export function renderMonthBanner() {
   }
   el.classList.remove("hidden");
   const label = `${monthName(selectedKey)} ${keyParts(selectedKey).y}`;
-  const jump = timeline().includes(nowK)
-    ? `<button data-action="selectMonth" data-arg0="${nowK}" class="text-[11px] font-black uppercase tracking-wider text-white bg-indigo-500/80 hover:bg-indigo-500 rounded-lg px-3 py-1.5 flex items-center gap-1.5 shadow-lg shadow-indigo-900/30 transition-colors"><span class="material-icons" style="font-size:15px">undo</span>Back to ${monthShort(nowK)}</button>`
-    : "";
   el.innerHTML = `<div class="flex items-center justify-between gap-2 py-2 pl-4 pr-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
     <span class="text-[11px] font-black uppercase tracking-wider text-amber-400">Viewing ${label}</span>
-    ${jump}
   </div>`;
 }
 
