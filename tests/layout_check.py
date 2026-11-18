@@ -25,7 +25,7 @@ async (sel) => {
     for (const p of parts) if (R(p).right > innerWidth+0.5 || R(p).left < -0.5) issues.push(k+': '+p.id+' off-screen');
     const lab = document.getElementById('mn-label'); if (lab.scrollWidth > lab.clientWidth+1) issues.push(k+': label text clipped');
   }
-  const tap = [...document.querySelectorAll('[data-action=histUndo],[data-action=openHistory],[data-action=openSearch],[data-action=openSettings],#density-toggle-btn')].filter(e => R(e).width > 0);
+  const tap = [...document.querySelectorAll('[data-action=histUndo],[data-action=openHistory],[data-action=openSearch],[data-action=openSettings],#density-toggle-btn,#mn-prev,#mn-next,#mn-label,#mn-today')].filter(e => R(e).width > 0);
   for (const e of tap) { const r = R(e); const mt = innerWidth >= 360 ? 43.5 : 31; if (r.width < mt || r.height < mt) issues.push('tap target < 44px: ' + (e.id || e.dataset.action) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); if (r.right > innerWidth + 0.5 || r.left < -0.5) issues.push('off-screen: ' + (e.id || e.dataset.action)); }
   const hdr = tap.filter(e => e.dataset.action);
   for (let i = 0; i < hdr.length; i++) for (let j = i + 1; j < hdr.length; j++) if (hit(R(hdr[i]), R(hdr[j]))) issues.push('header buttons overlap: ' + hdr[i].dataset.action + '/' + hdr[j].dataset.action);
