@@ -407,9 +407,10 @@ html { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.3) transparent;
     border-radius: 1.25rem !important;
   }
 
-  /* Month picker full screen on desktop too */
-  #month-picker {
-    display: none !important;
+  /* Month picker works on desktop too (the month bar label opens it); keep content centered */
+  #month-picker-grid {
+    max-width: 640px;
+    margin-inline: auto;
   }
 }
 

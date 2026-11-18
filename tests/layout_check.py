@@ -25,6 +25,11 @@ async (sel) => {
     for (const p of parts) if (R(p).right > innerWidth+0.5 || R(p).left < -0.5) issues.push(k+': '+p.id+' off-screen');
     const lab = document.getElementById('mn-label'); if (lab.scrollWidth > lab.clientWidth+1) issues.push(k+': label text clipped');
   }
+  document.getElementById('mn-label').click(); await w(500);
+  const mp = document.getElementById('month-picker'), mcs = getComputedStyle(mp);
+  if (!mp.classList.contains('open') || mcs.display === 'none' || mcs.opacity !== '1' || R(mp).height < 100) issues.push('month picker does not open/show');
+  if (!document.querySelector('#month-picker [data-action=jumpYear]')) issues.push('picker has no year pills');
+  c.toggleMonthPicker();
   if (document.documentElement.scrollWidth > innerWidth+1) issues.push('page scrolls horizontally');
   return issues;
 }
