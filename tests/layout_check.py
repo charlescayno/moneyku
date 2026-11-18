@@ -36,7 +36,15 @@ async (sel) => {
   if (!mp.classList.contains('open') || mcs.display === 'none' || mcs.opacity !== '1' || R(mp).height < 100) issues.push('month picker does not open/show');
   if (!document.querySelector('#month-picker [data-action=jumpYear]')) issues.push('picker has no year pills');
   c.toggleMonthPicker();
-  if (document.documentElement.scrollWidth > innerWidth+1) issues.push('page scrolls horizontally');
+  {
+    const lay = await import('/js/ui/layout.js');
+    st.setAppData({startMonth:'2026-01', items:{charlie:{income:[],expenses:[
+      {id:'a',name:'Meralco electricity bill long name',amount:5852,recurring:true,start:'2026-01',dueDay:5,pm:'card'},
+      {id:'b',name:'Phone installment',amount:1200,recurring:true,start:'2026-01',end:'2027-06',dueDay:20}]},debt:{income:[],expenses:[]}}, settings:{}});
+    st.setSelectedKey(u.currentKey()); lay.renderBudget(); await w(600);
+    const tags = [...document.querySelectorAll('#budget-body .item-row *')].filter(e => e.children.length === 0 && e.textContent.trim() && R(e).width > 0);
+    for (const e of tags) { const r = R(e); if (r.right > innerWidth + 0.5 || r.left < -0.5) issues.push('item row text off-screen: ' + e.textContent.trim().slice(0, 20)); }
+  }  if (document.documentElement.scrollWidth > innerWidth+1) issues.push('page scrolls horizontally');
   return issues;
 }
 """

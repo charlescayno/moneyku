@@ -170,25 +170,25 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
   const tags = [];
   if (!opts.hidePaymentTag) {
     if (it.paymentMethod === "bpi_platinum") {
-      tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
+      tags.push(`<span class="text-[11px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
     } else if (isAccountMethod(it.paymentMethod)) {
       const m = ACCOUNT_PAYMENT_METHODS.find((x) => x.id === it.paymentMethod);
-      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">${m.icon} ${escapeHtml(m.short)}</span>`);
+      tags.push(`<span class="text-[11px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">${m.icon} ${escapeHtml(m.short)}</span>`);
     } else if (it.paymentMethod && it.paymentMethod.startsWith("cc_")) {
-      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 ${escapeHtml(PM_LABELS[it.paymentMethod] || "Credit Card")}</span>`);
+      tags.push(`<span class="text-[11px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 ${escapeHtml(PM_LABELS[it.paymentMethod] || "Credit Card")}</span>`);
     }
   }
   
   if (it.txDate) {
-    tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event</span>${it.txDate}</span>`);
+    tags.push(`<span class="text-[11px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event</span>${it.txDate}</span>`);
   }
   
   const ds = kind === "expenses" ? dueStatus(it, k) : null;
-  if (ds && ds.state === "overdue") tags.unshift(`<span class="due-chip due-overdue text-[9px] font-black text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/40 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">error_outline</span>Overdue${ds.days ? ` ${ds.days}d` : ""}</span>`);
-  else if (ds && ds.state === "week") tags.unshift(`<span class="due-chip due-soon text-[9px] font-black text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">schedule</span>${ds.days === 0 ? "Due today" : `Due in ${ds.days}d`}</span>`);
-  if (installment) tags.push(`<span class="text-[9px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
-  else if (it.recurring && dd != null) tags.push(`<span class="text-[9px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
-  else if (it.recurring) tags.push(`<span class="text-[9px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
+  if (ds && ds.state === "overdue") tags.unshift(`<span class="due-chip due-overdue text-[11px] font-black text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/40 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">error_outline</span>Overdue${ds.days ? ` ${ds.days}d` : ""}</span>`);
+  else if (ds && ds.state === "week") tags.unshift(`<span class="due-chip due-soon text-[11px] font-black text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">schedule</span>${ds.days === 0 ? "Due today" : `Due in ${ds.days}d`}</span>`);
+  if (installment) tags.push(`<span class="text-[11px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
+  else if (it.recurring && dd != null) tags.push(`<span class="text-[11px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
+  else if (it.recurring) tags.push(`<span class="text-[11px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
   
   let progress = "";
   if (installment) {
@@ -198,8 +198,8 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     const toPay = Math.max(0, total - paidM) * (Number(it.amount) || 0);
     progress = `<div class="flex items-center gap-2 mt-1.5 max-w-full">
       <div class="flex-1 min-w-[24px] max-w-[110px] h-1 bg-slate-800 rounded-full overflow-hidden"><div class="inst-bar-fill h-full bg-gradient-to-r ${OWNERS[who].grad} rounded-full" style="width:${pct}%"></div></div>
-      <span class="inst-bar-count text-[9px] font-bold text-slate-500 flex-shrink-0">${paidM}/${total}</span>
-      <span class="inst-bar-rem text-[9px] font-semibold text-slate-500 whitespace-nowrap">${toPay > 0 ? `· ${peso(toPay)} to pay in full` : "· fully paid"}</span>
+      <span class="inst-bar-count text-[11px] font-bold text-slate-500 flex-shrink-0">${paidM}/${total}</span>
+      <span class="inst-bar-rem text-[11px] font-semibold text-slate-500 whitespace-nowrap">${toPay > 0 ? `· ${peso(toPay)} to pay in full` : "· fully paid"}</span>
     </div>`;
   }
   return `<div data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
