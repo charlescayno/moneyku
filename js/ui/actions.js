@@ -39,7 +39,20 @@ export function renderMonthStrip() {
       </div>
     </button>`;
   }).join("");
+  renderMonthNav();
   renderMonthBanner();
+}
+
+export function renderMonthNav() {
+  const label = $("mn-label");
+  if (!label) return;
+  const tl = timeline();
+  const k = getSelectedKey();
+  label.firstChild.textContent = `${monthName(k)} ${keyParts(k).y}`;
+  $("mn-prev").disabled = !tl.length || k <= tl[0];
+  $("mn-next").disabled = !tl.length || k >= tl[tl.length - 1];
+  const nowK = currentKey();
+  $("mn-today").classList.toggle("hidden", k === nowK || !tl.includes(nowK));
 }
 
 export function scrollChipIntoView() {

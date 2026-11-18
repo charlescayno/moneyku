@@ -176,6 +176,23 @@ export function addMonths(k, n) {
   return mkKey(d.getFullYear(), d.getMonth()); 
 }
 
+/** Move `delta` months within timeline `tl` (sorted keys), clamped at both ends. */
+export function stepKey(tl, k, delta) {
+  if (!tl.length) return k;
+  let i = tl.indexOf(k);
+  if (i < 0) i = Math.max(0, tl.findIndex((x) => x >= k));
+  if (i < 0) i = tl.length - 1;
+  return tl[Math.min(tl.length - 1, Math.max(0, i + delta))];
+}
+
+/** Same month in the year `dir` (+1/-1) away; clamped to the nearest key in the timeline. */
+export function yearStepKey(tl, k, dir) {
+  if (!tl.length) return k;
+  const want = addMonths(k, 12 * dir);
+  if (tl.includes(want)) return want;
+  return dir > 0 ? tl[tl.length - 1] : tl[0];
+}
+
 export function cmpKey(a, b) { 
   return a < b ? -1 : a > b ? 1 : 0; 
 }

@@ -4,6 +4,7 @@ import { isCardItem } from "../card.js";
 import { cardSectionHtml } from "./cardui.js";
 import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
 import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
@@ -1174,6 +1175,18 @@ export function selectMonth(k) {
 }
 
 
+export function stepMonth(d) {
+  selectMonth(stepKey(timeline(), getSelectedKey(), Number(d)));
+}
+
+export function goToday() {
+  if (timeline().includes(currentKey())) selectMonth(currentKey());
+}
+
+export function jumpYear(y) {
+  document.getElementById(`mp-year-${y}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export function toggleMonthPicker() {
   const mp = $("month-picker");
   const open = mp.classList.toggle("open");
@@ -1183,8 +1196,13 @@ export function toggleMonthPicker() {
     const years = {};
     const selectedKey = getSelectedKey();
     timeline().forEach((k) => { const y = keyParts(k).y; (years[y] = years[y] || []).push(k); });
-    $("month-picker-grid").innerHTML = Object.entries(years).map(([y, keys]) => `
-      <div>
+    const nowK = currentKey();
+    const pills = `<div class="sticky top-0 z-10 -mx-8 px-8 py-3 bg-slate-950/95 flex gap-2 overflow-x-auto no-scrollbar">
+      <button data-action="goToday" class="flex-shrink-0 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase">Today</button>
+      ${Object.keys(years).map((y) => `<button data-action="jumpYear" data-arg0="${y}" class="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-black ${Number(y) === keyParts(selectedKey).y ? "bg-slate-700 text-white" : "bg-slate-800 text-slate-300"}">${y}</button>`).join("")}
+    </div>`;
+    $("month-picker-grid").innerHTML = pills + Object.entries(years).map(([y, keys]) => `
+      <div id="mp-year-${y}" style="scroll-margin-top:64px">
         <p class="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-3">${y}</p>
         <div class="grid grid-cols-3 gap-3">
           ${keys.map((k) => `<button data-action="selectMonth" data-arg0="${k}" class="py-4 rounded-2xl font-black text-sm ${k === selectedKey ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"} transition-transform">${MONTHS_SHORT[keyParts(k).m]}</button>`).join("")}

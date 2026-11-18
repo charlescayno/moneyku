@@ -56,6 +56,9 @@ import {
   openMore,
   closeMore,
   toggleMonthPicker,
+  stepMonth,
+  goToday,
+  jumpYear,
   selectMonth,
   openItemModal,
   openChildModal,
@@ -146,6 +149,9 @@ window.openMore = openMore;
 window.closeMore = closeMore;
 window.toggleMonthPicker = toggleMonthPicker;
 window.selectMonth = selectMonth;
+window.stepMonth = stepMonth;
+window.goToday = goToday;
+window.jumpYear = jumpYear;
 window.openItemModal = openItemModal;
 window.openChildModal = openChildModal;
 window.openAccountModal = openAccountModal;

@@ -70,3 +70,20 @@ test("monthTotals adds income and expenses for the month", () => {
   assert.equal(t.expenses, 12000);
   assert.equal(t.savings, 38000);
 });
+
+import { stepKey, yearStepKey } from "../js/utils.js";
+test("stepKey clamps and steps", () => {
+  const tl = ["2026-10", "2026-11", "2026-12", "2027-01"];
+  assert.equal(stepKey(tl, "2026-11", 1), "2026-12");
+  assert.equal(stepKey(tl, "2026-12", 1), "2027-01");
+  assert.equal(stepKey(tl, "2027-01", 1), "2027-01");
+  assert.equal(stepKey(tl, "2026-10", -1), "2026-10");
+  assert.equal(stepKey(tl, "2026-12", -2), "2026-10");
+});
+test("yearStepKey keeps month, clamps at ends", () => {
+  const tl = ["2026-10", "2026-11", "2027-10", "2027-12"];
+  assert.equal(yearStepKey(tl, "2026-10", 1), "2027-10");
+  assert.equal(yearStepKey(tl, "2027-10", -1), "2026-10");
+  assert.equal(yearStepKey(tl, "2026-11", 1), "2027-12");
+  assert.equal(yearStepKey(tl, "2027-10", 1), "2027-12");
+});
