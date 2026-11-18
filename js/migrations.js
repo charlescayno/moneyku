@@ -57,3 +57,28 @@ export function migrateGroceryPerMonday(d) {
   }
   return false;
 }
+
+const PC_IDS = ["uniy6tx55", "zfsz971r3"]; // duplicate "PC" and "PC Payment" lines the user asked to remove
+
+/** Removes the PC / PC Payment lines (and their per-month data). Runs once (flag in settings). */
+export function migrateRemovePcItems(d) {
+  if (!d || !d.items) return false;
+  d.settings = d.settings || {};
+  if (d.settings.pcItemsRemoved) return false;
+  const walk = (list) => (list || []).filter((it) => !PC_IDS.includes(it?.id)).map((it) => {
+    if (Array.isArray(it?.children)) it.children = walk(it.children);
+    return it;
+  });
+  for (const who of ["charlie", "debt"]) {
+    for (const kind of ["income", "expenses"]) {
+      if (Array.isArray(d.items[who]?.[kind])) d.items[who][kind] = walk(d.items[who][kind]);
+    }
+  }
+  for (const field of ["paid", "paidFrom", "overrides", "spend", "deleted"]) {
+    for (const m of Object.values(d[field] || {})) {
+      if (m && typeof m === "object") for (const id of PC_IDS) delete m[id];
+    }
+  }
+  d.settings.pcItemsRemoved = true;
+  return true;
+}
