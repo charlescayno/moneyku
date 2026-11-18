@@ -5,7 +5,7 @@ Status: todo | done | skipped | needs decision
 |---|--------|-------|-------|
 | 1 | done | Header icon buttons were 36px on phones; now 44px (320px screens shrink them to ~32px wide x 44px tall to fit) | index.html header |
 | 2 | done | Month bar buttons (‹ › Today, label) raised from 40px to 44px | index.html #month-nav |
-| 3 | todo | Overview close and sign-out buttons are 40px, close to each other | index.html #more-overlay |
+| 3 | done | Overview close and sign-out buttons raised to 44px and spaced 16px apart | index.html #more-overlay |
 | 4 | todo | Tiny text (8-10px) on labels like "projected" and chip captions; raise to 11px where it carries info | js/ui/components.js, cardui.js |
 | 5 | todo | Month picker close button is small and far from the thumb; make it larger and fixed at the bottom | index.html #month-picker |
 | 6 | todo | Pressing a bottom-tab shows no active-state feedback beyond color; add a clearer active indicator | index.html tabs, style.css |
