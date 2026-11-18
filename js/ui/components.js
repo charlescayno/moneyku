@@ -1155,6 +1155,7 @@ export function closeMore() {
 }
 
 export function selectMonth(k) {
+  setSelectedKey(k); // set now so rapid taps on arrows don't lose a step
   if (document.startViewTransition) {
     document.startViewTransition(() => {
       setSelectedKey(k);
