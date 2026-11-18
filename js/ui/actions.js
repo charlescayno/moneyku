@@ -19,26 +19,6 @@ export function updateHeader() {
 }
 
 export function renderMonthStrip() {
-  const strip = $("month-strip");
-  if (!strip) return;
-  const nowK = currentKey();
-  const selectedKey = getSelectedKey();
-  strip.innerHTML = timeline().map((k) => {
-    const active = k === selectedKey;
-    const isNow = k === nowK;
-    const cls = active
-      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/40 ring-2 ring-indigo-400/60"
-      : "bg-slate-800/60 text-slate-400";
-    const year = keyParts(k).y;
-    return `<button data-action="selectMonth" data-arg0="${k}" data-k="${k}"
-      class="month-chip ${isNow ? "is-now" : ""} flex-shrink-0 relative px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wide transition-colors ${cls}">
-      ${isNow ? '<span class="now-banner">Now</span>' : ""}
-      <div class="flex flex-col items-center">
-        <span>${monthShort(k)}</span>
-        <span class="text-[9px] opacity-60 tracking-[0.1em] mt-0.5">${year}</span>
-      </div>
-    </button>`;
-  }).join("");
   renderMonthNav();
   renderMonthBanner();
 }

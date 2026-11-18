@@ -17,16 +17,13 @@ async (sel) => {
   const issues = [];
   for (const k of sel) {
     c.selectMonth(k); await w(1800);
-    const nav = document.getElementById('month-nav'), strip = document.getElementById('month-strip');
+    const nav = document.getElementById('month-nav'), body = document.getElementById('budget-body');
     const parts = ['mn-prev','mn-label','mn-next','mn-today'].map(i=>document.getElementById(i)).filter(e=>e && !e.classList.contains('hidden'));
     for (let i=0;i<parts.length;i++) for (let j=i+1;j<parts.length;j++) if (hit(R(parts[i]),R(parts[j]))) issues.push(k+': nav overlap '+parts[i].id+'/'+parts[j].id);
-    const nr = R(nav), sr = R(strip);
-    if (nr.bottom > sr.top + 0.5) issues.push(k+': nav overlaps strip');
+    const nr = R(nav), br0 = R(body);\r
+    if (nr.bottom > br0.top + 0.5) issues.push(k+': nav overlaps budget body');
     for (const p of parts) if (R(p).right > innerWidth+0.5 || R(p).left < -0.5) issues.push(k+': '+p.id+' off-screen');
     const lab = document.getElementById('mn-label'); if (lab.scrollWidth > lab.clientWidth+1) issues.push(k+': label text clipped');
-    const badge = strip.querySelector('.now-banner');
-    if (badge) { const br = R(badge); if (br.top < sr.top-0.5) issues.push(k+': NOW badge clipped by strip ('+(sr.top-br.top).toFixed(1)+'px)'); if (br.top < nr.bottom) issues.push(k+': NOW badge overlaps nav'); }
-    const act = strip.querySelector('[data-k="'+k+'"]'); if (act) { const ar = R(act); if (ar.left < sr.left-1 || ar.right > sr.right+1) issues.push(k+': selected chip not fully visible'); }
   }
   if (document.documentElement.scrollWidth > innerWidth+1) issues.push('page scrolls horizontally');
   return issues;
