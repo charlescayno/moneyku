@@ -1,8 +1,8 @@
-// "Next 5 months": projected balance at the end of each of the next five months, as figures plus a line.
+// "Projected in next 6 months": projected balance at the end of each of the next six months, as figures plus a line.
 import { MONTHS_SHORT, addMonths, cmpKey, currentKey, keyParts, peso } from "../utils.js";
 import { getHideProjected, getSelectedKey, outlookRows, timeline } from "../state.js";
 
-const COUNT = 5;
+const COUNT = 6;
 let offset = 0; // months from the current month where the window starts (scrolled with the arrows or a swipe)
 const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
 const cmp = (n) => { const a = Math.abs(n), s = n < 0 ? "-" : ""; return a >= 1e6 ? s + "₱" + (a / 1e6).toFixed(2) + "M" : a >= 1e4 ? s + "₱" + Math.round(a / 1e3) + "k" : a >= 1e3 ? s + "₱" + (a / 1e3).toFixed(1) + "k" : s + "₱" + Math.round(a); };
@@ -14,7 +14,7 @@ export function next5Keys() {
 }
 
 const MAX_OFFSET = () => Math.max(0, timeline().filter((m) => cmpKey(m, currentKey()) >= 0).length - COUNT);
-const title = (keys) => (offset === 0 ? `Next ${keys.length} months` : `${MONTHS_SHORT[keyParts(keys[0]).m]} ${keyParts(keys[0]).y} \u2013 ${MONTHS_SHORT[keyParts(keys[keys.length - 1]).m]} ${keyParts(keys[keys.length - 1]).y}`);
+const title = (keys) => (offset === 0 ? `Projected in next ${keys.length} months` : `Projected ${MONTHS_SHORT[keyParts(keys[0]).m]} ${keyParts(keys[0]).y} \u2013 ${MONTHS_SHORT[keyParts(keys[keys.length - 1]).m]} ${keyParts(keys[keys.length - 1]).y}`);
 const header = (keys) => `<div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-black text-white">${title(keys)}</h3>
       <div class="flex items-center gap-1">
@@ -54,7 +54,7 @@ export function next5CardHtml() {
   // Amounts follow the same hide switch as the rest of the projections
   if (getHideProjected()) {
     return `<div id="next5-card" class="glass-card rounded-2xl border border-white/5 px-4 py-3 flex items-center justify-between gap-3">
-      <div class="min-w-0"><h3 class="text-sm font-black text-white">Next ${keys.length} months</h3><p class="text-[11px] text-slate-500">Projected balances are hidden</p></div>
+      <div class="min-w-0"><h3 class="text-sm font-black text-white">Projected in next ${keys.length} months</h3><p class="text-[11px] text-slate-500">Projected balances are hidden</p></div>
       <button type="button" data-action="toggleProjected" class="flex-shrink-0 flex items-center gap-1 text-[11px] font-bold text-indigo-300 px-3 py-1.5 rounded-lg bg-white/5"><span class="material-icons" style="font-size:14px">visibility</span>Show</button>
     </div>`;
   }
