@@ -181,7 +181,7 @@ export async function togglePaidGroup(event, idsStr, k, kind) {
 
 export function updateParentBadge(childId) {
   let parent = null;
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner"]) {
     for (const it of getItems(who, "expenses")) {
       if (getKids(it).some((c) => c.id === childId)) { parent = it; break; }
     }

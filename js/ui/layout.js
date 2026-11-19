@@ -3,7 +3,7 @@ import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, cu
 import { syncSet } from '../firebase.js';
 import { dueSoonCardHtml, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
-import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, statsGridHtml } from './components.js';
+import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, householdCardHtml, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 import { cardSummaryHtml } from './cardui.js';
 import { cardDueIn } from '../card.js';
@@ -124,10 +124,16 @@ export function renderBudget() {
           <div class="order-[6]">${debtTrackerCardHtml()}</div>
         </div>
 
-        <!-- Col 2: Charlie's Monthly Budget -->
-        <div class="order-2 flex flex-col min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
-          ${personSectionHtml("charlie", false)}
+        <!-- Charlie's budget (left) and partner's budget (right on wide screens, stacked on phones) -->
+        <div class="order-2 grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start min-w-0">
+          <div class="flex flex-col min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
+            ${personSectionHtml("charlie", false)}
+          </div>
+          <div class="flex flex-col min-w-0" id="sec-partner" style="scroll-margin-top:5.5rem">
+            ${personSectionHtml("partner", false)}
+          </div>
         </div>
+        <div class="order-3" id="sec-household">${householdCardHtml()}</div>
 
       </div>
     </div>

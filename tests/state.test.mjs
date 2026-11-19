@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeData } from "./setup.mjs";
 import { mondaysInMonth } from "../js/utils.js";
-import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals } from "../js/state.js";
+import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals, householdTotals } from "../js/state.js";
 
 test("mondaysInMonth counts 4 or 5 Mondays", () => {
   assert.equal(mondaysInMonth("2026-12"), 4);
@@ -69,6 +69,25 @@ test("monthTotals adds income and expenses for the month", () => {
   assert.equal(t.income, 50000);
   assert.equal(t.expenses, 12000);
   assert.equal(t.savings, 38000);
+});
+
+test("partner items stay out of Charles' totals; household combines both", () => {
+  const d = makeData();
+  d.items.charlie.income.push({ id: "i", name: "Salary", amount: 50000, recurring: true, start: "2026-08" });
+  d.items.charlie.expenses.push({ id: "e", name: "Rent", amount: 12000, recurring: true, start: "2026-08" });
+  d.items.partner = { income: [{ id: "pi", name: "Pay", amount: 30000, recurring: true, start: "2026-08" }], expenses: [{ id: "pe", name: "Bills", amount: 5000, recurring: true, start: "2026-08" }] };
+  setAppData(d);
+  const t = monthTotals("2026-09");
+  assert.equal(t.income, 50000);
+  assert.equal(t.expenses, 12000);
+  assert.equal(t.savings, 38000);
+  assert.equal(t.pI, 30000);
+  assert.equal(t.pE, 5000);
+  const h = householdTotals("2026-09");
+  assert.equal(h.income, 80000);
+  assert.equal(h.expenses, 17000);
+  assert.equal(h.net, 63000);
+  assert.equal(h.partnerNet, 25000);
 });
 
 import { stepKey, yearStepKey } from "../js/utils.js";

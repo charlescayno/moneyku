@@ -6,7 +6,7 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore } from '../insights.js';
@@ -431,6 +431,33 @@ export function expenseSortBtnHtml() {
   return `<button data-action="toggleExpenseSort" title="${on ? "Sorted A-Z (tap for default order)" : "Sort A-Z"}" aria-label="Sort expenses by name" aria-pressed="${on}" class="text-[10px] font-bold ${on ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">sort_by_alpha</span>A-Z</button>`;
 }
 
+export function householdCardHtml() {
+  const k = getSelectedKey();
+  const h = householdTotals(k);
+  const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  const cell = (label, val, cls) => `<div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-slate-400">${label}</span><span class="text-xs font-black ${cls}">${val}</span></div>`;
+  return `<details open data-persist="household" class="glass-card rounded-xl border border-indigo-500/20 overflow-hidden w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center flex-shrink-0"><span class="material-icons text-white" style="font-size:14px">group</span></div>
+        <div>
+          <h3 class="text-xs font-black text-white uppercase tracking-wide">Household total</h3>
+          <p class="text-[8px] text-slate-400">${monthShort(k)} · ${OWNERS.charlie.label} + ${OWNERS.partner.label}</p>
+        </div>
+      </div>
+      <p class="text-xs font-black ${h.net >= 0 ? "text-emerald-400" : "text-rose-400"}">${sp(h.net)}</p>
+    </summary>
+    <div class="p-2.5 pt-0 grid grid-cols-2 gap-1.5">
+      ${cell("Income", peso(h.income), "text-emerald-400")}
+      ${cell("Expenses", peso(h.expenses), "text-rose-400")}
+      ${cell("To receive", peso(h.toReceive), "text-emerald-400")}
+      ${cell("To pay", peso(h.toPay), "text-rose-400")}
+      ${cell(OWNERS.charlie.label, sp(h.charlieNet), h.charlieNet >= 0 ? "text-blue-300" : "text-rose-400")}
+      ${cell(OWNERS.partner.label, sp(h.partnerNet), h.partnerNet >= 0 ? "text-teal-300" : "text-rose-400")}
+    </div>
+  </details>`;
+}
+
 export function personSectionHtml(who, includeDebt = true) {
   const o = OWNERS[who];
   const k = getSelectedKey();
@@ -438,8 +465,8 @@ export function personSectionHtml(who, includeDebt = true) {
   // Card purchases live in their own BPI Platinum section, not in the normal groups
   const expenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k) && !(who === "charlie" && isCardItem(it)));
   const t = monthTotals(k);
-  const incTot = who === "charlie" ? t.cI : t.dI;
-  const expTot = who === "charlie" ? t.cE : t.dE;
+  const incTot = who === "charlie" ? t.cI : who === "partner" ? t.pI : t.dI;
+  const expTot = who === "charlie" ? t.cE : who === "partner" ? t.pE : t.dE;
   const net = incTot - expTot;
   const incHtml = groupedRowsHtml(income, k, "income", who);
   const emptyRow = (w, kind) => `<button type="button" data-action="openItemModal" data-arg0="${w}" data-arg1="${kind}" class="w-full py-3 text-[11px] font-bold text-slate-500 border border-dashed border-slate-700 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>No ${kind === "income" ? "income" : "expenses"} this month · add one</button>`;
@@ -470,7 +497,7 @@ export function personSectionHtml(who, includeDebt = true) {
       </div>`}
     </div>
     <div class="p-2.5 space-y-2 no-scrollbar">
-      <details open data-persist="sec-income" class="group">
+      <details open data-persist="sec-income${who === "partner" ? "-p" : ""}" class="group">
         <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
           <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
@@ -484,7 +511,7 @@ export function personSectionHtml(who, includeDebt = true) {
         <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>
       </details>
       <div class="border-t border-white/[0.04] pt-2">
-        <details open data-persist="sec-expenses" class="group">
+        <details open data-persist="sec-expenses${who === "partner" ? "-p" : ""}" class="group">
           <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
             <div class="flex items-center gap-1">
               <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>

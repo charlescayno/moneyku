@@ -208,17 +208,38 @@ export function monthTotals(k) {
     if (itemActiveIn(it, k)) { const r = itemAmts(it, k); dE += r.total; debtPaid += r.paid; }
   }
   
+  // Partner budget: tracked separately, never part of Charles' totals or projection
+  let pI = 0, pE = 0, pRecv = 0, pPaid = 0;
+  for (const it of getItems("partner", "income")) {
+    if (itemActiveIn(it, k)) { const r = itemAmts(it, k); pI += r.total; pRecv += r.paid; }
+  }
+  for (const it of getItems("partner", "expenses")) {
+    if (itemActiveIn(it, k)) { const r = itemAmts(it, k); pE += r.total; pPaid += r.paid; }
+  }
+
   const income = cI, expenses = cE, toPay = expenses - expPaid;
   const toReceive = income - incRecv;
   const debtToReceive = dI - debtRecv;
   const debtToPay = dE - debtPaid;
   
   return {
+    pI, pE, pToReceive: pI - pRecv, pToPay: pE - pPaid,
     cI, dI, cE, dE, income, expenses, savings: income - toPay,
     incomeReceived: incRecv, expensePaid: expPaid,
     toReceive, toPay,
     debtToReceive, debtToPay,
     netPending: toReceive - toPay + debtToReceive - debtToPay,
+  };
+}
+
+// Combined Charles + partner view (Debt Tracker and Accounts excluded)
+export function householdTotals(k) {
+  const t = monthTotals(k);
+  const income = t.cI + t.pI, expenses = t.cE + t.pE;
+  const toReceive = t.toReceive + t.pToReceive, toPay = t.toPay + t.pToPay;
+  return {
+    income, expenses, net: income - expenses, toReceive, toPay,
+    charlieNet: t.cI - t.cE, partnerNet: t.pI - t.pE,
   };
 }
 
@@ -250,7 +271,7 @@ export function reconcileAutoPaid() {
   const curK = currentKey();
   const inTimeline = timeline().includes(curK);
   const today = new Date().getDate();
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner"]) {
     for (const it of getItems(who, "expenses")) {
       if (it.dueDay == null) {
         const d = parseDueDay(it.name);
@@ -330,7 +351,7 @@ export function sortItems(items, kind) {
 }
 
 export function findItemById(id) {
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner"]) {
     for (const kind of ["income", "expenses"]) {
       const it = getItems(who, kind).find((x) => x.id === id);
       if (it) return it;
@@ -340,7 +361,7 @@ export function findItemById(id) {
 }
 
 export function findItemOrChildById(id) {
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner"]) {
     for (const kind of ["expenses", "income"]) {
       for (const it of getItems(who, kind)) {
         if (it.id === id) return it;
