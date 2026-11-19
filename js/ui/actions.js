@@ -282,6 +282,12 @@ export function focusPerson(who) {
   renderBudget();
 }
 
+/** The (i) icon in the projected card header opens or closes the "explain the numbers" breakdown. */
+export function toggleExplain() {
+  const d = document.querySelector("#budget-body details[data-persist=proj-details]");
+  if (d) d.open = !d.open;
+}
+
 export function toggleProjected() {
   setHideProjected(!getHideProjected());
   renderBudget();

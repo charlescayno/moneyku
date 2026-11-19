@@ -89,6 +89,7 @@ export {
   toggleProjected,
   togglePersonIncluded,
   focusPerson,
+  toggleExplain,
   toggleInvestments,
   toggleExpenseSort,
   toggleArrange,

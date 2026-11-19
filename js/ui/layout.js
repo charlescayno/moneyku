@@ -109,10 +109,11 @@ export function renderBudget() {
       <!-- Projected hero: small label, one big number -->
       <div class="flex flex-col gap-1 px-1">
         <div class="flex items-center gap-1.5">
-          <span class="text-[11px] font-bold text-slate-400 min-w-0 truncate" style="text-transform:lowercase">projected · ${inclW.length === 2 ? "all" : OWNERS[inclW[0]].label + " only"} (${monthShort(k)})</span>
+          <span class="text-[11px] font-bold text-slate-400 min-w-0 truncate" style="text-transform:lowercase">projected · ${inclW.length === 2 ? "all" : OWNERS[inclW[0]].label} · ${monthShort(k)}</span>
           <button data-action="toggleProjected" aria-label="${hideProjected ? "Show amounts" : "Hide amounts"}" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center flex-shrink-0" style="padding:7px;margin:-7px">
             <span class="material-icons" style="font-size:14px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
           </button>
+          <button type="button" data-action="toggleExplain" title="Explain the numbers" aria-label="Explain the numbers" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center flex-shrink-0" style="padding:7px;margin:-7px"><span class="material-icons" style="font-size:15px">info_outline</span></button>
           <button data-action="openOutlook" data-arg0="all" class="ml-auto flex items-center text-[11px] font-bold text-indigo-300 hover:text-white focus:outline-none whitespace-nowrap flex-shrink-0" style="padding:8px 0;margin:-8px 0">12-mo outlook<span class="material-icons" style="font-size:14px">chevron_right</span></button>
         </div>
         <div class="flex items-end justify-between gap-3">
@@ -129,7 +130,7 @@ export function renderBudget() {
       </div>
       ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
       <details data-persist="proj-details" class="group/pd">
-        <summary class="inline-flex items-center cursor-pointer list-none select-none text-slate-400" title="Explain the numbers" aria-label="Explain the numbers" style="padding:6px;margin:-6px"><span class="material-icons" style="font-size:18px">info_outline</span></summary>
+        <summary style="display:none" aria-hidden="true">Explain the numbers</summary>
         <div class="space-y-1.5 pt-1 pl-1">
           <div class="rounded-lg bg-black/20 px-2.5 py-2 space-y-1">${hideProjected ? `<p class="text-[11px] text-slate-400">Cash &amp; pending hidden</p>` : `
             <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">Cash now</span><span class="font-black text-white">${peso(pj.cash)}</span></div>
