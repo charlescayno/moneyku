@@ -133,7 +133,11 @@ export function renderBudget() {
           <span class="material-icons transition-transform" style="font-size:15px">chevron_right</span>How is this made up?
         </summary>
         <div class="space-y-1.5 pt-1 pl-1">
-          <p class="text-[11px] text-slate-300 leading-snug">${hideProjected ? "Cash &amp; pending hidden" : `Cash <b class="text-white">${peso(pj.cash)}</b> + to receive <b class="text-emerald-300">${peso(pj.inc)}</b> &minus; to pay <b class="text-rose-300">${peso(pj.out)}</b> = <b class="${projected >= 0 ? "text-white" : "text-rose-300"}">${sp(projected)}</b>`}</p>
+          <div class="rounded-lg bg-black/20 px-2.5 py-2 space-y-1">${hideProjected ? `<p class="text-[11px] text-slate-400">Cash &amp; pending hidden</p>` : `
+            <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">Cash now</span><span class="font-black text-white">${peso(pj.cash)}</span></div>
+            <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">+ Still to receive</span><span class="font-black text-emerald-300">${peso(pj.inc)}</span></div>
+            <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">&minus; Still to pay</span><span class="font-black text-rose-300">${peso(pj.out)}</span></div>
+            <div class="flex items-center justify-between text-[11px] border-t border-white/10 pt-1"><span class="font-bold text-slate-200">= Projected</span><span class="font-black ${projected >= 0 ? "text-white" : "text-rose-300"}">${sp(projected)}</span></div>`}</div>
           ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
         </div>
       </details>
