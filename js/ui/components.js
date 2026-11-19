@@ -710,7 +710,7 @@ export function accountsCardHtml(who = "charlie") {
           <span class="material-icons text-white" style="font-size:14px">account_balance</span>
         </div>
         <div>
-          <h3 class="text-xs font-black text-white uppercase tracking-wide">${isP ? OWNERS.partner.label + " " : ""}Accounts</h3>
+          <h3 class="text-xs font-black text-white uppercase tracking-wide">${isP ? OWNERS.partner.label : OWNERS.charlie.label} Accounts</h3>
           <p class="text-[8px] text-slate-400">Balances on hand${(() => { const d = staleBalanceDays(who); return d != null && d > 7 ? ` · <span class="text-amber-300">oldest update ${d}d ago</span>` : ""; })()}</p>
         </div>
       </div>
