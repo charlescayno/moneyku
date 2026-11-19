@@ -76,7 +76,7 @@ export function srOpen(who, kind, id, parentId) {
 // ---------- 4. Add chooser ----------
 export function qlAddChooser() {
   const b = (cls, kind, label) => `<button type="button" data-action="addNew" data-arg0="${kind}" class="flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-1 ${cls}"><span class="material-icons" style="font-size:16px">add</span>${label}</button>`;
-  showSheet("Add", `<p class="text-sm text-slate-300">What do you want to add?</p>`,
+  showSheet("Add", "",
     b("text-emerald-300 bg-emerald-500/15 border border-emerald-500/25", "income", "Income") +
     b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "Bill") +
     `<button type="button" data-action="qlSpendPick" class="flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-1 text-sky-300 bg-sky-500/15 border border-sky-500/25"><span class="material-icons" style="font-size:16px">payments</span>Spend</button>`);
