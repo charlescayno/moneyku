@@ -512,14 +512,14 @@ export function personSectionHtml(who, includeDebt = true) {
           ${who === "partner" || who === "charlie" ? `<img src="assets/avatar-${who === "partner" ? "ynah" : "charles"}.jpg" alt="${who === "partner" ? "Ynah" : "Charles"}" class="w-full h-full rounded-lg object-cover">` : `<span class="text-xs font-black text-white">${o.label.charAt(0)}</span>`}
         </div>
         <div>
-          <h3 class="text-xs font-black text-white uppercase tracking-wide">${o.label}</h3>
-          ${who === 'debt' ? '' : `<p class="text-[8px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
+          <h3 class="font-black text-white uppercase tracking-wide" style="font-size:15px;line-height:1.2">${o.label}</h3>
+          ${who === 'debt' ? '' : `<p class="font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}" style="font-size:12px;line-height:1.3">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
         </div>
       </div>
       ${who === 'debt' ? '' : `
       <div class="text-right">
-        <p class="text-[7px] font-bold uppercase text-white/60">in / out</p>
-        <p class="text-[9px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
+        <p class="font-bold uppercase text-white/60" style="font-size:10px;line-height:1.3">in / out</p>
+        <p class="font-black text-white" style="font-size:13px;line-height:1.3">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
       </div>`}
     </div>
     <div class="p-2.5 space-y-2 no-scrollbar">
@@ -528,8 +528,8 @@ export function personSectionHtml(who, includeDebt = true) {
           <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
             <div class="flex items-baseline gap-1.5">
-              <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
-              <span class="text-[11px] font-bold text-emerald-400">${peso(incTot)}</span>
+              <p class="font-black uppercase tracking-[0.12em] text-slate-400" style="font-size:11px">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
+              <span class="font-bold text-emerald-400" style="font-size:14px">${peso(incTot)}</span>
             </div>
           </div>
           <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
@@ -542,8 +542,8 @@ export function personSectionHtml(who, includeDebt = true) {
             <div class="flex items-center gap-1">
               <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
               <div class="flex items-baseline gap-1.5">
-                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
-                <span class="text-[11px] font-bold text-rose-400">${peso(expTot)}</span>
+                <p class="font-black uppercase tracking-[0.12em] text-slate-400" style="font-size:11px">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
+                <span class="font-bold text-rose-400" style="font-size:14px">${peso(expTot)}</span>
               </div>
             </div>
             <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
