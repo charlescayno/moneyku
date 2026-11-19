@@ -7,6 +7,7 @@ import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, householdC
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 import { cardSummaryHtml } from './cardui.js';
 import { cardDueIn } from '../card.js';
+import { next5CardHtml } from './next5.js';
 
 // =============================
 // Dashboard Main Renderer
@@ -190,6 +191,7 @@ export function renderBudget() {
   $("budget-body").innerHTML = `
     <div class="w-full flex flex-col gap-2 budget-pad">
       ${kpiBar}
+      ${next5CardHtml()}
       ${tipCardHtml()}
       <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
