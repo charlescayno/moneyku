@@ -49,7 +49,6 @@ export function renderBudget() {
     const d = vals.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(" ");
     sparkHtml = `<svg viewBox="0 0 100 28" class="ml-auto w-24 h-7 flex-shrink-0" role="img" aria-label="Projected balance trend, next 12 months" data-action="openOutlook" data-arg0="all">${lo < 0 ? `<line x1="0" x2="100" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#fb7185" stroke-width="1" stroke-dasharray="2 2" opacity=".7"/>` : ""}<path d="${d}" fill="none" stroke="${Math.min(...vals) < 0 ? "#fb7185" : "#a5b4fc"}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
   }
-  const worstCase = outlookRows([k], { cons: true })[0].all.bal;
   const staleDays = Math.max(showC ? (staleBalanceDays("charlie") ?? -1) : -1, showP ? (staleBalanceDays("partner") ?? -1) : -1);
   const projChip = (cls, txt) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${txt}</span>`;
   // Chips in priority order: below zero, then stale balances, then the monthly change, then "all good".
@@ -135,7 +134,6 @@ export function renderBudget() {
         </summary>
         <div class="space-y-1.5 pt-1 pl-1">
           <p class="text-[11px] text-slate-300 leading-snug">${hideProjected ? "Cash &amp; pending hidden" : `Cash <b class="text-white">${peso(pj.cash)}</b> + to receive <b class="text-emerald-300">${peso(pj.inc)}</b> &minus; to pay <b class="text-rose-300">${peso(pj.out)}</b> = <b class="${projected >= 0 ? "text-white" : "text-rose-300"}">${sp(projected)}</b>`}</p>
-          ${hideProjected ? "" : `<button type="button" data-action="openOutlook" data-arg0="all" data-arg1="cons" class="text-left text-[11px] text-slate-300 leading-snug">Worst case (recurring income only): <b class="${worstCase >= 0 ? "text-white" : "text-rose-300"}">${sp(worstCase)}</b> <span class="text-indigo-300 font-bold">See why &rsaquo;</span></button>`}
           ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
         </div>
       </details>
