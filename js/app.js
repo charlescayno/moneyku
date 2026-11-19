@@ -7,7 +7,7 @@ import { openSearch, srOpen, qlAddChooser, qlSpendPick, addNew, duplicateItem, c
 import { tabGo, initTabs } from "./tabs.js";
 import { initHistory, openHistory, histUndo, histRedo, histRestore } from "./ui/historyui.js";
 import { rebaseHistory } from "./history.js";
-import { migrateGroceryPerMonday, migrateRemovePcItems } from "./migrations.js";
+import { migrateGroceryPerMonday, migrateRemovePcItems, migrateRenameFamilyExpense } from "./migrations.js";
 import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo } from "./ui/cardui.js";
 
 import {
@@ -309,7 +309,7 @@ function startDataSync(user) {
         console.warn("Storage error", err);
       }
 
-      const migrated = migrateGroceryPerMonday(getAppData()) | migrateRemovePcItems(getAppData());
+      const migrated = migrateGroceryPerMonday(getAppData()) | migrateRemovePcItems(getAppData()) | migrateRenameFamilyExpense(getAppData());
       if (uploadLocal) {
         syncSet(getAppData());
         toast("Uploaded this device's data to the cloud");

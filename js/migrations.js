@@ -82,3 +82,20 @@ export function migrateRemovePcItems(d) {
   d.settings.pcItemsRemoved = true;
   return true;
 }
+
+const FAMILY_NAME = "Cayno Family Expenses";
+
+/**
+ * Renames Charles' "Family Expense(s)" parent item to "Cayno Family Expenses".
+ * Acts once (marked in settings) and only if the item is found, so it is safe on every load.
+ */
+export function migrateRenameFamilyExpense(d) {
+  if (!d || !d.items) return false;
+  d.settings = d.settings || {};
+  if (d.settings.familyRenamed) return false;
+  const it = (d.items.charlie?.expenses || []).find((x) => x && /^family\s+expenses?$/i.test((x.name || "").trim()));
+  if (!it) return false;
+  it.name = FAMILY_NAME;
+  d.settings.familyRenamed = true;
+  return true;
+}

@@ -83,3 +83,13 @@ test("migrateRemovePcItems removes PC lines and their month data, once", () => {
   assert.deepEqual(d.paid["2026-11"], { keep: true });
   assert.equal(migrateRemovePcItems(d), false);
 });
+
+import { migrateRenameFamilyExpense } from "../js/migrations.js";
+test("migrateRenameFamilyExpense renames once and is a no-op when missing", () => {
+  const d = makeData();
+  assert.equal(migrateRenameFamilyExpense(d), false);
+  d.items.charlie.expenses.push({ id: "fam", name: "Family Expense", amount: 1, recurring: true, start: "2026-08" });
+  assert.equal(migrateRenameFamilyExpense(d), true);
+  assert.equal(d.items.charlie.expenses.at(-1).name, "Cayno Family Expenses");
+  assert.equal(migrateRenameFamilyExpense(d), false);
+});
