@@ -5,6 +5,7 @@ import { getHideProjected, getSelectedKey, outlookRows, timeline } from "../stat
 const COUNT = 5;
 let offset = 0; // months from the current month where the window starts (scrolled with the arrows or a swipe)
 const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+const cmp = (n) => { const a = Math.abs(n), s = n < 0 ? "-" : ""; return a >= 1e6 ? s + "₱" + (a / 1e6).toFixed(2) + "M" : a >= 1e4 ? s + "₱" + Math.round(a / 1e3) + "k" : a >= 1e3 ? s + "₱" + (a / 1e3).toFixed(1) + "k" : s + "₱" + Math.round(a); };
 
 export function next5Keys() {
   const tl = timeline(), start = addMonths(currentKey(), offset), keys = [];
@@ -70,7 +71,7 @@ export function next5CardHtml() {
   const zero = `<line x1="${(X(0) - 8).toFixed(1)}" x2="${(X(keys.length - 1) + 8).toFixed(1)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 4" opacity=".8"/>`;
   const cols = (cell) => `<div class="grid" style="grid-template-columns:repeat(${keys.length},minmax(0,1fr))">${keys.map(cell).join("")}</div>`;
 
-  const figures = cols((m, i) => `<button type="button" data-action="selectMonth" data-arg0="${m}" class="text-center text-[11px] font-black tabular-nums truncate px-0.5 ${vals[i] < 0 ? "text-rose-400" : "text-white"}" aria-label="${MONTHS_SHORT[keyParts(m).m]}: ${sp(vals[i])}">${sp(vals[i])}</button>`);
+  const figures = cols((m, i) => `<button type="button" data-action="selectMonth" data-arg0="${m}" class="text-center text-[11px] font-black tabular-nums truncate px-0.5 ${vals[i] < 0 ? "text-rose-400" : "text-white"}" aria-label="${MONTHS_SHORT[keyParts(m).m]}: ${sp(vals[i])}">${cmp(vals[i])}</button>`);
   const labels = cols((m) => `<button type="button" data-action="selectMonth" data-arg0="${m}" class="text-center text-[11px] font-bold ${m === sel ? "text-indigo-300" : "text-slate-500"}" style="text-transform:lowercase">${MONTHS_SHORT[keyParts(m).m]}</button>`);
 
   return `<div id="next5-card" class="glass-card rounded-2xl border border-white/5 px-4 py-3">
