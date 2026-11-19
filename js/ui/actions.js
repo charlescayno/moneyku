@@ -70,10 +70,11 @@ export async function togglePaidQuick(event, id, kind) {
   const busyKey = `${getSelectedKey()}|${id}`;
   if (paidBusy.has(busyKey)) return;
   paidBusy.add(busyKey);
-  try { await togglePaidQuickRun(event, id, kind); } finally { paidBusy.delete(busyKey); }
+  const release = () => paidBusy.delete(busyKey);
+  try { await togglePaidQuickRun(event, id, kind, release); } finally { release(); }
 }
 
-async function togglePaidQuickRun(event, id, kind) {
+async function togglePaidQuickRun(event, id, kind, release = () => {}) {
   const btn = event.target ? event.target.closest("[data-action]") : event;
   const selectedKey = getSelectedKey();
   let appData = getAppData();
@@ -111,6 +112,8 @@ async function togglePaidQuickRun(event, id, kind) {
   refreshRealized();
   if (navigator.vibrate) navigator.vibrate(12);
   if (moved) renderAll(); // account balances changed
+  // The change is done locally; do not keep this item locked while the cloud write waits (offline it can wait forever)
+  release();
   await syncSet(appData);
   const msg = nowSettled
     ? (paidNow[0] ? paidMessage(plan, paidNow) : kind === "income" ? "Marked received" : "Marked paid")
