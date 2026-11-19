@@ -159,7 +159,7 @@ export function normalize(d) {
   d.accounts = Array.isArray(d.accounts) ? d.accounts : (d.accounts ? Object.values(d.accounts) : []);
   d.startMonth = d.startMonth || currentKey();
   d.items = d.items || {};
-  for (const who of ["charlie", "debt", "partner"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
     d.items[who] = d.items[who] || {};
     for (const kind of ["income", "expenses"]) {
       const v = d.items[who][kind];

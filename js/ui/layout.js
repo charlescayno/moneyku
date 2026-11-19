@@ -124,16 +124,15 @@ export function renderBudget() {
             <div class="min-w-0" id="sec-accounts">${accountsCardHtml("charlie")}</div>
             <div class="min-w-0" id="sec-accounts-partner">${accountsCardHtml("partner")}</div>
           </div>
-          <div class="order-[6]">${debtTrackerCardHtml()}</div>
         </div>
 
         <!-- Charlie's budget (left) and partner's budget (right on wide screens, stacked on phones) -->
         <div class="order-2 grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start min-w-0">
           <div class="flex flex-col min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
-            ${personSectionHtml("charlie", false)}
+            ${personSectionHtml("charlie", true)}
           </div>
           <div class="flex flex-col min-w-0" id="sec-partner" style="scroll-margin-top:5.5rem">
-            ${personSectionHtml("partner", false)}
+            ${personSectionHtml("partner", true)}
           </div>
         </div>
         <div class="order-3" id="sec-household">${householdCardHtml()}</div>

@@ -16,6 +16,7 @@ export const MONTHS_SHORT = [
 export const OWNERS = {
   charlie: { label: "Charles'", who: "charlie", accent: "blue", text: "text-blue-400", ring: "border-blue-500/20", grad: "from-blue-500 to-indigo-600" },
   partner: { label: "Ynah's", who: "partner", accent: "teal", text: "text-ynah", ring: "border-ynah", grad: "ynah-grad" },
+  pdebt: { label: "Ynah's Debt Tracker", who: "pdebt", accent: "ynah", text: "text-ynah", ring: "border-ynah", grad: "ynah-grad" },
   debt: { label: "Debt Tracker", who: "debt", accent: "rose", text: "text-rose-400", ring: "border-rose-500/20", grad: "from-rose-500 to-pink-600" },
 };
 

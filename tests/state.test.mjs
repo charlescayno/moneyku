@@ -89,6 +89,11 @@ test("partner items stay out of Charles' totals; household combines both", () =>
   assert.equal(h.expenses, 17000);
   assert.equal(h.net, 63000);
   assert.equal(h.partnerNet, 25000);
+  d.items.pdebt = { income: [{ id: "pd1", name: "Lent", amount: 700, recurring: true, start: "2026-08" }], expenses: [] };
+  setAppData(d);
+  assert.equal(monthTotals("2026-09").pdI, 700);
+  assert.equal(monthTotals("2026-09").netPending, 38000); // Charles' projection unaffected by Ynah's debts
+  assert.equal(householdTotals("2026-09").partner.debtNet, 700);
   assert.equal(accountsTotal(), 1000);
   assert.equal(accountsTotal("partner"), 400);
   assert.equal(h.cash, 1400);

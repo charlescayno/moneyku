@@ -299,7 +299,7 @@ const dueHeader = (label, cls, icon, n) => `<p class="due-group flex items-cente
 
 /** Expenses of the current/past months: Overdue and This week come first, everything else is Later. */
 export function groupedRowsHtml(items, k, kind, who) {
-  if (kind !== "expenses" || who === "debt" || !items.length) return groupedRowsInner(items, k, kind, who);
+  if (kind !== "expenses" || who === "debt" || who === "pdebt" || !items.length) return groupedRowsInner(items, k, kind, who);
   const over = [], week = [], later = [];
   for (const it of items) {
     const ds = getKids(it, k).length ? null : dueStatus(it, k);
@@ -366,26 +366,27 @@ function groupedRowsInner(items, k, kind, who) {
   return html;
 }
 
-export function debtTrackerCardHtml() {
+export function debtTrackerCardHtml(who = "debt") {
+  const isP = who === "pdebt";
   const k = getSelectedKey();
   const t = monthTotals(k);
-  const debtIncome = getItems("debt", "income").filter((it) => itemActiveIn(it, k));
-  const debtExpenses = getItems("debt", "expenses").filter((it) => itemActiveIn(it, k));
-  const debtIncTot = t.dI;
-  const debtExpTot = t.dE;
-  const debtIncHtml = groupedRowsHtml(debtIncome, k, "income", "debt");
-  const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", "debt");
-  const dO = OWNERS.debt;
+  const debtIncome = getItems(who, "income").filter((it) => itemActiveIn(it, k));
+  const debtExpenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k));
+  const debtIncTot = isP ? t.pdI : t.dI;
+  const debtExpTot = isP ? t.pdE : t.dE;
+  const debtIncHtml = groupedRowsHtml(debtIncome, k, "income", who);
+  const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", who);
+  const dO = OWNERS[who];
 
   return `
-    <details open data-persist="debts" class="glass-card rounded-xl border border-rose-500/20 overflow-hidden w-full flex-shrink-0">
+    <details open data-persist="debts${isP ? "-p" : ""}" class="glass-card rounded-xl border ${isP ? "border-ynah" : "border-rose-500/20"} overflow-hidden w-full flex-shrink-0">
       <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
         <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${isP ? "ynah-grad" : "from-rose-500 to-pink-600"} flex items-center justify-center flex-shrink-0 shadow-sm">
             <span class="material-icons text-white" style="font-size:14px">handshake</span>
           </div>
           <div>
-            <h4 class="text-xs font-black uppercase tracking-wider text-white">Debt Tracker</h4>
+            <h4 class="text-xs font-black uppercase tracking-wider text-white">${isP ? OWNERS.partner.label + " " : ""}Debt Tracker</h4>
             <p class="text-[8px] text-slate-400">Owed to me &amp; owe others</p>
           </div>
         </div>
@@ -403,7 +404,7 @@ export function debtTrackerCardHtml() {
                 <span class="text-[11px] font-bold text-emerald-400">${peso(debtIncTot)}</span>
               </div>
             </div>
-            <button data-action="openItemModal" data-arg0="debt" data-arg1="income" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
+            <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
           </summary>
           <div class="space-y-0.5 mt-1">${debtIncHtml}</div>
         </details>
@@ -417,7 +418,7 @@ export function debtTrackerCardHtml() {
                   <span class="text-[11px] font-bold text-rose-400">${peso(debtExpTot)}</span>
                 </div>
               </div>
-              <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
+              <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
             </summary>
             <div class="space-y-0.5 mt-1">${debtExpHtml}</div>
           </details>
@@ -440,6 +441,7 @@ export function householdCardHtml() {
       <div class="flex items-center justify-between px-0.5 mb-1"><p class="text-[10px] font-black uppercase tracking-wider ${titleCls}">${title}</p><p class="text-xs font-black ${v.net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${sp(v.net)}</p></div>
       <div class="grid grid-cols-2 gap-1.5">
         ${cell("Cash &amp; bank", peso(v.cash), "text-slate-100")}
+        ${Math.abs(v.debtNet) > 0.005 ? cell("Debt net", sp(v.debtNet), v.debtNet >= 0 ? "text-indigo-300" : "text-orange-300") : ""}
         ${cell("Income", peso(v.income), "text-emerald-400")}
         ${cell("Expenses", peso(v.expenses), "text-rose-400")}
         ${cell("To receive", peso(v.toReceive), "text-emerald-400")}
@@ -482,8 +484,8 @@ export function personSectionHtml(who, includeDebt = true) {
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
 
   let debtSectionHtml = "";
-  if (who === "charlie" && includeDebt) {
-    debtSectionHtml = `<div class="border-t border-white/[0.08] pt-2 mt-1">${debtTrackerCardHtml()}</div>`;
+  if ((who === "charlie" || who === "partner") && includeDebt) {
+    debtSectionHtml = `<div class="border-t border-white/[0.08] pt-2 mt-1">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
   }
 
   return `<div class="glass-card rounded-xl overflow-hidden border ${o.ring} w-full flex flex-col">
@@ -1252,7 +1254,7 @@ export function toggleMonthPicker() {
 // =============================
 /** Account choices for a spending entry: last one used, else the item's own account, else the first. */
 function spendAccountOptions(it) {
-  const owner = getItems("partner", "expenses").some((x) => x.id === it.id || getKids(x).some((c) => c.id === it.id)) ? "partner" : "charlie";
+  const owner = ["partner", "pdebt"].some((w) => getItems(w, "expenses").some((x) => x.id === it.id || getKids(x).some((c) => c.id === it.id))) ? "partner" : "charlie";
   const accts = payableAccounts(owner);
   let last = ""; try { last = localStorage.getItem("moneyku_spend_acct") || ""; } catch { /* ignore */ }
   const own = accountForMethod(it?.paymentMethod, owner)?.id || "";

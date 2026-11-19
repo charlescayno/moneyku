@@ -21,7 +21,7 @@ export function payableAccounts(who = "charlie") {
 /** Find an expense leaf (an item without sub-items, or a sub-item) by id. */
 function findExpenseLeaf(id) {
   const d = getAppData();
-  for (const who of ["charlie", "debt", "partner"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
     for (const kind of ["expenses", "income"]) {
       for (const it of d?.items?.[who]?.[kind] || []) {
         if (it.id === id) return { who, item: it, child: null, income: kind === "income" };
@@ -65,11 +65,11 @@ function paymentMethodOf(id) {
 export function autoAccountFor(id) {
   const f = findExpenseLeaf(id);
   if (!f || f.income) return null;
-  return accountForMethod(f.item.paymentMethod, f.who === "partner" ? "partner" : "charlie");
+  return accountForMethod(f.item.paymentMethod, ownerOfId(id));
 }
 
 /** Whose budget an item belongs to: "partner" or "charlie" (debt items use Charles' accounts). */
-export function ownerOfId(id) { return findExpenseLeaf(id)?.who === "partner" ? "partner" : "charlie"; }
+export function ownerOfId(id) { const w = findExpenseLeaf(id)?.who; return w === "partner" || w === "pdebt" ? "partner" : "charlie"; }
 
 export function isIncomeId(id) { return !!findExpenseLeaf(id)?.income; }
 

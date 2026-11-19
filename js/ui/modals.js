@@ -119,7 +119,7 @@ export function openItemModal(who, kind, id, presetDay) {
   const settledNow = it ? isPaid(it.id, selectedKey) : false;
 
   let title = isNew ? `Add ${kind === "income" ? "Income" : "Expense"}` : "Edit";
-  if (who === "debt" && isNew) {
+  if ((who === "debt" || who === "pdebt") && isNew) {
     title = kind === "income" ? "Add Person (They owe me)" : "Add Person (I owe them)";
   }
   $("modal-title").textContent = title;

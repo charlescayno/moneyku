@@ -63,7 +63,7 @@ export function rebaseHistory(data) {
 // ---------- describing a change ----------
 function indexItems(d) {
   const m = new Map();
-  for (const who of ["charlie", "debt", "partner"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
     for (const kind of ["income", "expenses"]) {
       for (const it of d?.items?.[who]?.[kind] || []) {
         if (!it) continue;

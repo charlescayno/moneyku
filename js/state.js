@@ -221,6 +221,14 @@ export function monthTotals(k) {
   for (const it of getItems("partner", "expenses")) {
     if (itemActiveIn(it, k)) { const r = itemAmts(it, k); pE += r.total; pPaid += r.paid; }
   }
+  // Partner's own debt tracker (separate from Charles' debt tracker)
+  let pdI = 0, pdE = 0, pdRecv = 0, pdPaid = 0;
+  for (const it of getItems("pdebt", "income")) {
+    if (itemActiveIn(it, k)) { const r = itemAmts(it, k); pdI += r.total; pdRecv += r.paid; }
+  }
+  for (const it of getItems("pdebt", "expenses")) {
+    if (itemActiveIn(it, k)) { const r = itemAmts(it, k); pdE += r.total; pdPaid += r.paid; }
+  }
 
   const income = cI, expenses = cE, toPay = expenses - expPaid;
   const toReceive = income - incRecv;
@@ -229,6 +237,7 @@ export function monthTotals(k) {
   
   return {
     pI, pE, pToReceive: pI - pRecv, pToPay: pE - pPaid,
+    pdI, pdE, pDebtToReceive: pdI - pdRecv, pDebtToPay: pdE - pdPaid,
     cI, dI, cE, dE, income, expenses, savings: income - toPay,
     incomeReceived: incRecv, expensePaid: expPaid,
     toReceive, toPay,
@@ -246,8 +255,9 @@ export function householdTotals(k) {
     income, expenses, net: income - expenses, toReceive, toPay,
     charlieNet: t.cI - t.cE, partnerNet: t.pI - t.pE,
     cash: accountsTotal("charlie") + accountsTotal("partner"),
-    charlie: { cash: accountsTotal("charlie"), income: t.cI, expenses: t.cE, net: t.cI - t.cE, toReceive: t.toReceive, toPay: t.toPay },
-    partner: { cash: accountsTotal("partner"), income: t.pI, expenses: t.pE, net: t.pI - t.pE, toReceive: t.pToReceive, toPay: t.pToPay },
+    debtNet: (t.debtToReceive - t.debtToPay) + (t.pDebtToReceive - t.pDebtToPay),
+    charlie: { debtNet: t.debtToReceive - t.debtToPay, cash: accountsTotal("charlie"), income: t.cI, expenses: t.cE, net: t.cI - t.cE, toReceive: t.toReceive, toPay: t.toPay },
+    partner: { debtNet: t.pDebtToReceive - t.pDebtToPay, cash: accountsTotal("partner"), income: t.pI, expenses: t.pE, net: t.pI - t.pE, toReceive: t.pToReceive, toPay: t.pToPay },
   };
 }
 
@@ -279,7 +289,7 @@ export function reconcileAutoPaid() {
   const curK = currentKey();
   const inTimeline = timeline().includes(curK);
   const today = new Date().getDate();
-  for (const who of ["charlie", "debt", "partner"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
     for (const it of getItems(who, "expenses")) {
       if (it.dueDay == null) {
         const d = parseDueDay(it.name);
@@ -359,7 +369,7 @@ export function sortItems(items, kind) {
 }
 
 export function findItemById(id) {
-  for (const who of ["charlie", "debt", "partner"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
     for (const kind of ["income", "expenses"]) {
       const it = getItems(who, kind).find((x) => x.id === id);
       if (it) return it;
@@ -369,7 +379,7 @@ export function findItemById(id) {
 }
 
 export function findItemOrChildById(id) {
-  for (const who of ["charlie", "debt", "partner"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
     for (const kind of ["expenses", "income"]) {
       for (const it of getItems(who, kind)) {
         if (it.id === id) return it;
