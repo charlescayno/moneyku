@@ -447,52 +447,57 @@ function realFields(who) {
 // A label/value row; `sub` rows are indented "of which" lines
 const subRow = (label, val, cls, sub = false) => `<div class="flex items-center justify-between ${sub ? "pl-4 text-[10px]" : "text-[11px]"}"><span class="${sub ? "text-slate-500" : "font-bold text-slate-300"}">${label}</span><span class="font-black ${cls}">${val}</span></div>`;
 const subHead = (label, cls) => `<p class="text-[9px] font-black uppercase tracking-[0.15em] ${cls} pt-1.5 pb-0.5">${label}</p>`;
-// One person's (or the overall) subtotal as a list: INFLOW, then OUTFLOW, then net and money position.
-// v comes from householdTotals(k)
-function subtotalBlockHtml(title, v, titleCls, strong = false) {
+// One person's subtotal, kept short: inflow, outflow, net, then the money position. v comes from householdTotals(k)
+function subtotalBlockHtml(title, v, titleCls) {
   const hide = getHideProjected();
   const netCls = v.net >= 0 ? "text-emerald-400" : "text-rose-400";
-  return `<div class="${strong ? "border-t border-white/10 pt-2" : ""}">
+  return `<div>
       <p class="text-[10px] font-black uppercase tracking-wider ${titleCls} px-0.5 mb-0.5">${title}</p>
-      <div class="rounded-lg bg-black/20 px-2.5 py-1.5 space-y-0.5">
-        ${subHead("Inflow", "text-emerald-400")}
-        ${subRow("Income", peso(v.income), "text-emerald-400")}
-        ${subRow("still to receive", peso(v.toReceive), "text-slate-400", true)}
-        ${subHead("Outflow", "text-rose-400")}
-        ${subRow("Expenses", peso(v.expenses), "text-rose-400")}
-        ${subRow("still to pay", peso(v.toPay), "text-slate-400", true)}
-        <div class="border-t border-white/10 mt-1.5 pt-1.5 space-y-0.5">
-          ${subRow("Net (inflow &minus; outflow)", spSigned(v.net), netCls)}
+      <div class="rounded-lg bg-black/20 px-2.5 py-2 space-y-1">
+        ${subRow("Inflow", peso(v.income), "text-emerald-400")}
+        ${subRow("Outflow", peso(v.expenses), "text-rose-400")}
+        ${subRow("Net", spSigned(v.net), netCls)}
+        <div class="border-t border-white/10 pt-1 space-y-1">
           ${subRow("Cash &amp; bank", peso(v.cash), "text-slate-100")}
           ${v.realMoney != null ? subRow("Real money", spSigned(v.realMoney), v.realMoney >= 0 ? "text-white" : "text-rose-400") : ""}
-          ${v.realNote ? subRow(v.realNote, "", "", true) : ""}
-          ${Math.abs(v.debtNet) > 0.005 ? subRow("Debt net", spSigned(v.debtNet), v.debtNet >= 0 ? "text-indigo-300" : "text-orange-300") : ""}
           ${subRow(`Projected (${monthShort(getSelectedKey())})`, hide ? "••••••" : spSigned(v.projected), v.projected >= 0 ? "text-white" : "text-rose-400")}
         </div>
       </div>
     </div>`;
 }
 
+// Household total: one compact table, a column per person plus the combined total
 export function householdCardHtml() {
   const k = getSelectedKey();
   const h = householdTotals(k);
+  const hide = getHideProjected();
   const sp = spSigned;
-  const block = subtotalBlockHtml;
+  const c = { ...h.charlie, realMoney: realFields("charlie").realMoney };
+  const p = { ...h.partner, realMoney: realFields("partner").realMoney };
+  const a = { ...h, realMoney: householdRealMoney().real };
+  const money = (n, tone) => `<span class="font-black ${tone}">${sp(n)}</span>`;
+  const row = (label, f, tone = () => "text-slate-100", strong = false) => `<div class="grid grid-cols-[3.4rem_1fr_1fr_1fr] gap-1 items-center py-1 text-[10px] ${strong ? "border-t border-white/10" : ""}"><span class="font-bold text-slate-400">${label}</span>${[c, p, a].map((v) => `<span class="text-right">${money(f(v), tone(f(v)))}</span>`).join("")}</div>`;
+  const sign = (n) => (n >= 0 ? "text-emerald-400" : "text-rose-400");
+  const white = (n) => (n >= 0 ? "text-white" : "text-rose-400");
   return `<details open data-persist="household" class="glass-card rounded-xl border border-indigo-500/20 overflow-hidden w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center flex-shrink-0"><span class="material-icons text-white" style="font-size:14px">group</span></div>
         <div>
           <h3 class="text-xs font-black text-white uppercase tracking-wide">Household total</h3>
-          <p class="text-[8px] text-slate-400">${monthShort(k)} · ${OWNERS.charlie.label} + ${OWNERS.partner.label}</p>
+          <p class="text-[8px] text-slate-400">${monthShort(k)}</p>
         </div>
       </div>
-      <p class="text-xs font-black ${h.net >= 0 ? "text-emerald-400" : "text-rose-400"}">${sp(h.net)}</p>
+      <p class="text-xs font-black ${sign(h.net)}">${sp(h.net)}</p>
     </summary>
-    <div class="p-2.5 pt-0 space-y-2">
-      ${block(`Subtotal · ${OWNERS.charlie.label}`, { ...h.charlie, ...realFields("charlie") }, OWNERS.charlie.text)}
-      ${block(`Subtotal · ${OWNERS.partner.label}`, { ...h.partner, ...realFields("partner") }, OWNERS.partner.text)}
-      ${block("Total (all)", { ...h, realMoney: householdRealMoney().real }, "text-indigo-300", true)}
+    <div class="px-3 pb-3">
+      <div class="grid grid-cols-[3.4rem_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide"><span></span><span class="text-right ${OWNERS.charlie.text}">${OWNERS.charlie.label}</span><span class="text-right ${OWNERS.partner.text}">${OWNERS.partner.label}</span><span class="text-right text-indigo-300">All</span></div>
+      ${row("Inflow", (v) => v.income, () => "text-emerald-400")}
+      ${row("Outflow", (v) => v.expenses, () => "text-rose-400")}
+      ${row("Net", (v) => v.net, sign, true)}
+      ${row("Cash", (v) => v.cash, () => "text-slate-100", true)}
+      ${row("Real", (v) => v.realMoney, white)}
+      ${hide ? "" : row("Proj.", (v) => v.projected, white)}
     </div>
   </details>`;
 }
