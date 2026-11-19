@@ -396,7 +396,7 @@ export function debtTrackerCardHtml(who = "debt") {
         </div>
         <p class="font-bold" style="font-size:14px"><span class="text-emerald-400">${peso(debtIncTot)}</span> <span class="text-slate-500 font-normal">/</span> <span class="text-rose-400">${peso(debtExpTot)}</span></p>
       </summary>
-      <div class="mt-2">
+      <div style="margin:8px 0 0 14px;padding-left:10px;border-left:2px solid rgba(148,163,184,.22)">
         <details open class="group">
           <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("16,185,129")}">
             <div class="flex items-center gap-1">
