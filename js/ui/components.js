@@ -681,7 +681,7 @@ function acctCardSection(title, list, total) {
 }
 
 export function getAccountsView() {
-  try { return localStorage.getItem("moneyku_accts_view") === "list" ? "list" : "cards"; } catch (e) { return "cards"; }
+  try { return localStorage.getItem("moneyku_accts_view") === "cards" ? "cards" : "list"; } catch (e) { return "list"; } // list unless card view was picked
 }
 export function setAccountsView(v) {
   try { localStorage.setItem("moneyku_accts_view", v === "list" ? "list" : "cards"); } catch (e) { /* ignore */ }
