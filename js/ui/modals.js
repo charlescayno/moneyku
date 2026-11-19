@@ -128,6 +128,15 @@ export function openItemModal(who, kind, id, presetDay) {
   const kids = it ? getKids(it, selectedKey) : [];
   let body = "";
   let more = "";
+  if (isNew) {
+    // Which person's account the new item belongs to
+    const debtSide = who === "debt" || who === "pdebt";
+    const opts = debtSide
+      ? [["debt", `${OWNERS.charlie.label} debt tracker`], ["pdebt", `${OWNERS.partner.label} debt tracker`]]
+      : [["charlie", OWNERS.charlie.label], ["partner", OWNERS.partner.label]];
+    body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Whose account</label>
+      <div id="f-who" data-val="${who}" class="grid grid-cols-2 gap-2">${opts.map(([w, label]) => `<button type="button" data-action="pickOwner" data-arg0="${w}" class="py-3 rounded-xl font-bold text-xs ${w === who ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${escapeHtml(label)}</button>`).join("")}</div></div>`;
+  }
   body += inputBlock(kind === "income" ? "Source" : (who === "debt" ? "Name" : "Name"), "f-name", name, "text", 'placeholder="e.g. Rent"');
   if (kids.length) {
     body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (₱)</label>
@@ -372,7 +381,7 @@ export function openTransferModal(who) {
   openModalShell();
 }
 export function pickOwner(btn, w) {
-  const wrap = $("f-owner");
+  const wrap = btn.parentElement;
   if (!wrap) return;
   wrap.dataset.val = w;
   [...wrap.children].forEach((c) => {

@@ -1548,7 +1548,10 @@ async function saveModalInner() {
   // Regular item
   if (!name) return toast("Name required", "error");
   const bb = budgetBefore();
-  const { who, type, id } = activeEdit;
+  const { type, id } = activeEdit;
+  // New items can be assigned to a person in the modal ("Whose account")
+  const pickedWho = !id ? $("f-who")?.dataset.val : null;
+  const who = ["charlie", "partner", "debt", "pdebt"].includes(pickedWho) ? pickedWho : activeEdit.who;
   const recurring = $("f-recurring").dataset.on === "true";
   const start = $("f-start").value;
   const end = $("f-end").value || null;
