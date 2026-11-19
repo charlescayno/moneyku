@@ -120,7 +120,10 @@ export function renderBudget() {
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->
         <div class="contents">
-          <div class="order-1" id="sec-accounts" style="scroll-margin-top:5.5rem">${accountsCardHtml()}</div>
+          <div class="order-1 grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start min-w-0" style="scroll-margin-top:5.5rem">
+            <div class="min-w-0" id="sec-accounts">${accountsCardHtml("charlie")}</div>
+            <div class="min-w-0" id="sec-accounts-partner">${accountsCardHtml("partner")}</div>
+          </div>
           <div class="order-[6]">${debtTrackerCardHtml()}</div>
         </div>
 

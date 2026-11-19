@@ -5,7 +5,7 @@
 // Expenses paid by Maribank / GCash / BPI Debit skip the chooser: the matching account
 // is charged straight away (autoAccountFor) and reversed from the same record.
 // =============================
-import { acctType, childFinal, getAppData, getSpendList, isPaid, itemFinal } from "./state.js";
+import { acctOwner, acctType, childFinal, getAppData, getSpendList, isPaid, itemFinal } from "./state.js";
 import { isCardItem } from "./card.js";
 import { ACCOUNT_PAYMENT_METHODS, BANK_DOMAINS, bankIconFor, escapeHtml, peso } from "./utils.js";
 
@@ -14,19 +14,19 @@ const r2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 const LAST_KEY = "moneyku_pay_acct";
 
 /** Accounts that hold real money (credit cards are not paid from here). */
-export function payableAccounts() {
-  return (getAppData()?.accounts || []).filter((a) => acctType(a) !== "credit");
+export function payableAccounts(who = "charlie") {
+  return (getAppData()?.accounts || []).filter((a) => acctType(a) !== "credit" && acctOwner(a) === who);
 }
 
 /** Find an expense leaf (an item without sub-items, or a sub-item) by id. */
 function findExpenseLeaf(id) {
   const d = getAppData();
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner"]) {
     for (const kind of ["expenses", "income"]) {
       for (const it of d?.items?.[who]?.[kind] || []) {
-        if (it.id === id) return { item: it, child: null, income: kind === "income" };
+        if (it.id === id) return { who, item: it, child: null, income: kind === "income" };
         for (const c of Array.isArray(it.children) ? it.children : []) {
-          if (c && c.id === id) return { item: it, child: c, income: kind === "income" };
+          if (c && c.id === id) return { who, item: it, child: c, income: kind === "income" };
         }
       }
     }
@@ -47,10 +47,10 @@ export function amountDue(id, k) {
 }
 
 /** The account a payment method points at (Maribank, GCash, BPI Debit Card), matched by name; null for cash/cards/no match. */
-export function accountForMethod(pm) {
+export function accountForMethod(pm, who = "charlie") {
   const m = ACCOUNT_PAYMENT_METHODS.find((x) => x.id === pm);
   if (!m) return null;
-  return payableAccounts().find((a) => m.account.test((a.name || "").trim())) || null;
+  return payableAccounts(who).find((a) => m.account.test((a.name || "").trim())) || null;
 }
 
 function paymentMethodOf(id) {
@@ -65,8 +65,11 @@ function paymentMethodOf(id) {
 export function autoAccountFor(id) {
   const f = findExpenseLeaf(id);
   if (!f || f.income) return null;
-  return accountForMethod(f.item.paymentMethod);
+  return accountForMethod(f.item.paymentMethod, f.who === "partner" ? "partner" : "charlie");
 }
+
+/** Whose budget an item belongs to: "partner" or "charlie" (debt items use Charles' accounts). */
+export function ownerOfId(id) { return findExpenseLeaf(id)?.who === "partner" ? "partner" : "charlie"; }
 
 export function isIncomeId(id) { return !!findExpenseLeaf(id)?.income; }
 
@@ -120,12 +123,13 @@ export async function choosePayment(k, ids, label) {
     if (acct) auto.push({ ...x, acctId: acct.id }); else manual.push(x);
   }
   let acctId = null, income = false, picked = [];
-  if (manual.length && payableAccounts().length) {
+  const owner = manual.length ? ownerOfId(manual[0].id) : "charlie";
+  if (manual.length && payableAccounts(owner).length) {
     income = isIncomeId(manual[0].id);
     const total = manual.reduce((s, x) => s + x.amt, 0);
     const methods = new Set(manual.map((x) => paymentMethodOf(x.id)));
-    const preferred = methods.size === 1 ? accountForMethod([...methods][0]) : null;
-    const choice = await pickAccount(auto.length ? `${label} (${manual.length} not on an account)` : label, total, income, preferred);
+    const preferred = methods.size === 1 ? accountForMethod([...methods][0], owner) : null;
+    const choice = await pickAccount(auto.length ? `${label} (${manual.length} not on an account)` : label, total, income, preferred, owner);
     if (choice === null) return null;
     acctId = choice;
     picked = manual;
@@ -181,10 +185,10 @@ export function accountName(acctId) {
 // ---------- the chooser ----------
 let open = false;
 
-function pickAccount(label, total, income, preferred = null) {
+function pickAccount(label, total, income, preferred = null, owner = "charlie") {
   if (open) return Promise.resolve(null);
   open = true;
-  const accts = payableAccounts();
+  const accts = payableAccounts(owner);
   let last = null;
   try { last = localStorage.getItem(LAST_KEY); } catch { /* ignore */ }
   const pre = preferred || accts.find((a) => a.id === last) || accts[0];

@@ -1,7 +1,7 @@
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, ACCOUNT_PAYMENT_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { cardSettings } from "../card.js";
 import { childAmt } from "../state.js";
-import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { acctOwner, acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
 import { toast } from './core.js';
@@ -325,11 +325,11 @@ export function openInvestmentModal() {
   openModalShell();
 }
 
-export function openAccountModal(id) {
+export function openAccountModal(id, who) {
   const appData = getAppData();
   const a = id ? (appData?.accounts || []).find((x) => x.id === id) : null;
   const isNew = !a;
-  setActiveEdit({ kind: "account", id });
+  setActiveEdit({ kind: "account", id, owner: a ? acctOwner(a) : (who === "partner" ? "partner" : "charlie") });
   $("modal-title").textContent = isNew ? "Add Account" : "Edit Account";
   $("modal-title").className = "text-lg font-black uppercase tracking-tight text-emerald-400";
 
@@ -348,8 +348,8 @@ export function openAccountModal(id) {
   openModalShell();
 }
 
-export function openTransferModal() {
-  const accts = getAppData()?.accounts || [];
+export function openTransferModal(who) {
+  const accts = (getAppData()?.accounts || []).filter((a) => acctOwner(a) === (who === "partner" ? "partner" : "charlie"));
   if (accts.length < 2) return toast("Add at least 2 accounts to transfer", "error");
   setActiveEdit({ kind: "transfer" });
   $("modal-title").textContent = "Transfer";

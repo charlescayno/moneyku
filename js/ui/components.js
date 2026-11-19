@@ -6,7 +6,7 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore } from '../insights.js';
@@ -439,6 +439,7 @@ export function householdCardHtml() {
   const block = (title, v, titleCls, strong = false) => `<div class="${strong ? "border-t border-white/10 pt-2" : ""}">
       <div class="flex items-center justify-between px-0.5 mb-1"><p class="text-[10px] font-black uppercase tracking-wider ${titleCls}">${title}</p><p class="text-xs font-black ${v.net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${sp(v.net)}</p></div>
       <div class="grid grid-cols-2 gap-1.5">
+        ${cell("Cash &amp; bank", peso(v.cash), "text-slate-100")}
         ${cell("Income", peso(v.income), "text-emerald-400")}
         ${cell("Expenses", peso(v.expenses), "text-rose-400")}
         ${cell("To receive", peso(v.toReceive), "text-emerald-400")}
@@ -649,9 +650,9 @@ export function setAccountsView(v) {
   renderBudget();
 }
 
-export function accountsCardHtml() {
+export function accountsCardHtml(who = "charlie") {
   const appData = getAppData();
-  const accts = appData?.accounts || [];
+  const accts = (appData?.accounts || []).filter((a) => acctOwner(a) === who);
   const view = getAccountsView();
   const groups = [];
   const idx = {};
@@ -669,25 +670,26 @@ export function accountsCardHtml() {
       ? acctCardSection("Cash & Bank", bank, sum(bank)) + acctCardSection("Credit", credit, sum(credit))
       : groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("");
   const tgl = (v, icon, label) => `<button type="button" data-action="setAccountsView" data-arg0="${v}" aria-label="${label}" aria-pressed="${view === v}" class="w-7 h-6 flex items-center justify-center rounded-md ${view === v ? "bg-slate-600/70 text-white" : "text-slate-400"}"><span class="material-icons" style="font-size:15px">${icon}</span></button>`;
-  return `<details open data-persist="accounts" class="glass-card rounded-xl overflow-hidden border border-emerald-500/10 w-full flex-shrink-0">
+  const isP = who === "partner";
+  return `<details open data-persist="accounts${isP ? "-p" : ""}" class="glass-card rounded-xl overflow-hidden border border-emerald-500/10 w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-teal-600 flex items-center justify-center flex-shrink-0">
           <span class="material-icons text-white" style="font-size:14px">account_balance</span>
         </div>
         <div>
-          <h3 class="text-xs font-black text-white uppercase tracking-wide">Accounts</h3>
+          <h3 class="text-xs font-black text-white uppercase tracking-wide">${isP ? OWNERS.partner.label + " " : ""}Accounts</h3>
           <p class="text-[8px] text-slate-400">Balances on hand</p>
         </div>
       </div>
-      <p class="text-xs font-black text-emerald-400">${peso(accountsTotal())}</p>
+      <p class="text-xs font-black text-emerald-400">${peso(accountsTotal(who))}</p>
     </summary>
     <div class="p-2.5 pt-0 space-y-1">
       <div class="flex justify-end"><div class="inline-flex gap-0.5 p-0.5 rounded-lg bg-slate-900/70 border border-white/5">${tgl("cards", "view_carousel", "Card view")}${tgl("list", "view_list", "List view")}</div></div>
       ${rows}
       <div class="flex gap-2 mt-1.5">
-        <button data-action="openAccountModal" class="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Add account</button>
-        ${accts.length >= 2 ? `<button data-action="openTransferModal" class="flex-1 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg font-bold text-indigo-300 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">swap_horiz</span>Transfer</button>` : ""}
+        <button data-action="openAccountModal" data-arg0="" data-arg1="${who}" class="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Add account</button>
+        ${accts.length >= 2 ? `<button data-action="openTransferModal" data-arg0="${who}" class="flex-1 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg font-bold text-indigo-300 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">swap_horiz</span>Transfer</button>` : ""}
       </div>
     </div>
   </details>`;
@@ -1250,9 +1252,10 @@ export function toggleMonthPicker() {
 // =============================
 /** Account choices for a spending entry: last one used, else the item's own account, else the first. */
 function spendAccountOptions(it) {
-  const accts = payableAccounts();
+  const owner = getItems("partner", "expenses").some((x) => x.id === it.id || getKids(x).some((c) => c.id === it.id)) ? "partner" : "charlie";
+  const accts = payableAccounts(owner);
   let last = ""; try { last = localStorage.getItem("moneyku_spend_acct") || ""; } catch { /* ignore */ }
-  const own = accountForMethod(it?.paymentMethod)?.id || "";
+  const own = accountForMethod(it?.paymentMethod, owner)?.id || "";
   const pick = [last, own].find((id) => id && accts.some((a) => a.id === id)) || accts[0]?.id || "";
   return `<option value="">No account</option>` + accts.map((a) => `<option value="${escapeHtml(a.id)}" ${a.id === pick ? "selected" : ""}>${escapeHtml(a.name)}</option>`).join("");
 }
@@ -1458,7 +1461,7 @@ async function saveModalInner() {
 
   if (activeEdit.kind === "account") {
     if (!name) return toast("Name required", "error");
-    const owner = "charlie";
+    const owner = activeEdit.owner === "partner" ? "partner" : "charlie";
     if (activeEdit.id) {
       const a = appData.accounts.find((x) => x.id === activeEdit.id);
       if (a) { a.name = name; a.amount = amount; a.owner = owner; a.type = $("f-type")?.value || "bank"; }

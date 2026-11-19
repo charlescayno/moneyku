@@ -132,8 +132,13 @@ export function acctType(a) {
 }
 
 // Money on hand: credit accounts are not counted (their balance is available credit, not cash)
-export function accountsTotal() { 
-  return (appData?.accounts || []).filter((a) => acctType(a) !== "credit").reduce((s, a) => s + (Number(a.amount) || 0), 0); 
+// Whose account it is: "partner" or (default, incl. old data) "charlie"
+export function acctOwner(a) { return a && a.owner === "partner" ? "partner" : "charlie"; }
+export function accountsOf(who) { return (appData?.accounts || []).filter((a) => acctOwner(a) === who); }
+
+// Defaults to Charles' accounts so his projection never includes his partner's money
+export function accountsTotal(who = "charlie") { 
+  return accountsOf(who).filter((a) => acctType(a) !== "credit").reduce((s, a) => s + (Number(a.amount) || 0), 0); 
 }
 
 // Sub-expenses: container logic
@@ -240,8 +245,9 @@ export function householdTotals(k) {
   return {
     income, expenses, net: income - expenses, toReceive, toPay,
     charlieNet: t.cI - t.cE, partnerNet: t.pI - t.pE,
-    charlie: { income: t.cI, expenses: t.cE, net: t.cI - t.cE, toReceive: t.toReceive, toPay: t.toPay },
-    partner: { income: t.pI, expenses: t.pE, net: t.pI - t.pE, toReceive: t.pToReceive, toPay: t.pToPay },
+    cash: accountsTotal("charlie") + accountsTotal("partner"),
+    charlie: { cash: accountsTotal("charlie"), income: t.cI, expenses: t.cE, net: t.cI - t.cE, toReceive: t.toReceive, toPay: t.toPay },
+    partner: { cash: accountsTotal("partner"), income: t.pI, expenses: t.pE, net: t.pI - t.pE, toReceive: t.pToReceive, toPay: t.pToPay },
   };
 }
 
