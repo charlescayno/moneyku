@@ -432,22 +432,28 @@ export function expenseSortBtnHtml() {
   return `<button data-action="toggleExpenseSort" title="${on ? "Sorted A-Z (tap for default order)" : "Sort A-Z"}" aria-label="Sort expenses by name" aria-pressed="${on}" class="text-[10px] font-bold ${on ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">sort_by_alpha</span>A-Z</button>`;
 }
 
+const spSigned = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+const subtotalCell = (label, val, cls) => `<div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-slate-400">${label}</span><span class="text-xs font-black ${cls}">${val}</span></div>`;
+// One person's (or the overall) subtotal block; v comes from householdTotals(k)
+function subtotalBlockHtml(title, v, titleCls, strong = false) {
+  return `<div class="${strong ? "border-t border-white/10 pt-2" : ""}">
+      <div class="flex items-center justify-between px-0.5 mb-1"><p class="text-[10px] font-black uppercase tracking-wider ${titleCls}">${title}</p><p class="text-xs font-black ${v.net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${spSigned(v.net)}</p></div>
+      <div class="grid grid-cols-2 gap-1.5">
+        ${subtotalCell("Cash &amp; bank", peso(v.cash), "text-slate-100")}
+        ${Math.abs(v.debtNet) > 0.005 ? subtotalCell("Debt net", spSigned(v.debtNet), v.debtNet >= 0 ? "text-indigo-300" : "text-orange-300") : ""}
+        ${subtotalCell("Income", peso(v.income), "text-emerald-400")}
+        ${subtotalCell("Expenses", peso(v.expenses), "text-rose-400")}
+        ${subtotalCell("To receive", peso(v.toReceive), "text-emerald-400")}
+        ${subtotalCell("To pay", peso(v.toPay), "text-rose-400")}
+      </div>
+    </div>`;
+}
+
 export function householdCardHtml() {
   const k = getSelectedKey();
   const h = householdTotals(k);
-  const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
-  const cell = (label, val, cls) => `<div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-slate-400">${label}</span><span class="text-xs font-black ${cls}">${val}</span></div>`;
-  const block = (title, v, titleCls, strong = false) => `<div class="${strong ? "border-t border-white/10 pt-2" : ""}">
-      <div class="flex items-center justify-between px-0.5 mb-1"><p class="text-[10px] font-black uppercase tracking-wider ${titleCls}">${title}</p><p class="text-xs font-black ${v.net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${sp(v.net)}</p></div>
-      <div class="grid grid-cols-2 gap-1.5">
-        ${cell("Cash &amp; bank", peso(v.cash), "text-slate-100")}
-        ${Math.abs(v.debtNet) > 0.005 ? cell("Debt net", sp(v.debtNet), v.debtNet >= 0 ? "text-indigo-300" : "text-orange-300") : ""}
-        ${cell("Income", peso(v.income), "text-emerald-400")}
-        ${cell("Expenses", peso(v.expenses), "text-rose-400")}
-        ${cell("To receive", peso(v.toReceive), "text-emerald-400")}
-        ${cell("To pay", peso(v.toPay), "text-rose-400")}
-      </div>
-    </div>`;
+  const sp = spSigned;
+  const block = subtotalBlockHtml;
   return `<details open data-persist="household" class="glass-card rounded-xl border border-indigo-500/20 overflow-hidden w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
@@ -537,6 +543,7 @@ export function personSectionHtml(who, includeDebt = true) {
       </div>
       ${who === "charlie" ? cardSectionHtml(k) : ""}
       ${debtSectionHtml}
+      ${who === "charlie" || who === "partner" ? `<div class="border-t border-white/[0.08] pt-2">${subtotalBlockHtml(`Subtotal · ${o.label}`, householdTotals(k)[who], o.text)}</div>` : ""}
     </div>
   </div>`;
 }
