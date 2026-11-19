@@ -3,7 +3,7 @@ import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, cu
 import { syncSet } from '../firebase.js';
 import { householdRealMoney, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
-import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, householdCardHtml, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, statsGridHtml } from './components.js';
+import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 import { cardSummaryHtml } from './cardui.js';
 import { cardDueIn } from '../card.js';
@@ -194,7 +194,6 @@ export function renderBudget() {
             ${personSectionHtml("partner", true)}
           </div>
         </div>
-        <div class="order-3" id="sec-household">${householdCardHtml()}</div>
 
       </div>
     </div>
