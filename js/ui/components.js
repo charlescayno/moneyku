@@ -1079,8 +1079,11 @@ export function toggleOutlookOpt(name) {
   redrawOutlook();
 }
 // Open Overview straight on the outlook, for a person or everyone (used by the Projected block at the top)
-export function openOutlook(w) {
-  try { localStorage.setItem(OUTLOOK_KEY, w === "charlie" || w === "partner" ? w : "all"); } catch (e) { /* ignore */ }
+export function openOutlook(w, opt) {
+  try {
+    localStorage.setItem(OUTLOOK_KEY, w === "charlie" || w === "partner" ? w : "all");
+    if (opt === "cons") localStorage.setItem(OUTLOOK_OPTS_KEY, JSON.stringify({ ...getOutlookOpts(), cons: true }));
+  } catch (e) { /* ignore */ }
   openMore();
   setTimeout(() => document.querySelector('details[data-persist="outlook"]')?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
 }

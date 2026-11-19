@@ -1,5 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
-import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, projectionBreakdown, outlookKeys, outlookRows, firstNegative, staleBalanceDays, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, projectionBreakdown, monthFlow, outlookKeys, outlookRows, firstNegative, staleBalanceDays, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { dueSoonCardHtml, householdRealMoney, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
@@ -16,11 +16,32 @@ export function renderBudget() {
   const k = getSelectedKey();
   const t = monthTotals(k);
   const projected = householdProjectedAt(k);
+  const hideProjected = getHideProjected();
   const projC = runningFundsAt(k, "charlie"), projP = runningFundsAt(k, "partner");
   // What the projected number is made of, early warnings, a worst case, and stale-balance nudge
   const pj = projectionBreakdown(k);
   const okeys = outlookKeys();
-  const neg = firstNegative(okeys.length ? outlookRows(okeys) : []);
+  const orows = okeys.length ? outlookRows(okeys) : [];
+  const neg = firstNegative(orows);
+  // Headline color by risk: red if the balance dips below zero in the next 12 months, amber if it gets under a quarter of today's cash, else green
+  const lowestBal = orows.length ? Math.min(...orows.map((r) => r.all.bal)) : 0;
+  const riskText = hideProjected ? "text-white" : lowestBal < 0 ? "text-rose-400" : lowestBal < 0.25 * pj.cash ? "text-amber-300" : "text-emerald-300";
+  // Per-person change vs previous month (▲ / ▼), only for future months
+  const pDelta = (w) => {
+    if (hideProjected || cmpKey(k, currentKey()) <= 0) return "";
+    const n = monthFlow(k, w).net;
+    if (Math.abs(n) < 0.5) return "";
+    return `<span class="text-[10px] font-bold ${n > 0 ? "text-emerald-300" : "text-rose-300"}" title="Change vs previous month">${n > 0 ? "▲" : "▼"} ${peso(Math.abs(n))}</span>`;
+  };
+  // Tiny 12-month trend of the combined balance (hidden along with the numbers)
+  let sparkHtml = "";
+  if (orows.length > 1 && !getHideProjected()) {
+    const vals = orows.map((r) => r.all.bal);
+    const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), sp2 = hi - lo || 1;
+    const X = (i) => 2 + (i * 96) / (vals.length - 1), Y = (v) => 2 + ((hi - v) / sp2) * 24;
+    const d = vals.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(" ");
+    sparkHtml = `<svg viewBox="0 0 100 28" class="ml-auto w-24 h-7 flex-shrink-0" role="img" aria-label="Projected balance trend, next 12 months" data-action="openOutlook" data-arg0="all">${lo < 0 ? `<line x1="0" x2="100" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#fb7185" stroke-width="1" stroke-dasharray="2 2" opacity=".7"/>` : ""}<path d="${d}" fill="none" stroke="${Math.min(...vals) < 0 ? "#fb7185" : "#a5b4fc"}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+  }
   const worstCase = outlookRows([k], { cons: true })[0].all.bal;
   const staleDays = Math.max(staleBalanceDays("charlie") ?? -1, staleBalanceDays("partner") ?? -1);
   const projChip = (cls, txt) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${txt}</span>`;
@@ -35,7 +56,6 @@ export function renderBudget() {
   if (staleDays > 7) projChips.push(projChip("bg-amber-500/20 text-amber-200", `Oldest balance updated ${staleDays}d ago`));
   if (pj.delta != null && !hideProjected) projChips.push(projChip(pj.delta >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300", `${pj.delta >= 0 ? "+" : "-"}${peso(Math.abs(pj.delta))} vs prev. month`));
   if (!neg.all && !neg.charlie && !neg.partner && okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
-  const hideProjected = getHideProjected();
   const current = currentMoneyAt();
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
 
@@ -79,12 +99,13 @@ export function renderBudget() {
             </button>
             <button data-action="openOutlook" data-arg0="all" class="ml-1 flex items-center text-[10px] font-bold text-indigo-300 hover:text-white focus:outline-none">12-mo outlook<span class="material-icons" style="font-size:13px">chevron_right</span></button>
           </div>
-          <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer text-sm sm:text-base font-black text-white leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
+          <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer text-sm sm:text-base font-black ${riskText} leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
         </div>
+        ${sparkHtml}
       </div>
       <div class="grid grid-cols-2 gap-1.5">
-        <div data-action="openOutlook" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span><span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></div>
-        <div data-action="openOutlook" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span><span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></div>
+        <div data-action="openOutlook" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span><span class="flex items-center gap-1">${pDelta("charlie")}<span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></span></div>
+        <div data-action="openOutlook" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span><span class="flex items-center gap-1">${pDelta("partner")}<span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></span></div>
       </div>
       ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
       <details data-persist="proj-details" class="group/pd">
@@ -93,7 +114,7 @@ export function renderBudget() {
         </summary>
         <div class="space-y-1.5 pt-1 pl-1">
           <p class="text-[11px] text-slate-300 leading-snug">${hideProjected ? "Cash &amp; pending hidden" : `Cash <b class="text-white">${peso(pj.cash)}</b> + to receive <b class="text-emerald-300">${peso(pj.inc)}</b> &minus; to pay <b class="text-rose-300">${peso(pj.out)}</b>`}</p>
-          ${hideProjected ? "" : `<p class="text-[11px] text-slate-300 leading-snug">Worst case (recurring income only): <b class="${worstCase >= 0 ? "text-white" : "text-rose-300"}">${sp(worstCase)}</b></p>`}
+          ${hideProjected ? "" : `<button type="button" data-action="openOutlook" data-arg0="all" data-arg1="cons" class="text-left text-[11px] text-slate-300 leading-snug">Worst case (recurring income only): <b class="${worstCase >= 0 ? "text-white" : "text-rose-300"}">${sp(worstCase)}</b> <span class="text-indigo-300 font-bold">See why &rsaquo;</span></button>`}
           ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
         </div>
       </details>
