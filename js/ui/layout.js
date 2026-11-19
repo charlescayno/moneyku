@@ -56,7 +56,6 @@ export function renderBudget() {
   const projChips = [];
   if (staleDays > 7) projChips.push(projChip("bg-amber-500/20 text-amber-200", `Oldest balance updated ${staleDays}d ago`));
   if (pj.delta != null && !hideProjected) projChips.push(projChip(pj.delta >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300", `${pj.delta >= 0 ? "+" : "-"}${peso(Math.abs(pj.delta))} vs prev. month`));
-  if (!neg.all && !(showC && neg.charlie) && !(showP && neg.partner) && okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
   const ht = includedTotals(k);
   const current = ht.current;
   const dRecv = (showC ? t.debtToReceive : 0) + (showP ? t.pDebtToReceive : 0), dPay = (showC ? t.debtToPay : 0) + (showP ? t.pDebtToPay : 0);
@@ -131,13 +130,8 @@ export function renderBudget() {
             <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">&minus; Still to pay</span><span class="font-black text-rose-300">${peso(pj.out)}</span></div>
             <div class="flex items-center justify-between text-[11px] border-t border-white/10 pt-1"><span class="font-bold text-slate-200">= Projected</span><span class="font-black ${projected >= 0 ? "text-white" : "text-rose-300"}">${sp(projected)}</span></div>`}</div>
           ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
-        </div>
-      </details>
-      ${cardNote}
-
-      <!-- KPI Metrics (collapsed by default; headline shows savings) -->
-      ${realDiffers ? `<details data-persist="kpi" class="group">
-      <summary class="flex flex-wrap items-center justify-between gap-y-1 cursor-pointer list-none select-none px-1 pt-2 border-t border-white/5">
+          ${realDiffers ? `<details data-persist="kpi" class="group">
+      <summary class="flex flex-wrap items-center justify-between gap-y-1 cursor-pointer list-none select-none px-1 pt-2 border-t border-white/5 mt-1">
         <span class="text-[11px] font-bold text-slate-400 flex items-baseline gap-2">Real money · ${showC && showP ? "all" : OWNERS[showC ? "charlie" : "partner"].label} <span class="text-base font-extrabold tabular-nums ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></span>
         <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
         ${showC && showP ? `<div class="grid grid-cols-2 gap-2 mt-1.5" style="flex:0 0 100%;width:100%">
@@ -158,6 +152,12 @@ export function renderBudget() {
         ` : ""}
       </div>
       </details>` : ""}
+        </div>
+      </details>
+      ${cardNote}
+
+      <!-- KPI Metrics (collapsed by default; headline shows savings) -->
+
     </div>
   `;
 
