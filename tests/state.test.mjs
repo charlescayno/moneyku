@@ -171,7 +171,10 @@ test("switching a person off removes them from combined numbers only", () => {
   assert.equal(householdProjectedAt(cur), cOnly);
   assert.equal(runningFundsAt(cur, "partner"), 400 + 50); // her own number is unchanged
   assert.equal(outlookRows([cur])[0].all.bal, cOnly);
-  assert.equal(setWhoIncluded("charlie", false), false); // can't switch both off
+  assert.equal(setWhoIncluded("charlie", false), true); // switching off the last one ticked ticks the other
+  assert.deepEqual(includedWho(), ["partner"]);
+  assert.equal(setWhoIncluded("partner", false), true);
+  assert.deepEqual(includedWho(), ["charlie"]);
   assert.equal(setWhoIncluded("partner", true), true);
   assert.deepEqual(includedWho(), ["charlie", "partner"]);
 });

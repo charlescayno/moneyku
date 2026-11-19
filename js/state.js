@@ -444,7 +444,8 @@ export function setWhoIncluded(who, on) {
   let o = {};
   try { o = JSON.parse(localStorage.getItem(INCL_KEY) || "{}"); } catch (e) { /* ignore */ }
   o[who] = !!on;
-  if (o.charlie === false && o.partner === false) return false; // keep at least one person in the total
+  // At least one person always counts: switching off the last one ticked turns the other back on
+  if (o.charlie === false && o.partner === false) o[who === "charlie" ? "partner" : "charlie"] = true;
   try { localStorage.setItem(INCL_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ }
   return true;
 }

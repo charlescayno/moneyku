@@ -282,7 +282,7 @@ export function refreshRealized() {
 // Window Action Helpers
 // =============================
 export function togglePersonIncluded(who) {
-  if (!setWhoIncluded(who, !includedWho().includes(who))) toast('Keep at least one person in the total', 'error');
+  setWhoIncluded(who, !includedWho().includes(who)); // untick the last one and the other is ticked for you
   renderBudget();
 }
 
