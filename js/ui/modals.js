@@ -279,7 +279,7 @@ export function openChildModal(who, parentId, childId) {
   $("modal-title").textContent = isNew ? "Add Sub-expense" : "Edit Sub-expense";
   $("modal-title").className = "text-lg font-black uppercase tracking-tight text-violet-300";
   const settledNow = c ? isPaid(c.id, selectedKey) : false;
-  let body = `<p class="text-[11px] text-slate-500 mb-1">Under <span class="font-bold text-slate-300">${escapeHtml(parent.name)}</span></p>`;
+  let body = inputBlock("Group name (header)", "f-parent", parent.name, "text", 'placeholder="Group name"');
   body += inputBlock("Name", "f-name", c ? c.name : "", "text", 'placeholder="e.g. Electricity"');
   body += inputBlock("Estimate (₱)", "f-amount", c ? childAmt(c, selectedKey) : "", "text", 'inputmode="text" placeholder="0"');
   if (!isNew) {

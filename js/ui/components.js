@@ -1527,6 +1527,8 @@ export async function saveChildAndAddAnother() {
   if (parent) {
     if (!Array.isArray(parent.children)) parent.children = [];
     parent.children.push({ id: generateId(), name, amount });
+    const gn = ($("f-parent")?.value || "").trim();
+    if (gn) parent.name = gn;
   }
   await syncSet(appData);
   renderAll();
@@ -1642,6 +1644,8 @@ async function saveModalInner() {
     const parent = getItems(who, "expenses").find((x) => x.id === parentId);
     if (parent) {
       if (!Array.isArray(parent.children)) parent.children = [];
+      const gn = ($("f-parent")?.value || "").trim();
+      if (gn) parent.name = gn; // rename the group header
       if (id) {
         const c = parent.children.find((x) => x.id === id);
         if (c) {
