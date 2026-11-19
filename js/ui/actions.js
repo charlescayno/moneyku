@@ -21,27 +21,20 @@ export function updateHeader() {
 export function renderMonthStrip() {
   renderMonthNav();
   renderMonthBanner();
-  scrollChipIntoView();
 }
 
 export function renderMonthNav() {
-  const strip = $("month-strip");
-  if (!strip) return;
+  const label = $("mn-label");
+  if (!label) return;
   const tl = timeline();
-  const sel = getSelectedKey(), nowK = currentKey();
-  const keepScroll = strip.scrollLeft;
-  const byYear = [];
-  for (const k of tl) {
-    const y = keyParts(k).y;
-    if (!byYear.length || byYear[byYear.length - 1].y !== y) byYear.push({ y, keys: [] });
-    byYear[byYear.length - 1].keys.push(k);
-  }
-  strip.innerHTML = byYear.map((g, i) => `<div class="mstrip-year${i ? " mstrip-sep" : ""}">
-      <p class="mstrip-y">${g.y}</p>
-      <div class="mstrip-months">${g.keys.map((k) => `<button type="button" role="tab" aria-selected="${k === sel}" data-action="selectMonth" data-arg0="${k}" data-k="${k}" class="mstrip-m${k === sel ? " on" : ""}${k === nowK ? " now" : ""}" style="text-transform:lowercase">${MONTHS_SHORT[keyParts(k).m]}</button>`).join("")}</div>
-    </div>`).join("");
-  strip.scrollLeft = keepScroll;
+  const k = getSelectedKey();
+  label.firstChild.textContent = `${monthName(k)} ${keyParts(k).y}`;
+  $("mn-prev").disabled = !tl.length || k <= tl[0];
+  $("mn-next").disabled = !tl.length || k >= tl[tl.length - 1];
+  const nowK = currentKey();
+  $("mn-today").classList.toggle("hidden", k === nowK || !tl.includes(nowK));
 }
+
 export function scrollChipIntoView() {
   const selectedKey = getSelectedKey();
   const btn = $("month-strip")?.querySelector(`[data-k="${selectedKey}"]`);

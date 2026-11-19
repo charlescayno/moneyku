@@ -18,22 +18,25 @@ async (sel) => {
   for (const k of sel) {
     c.selectMonth(k); await w(1800);
     const nav = document.getElementById('month-nav'), body = document.getElementById('budget-body');
-    const strip = document.getElementById('month-strip'), chip = strip && strip.querySelector('[data-k="'+k+'"]');
-    const nr = R(nav), br0 = R(body);
-    if (!strip || !chip) { issues.push(k+': month strip missing/selected chip not found'); continue; }
+    const parts = ['mn-prev','mn-label','mn-next','mn-today'].map(i=>document.getElementById(i)).filter(e=>e && !e.classList.contains('hidden'));
+    for (let i=0;i<parts.length;i++) for (let j=i+1;j<parts.length;j++) if (hit(R(parts[i]),R(parts[j]))) issues.push(k+': nav overlap '+parts[i].id+'/'+parts[j].id);
+    const nr = R(nav), br0 = R(body);\r
     if (nr.bottom > br0.top + 0.5) issues.push(k+': nav overlaps budget body');
-    const sr = R(strip), cr = R(chip);
-    if (sr.right > innerWidth+0.5 || sr.left < -0.5) issues.push(k+': month strip off-screen');
-    if (cr.left < sr.left-1 || cr.right > sr.right+1) issues.push(k+': selected month not visible in strip');
-    if (!chip.classList.contains('on')) issues.push(k+': selected month not highlighted');
+    for (const p of parts) if (R(p).right > innerWidth+0.5 || R(p).left < -0.5) issues.push(k+': '+p.id+' off-screen');
+    const lab = document.getElementById('mn-label'); if (lab.scrollWidth > lab.clientWidth+1) issues.push(k+': label text clipped');
   }
-  const tap = [...document.querySelectorAll('[data-action=histUndo],[data-action=openHistory],[data-action=openSearch],[data-action=openSettings],#more-overlay [data-action=closeMore],#more-overlay [data-action=signOut],#density-toggle-btn')].filter(e => R(e).width > 0);
+  const tap = [...document.querySelectorAll('[data-action=histUndo],[data-action=openHistory],[data-action=openSearch],[data-action=openSettings],#more-overlay [data-action=closeMore],#more-overlay [data-action=signOut],#density-toggle-btn,#mn-prev,#mn-next,#mn-label,#mn-today')].filter(e => R(e).width > 0);
   for (const e of tap) { const r = R(e); const mt = innerWidth >= 360 ? 43.5 : 31; if (r.width < mt || r.height < mt) issues.push('tap target < 44px: ' + (e.id || e.dataset.action) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); if (r.right > innerWidth + 0.5 || r.left < -0.5) issues.push('off-screen: ' + (e.id || e.dataset.action)); }
   const hdr = tap.filter(e => e.dataset.action);
   for (let i = 0; i < hdr.length; i++) for (let j = i + 1; j < hdr.length; j++) if (hit(R(hdr[i]), R(hdr[j]))) issues.push('header buttons overlap: ' + hdr[i].dataset.action + '/' + hdr[j].dataset.action);
   const so = document.querySelector('#more-overlay [data-action=signOut]'), cl = document.querySelector('#more-overlay [data-action=closeMore]');
   if (so && cl && R(so).width > 0 && Math.abs(R(cl).left - R(so).right) < 12) issues.push('overview sign-out too close to close button');
- {
+  document.getElementById('mn-label').click(); await w(500);
+  const mp = document.getElementById('month-picker'), mcs = getComputedStyle(mp);
+  if (!mp.classList.contains('open') || mcs.display === 'none' || mcs.opacity !== '1' || R(mp).height < 100) issues.push('month picker does not open/show');
+  if (!document.querySelector('#month-picker [data-action=jumpYear]')) issues.push('picker has no year pills');
+  c.toggleMonthPicker();
+  {
     const lay = await import('/js/ui/layout.js');
     st.setAppData({startMonth:'2026-01', items:{charlie:{income:[],expenses:[
       {id:'a',name:'Meralco electricity bill long name',amount:5852,recurring:true,start:'2026-01',dueDay:5,pm:'card'},
