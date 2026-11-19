@@ -62,9 +62,9 @@ export function renderMonthBanner() {
   }
   el.classList.remove("hidden");
   const label = `${monthName(selectedKey)} ${keyParts(selectedKey).y}`;
-  el.innerHTML = `<div class="flex items-center justify-between gap-2 py-2 pl-4 pr-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-    <span class="text-[11px] font-black uppercase tracking-wider text-amber-400">Viewing ${label}</span>
-    <button type="button" data-action="goToday" class="flex-shrink-0 flex items-center gap-1 h-8 px-3 rounded-lg bg-amber-500/20 text-amber-300 text-[11px] font-black uppercase tracking-wider"><span class="material-icons" style="font-size:14px">${cmpKey(selectedKey, nowK) > 0 ? "undo" : "redo"}</span>Back to ${monthShort(nowK)}</button>
+  el.innerHTML = `<div class="flex items-center justify-between gap-2 py-2 pl-4 pr-2 rounded-xl bg-indigo-500/10 border border-indigo-400/20">
+    <span class="text-[11px] font-black uppercase tracking-wider text-indigo-300">Viewing ${label}</span>
+    <button type="button" data-action="goToday" class="flex-shrink-0 flex items-center gap-1 h-8 px-3 rounded-lg bg-indigo-600 text-white text-[11px] font-black uppercase tracking-wider"><span class="material-icons" style="font-size:14px">${cmpKey(selectedKey, nowK) > 0 ? "undo" : "redo"}</span>Back to ${monthShort(nowK)}</button>
   </div>`;
 }
 
