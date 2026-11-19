@@ -15,7 +15,7 @@ export const MONTHS_SHORT = [
 // owner meta
 export const OWNERS = {
   charlie: { label: "Charles'", who: "charlie", accent: "blue", text: "text-blue-400", ring: "border-blue-500/20", grad: "from-blue-500 to-indigo-600" },
-  partner: { label: "Ynah's", who: "partner", accent: "teal", text: "text-teal-400", ring: "border-teal-500/20", grad: "from-teal-500 to-emerald-600" },
+  partner: { label: "Ynah's", who: "partner", accent: "teal", text: "text-ynah", ring: "border-ynah", grad: "ynah-grad" },
   debt: { label: "Debt Tracker", who: "debt", accent: "rose", text: "text-rose-400", ring: "border-rose-500/20", grad: "from-rose-500 to-pink-600" },
 };
 

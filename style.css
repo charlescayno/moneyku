@@ -1387,3 +1387,11 @@ html.app-ready.kb-open .fab-add {
 @supports (-webkit-touch-callout: none) {
   input, select, textarea { font-size: 16px !important; }
 }
+
+/* Ynah's accent colour */
+.text-ynah{color:#DFC5FE}
+.border-ynah{border-color:rgba(223,197,254,.45)}
+.ynah-grad{--tw-gradient-from:#DFC5FE;--tw-gradient-to:#DFC5FE;--tw-gradient-stops:#DFC5FE,#DFC5FE}
+.ynah-grad .text-white,.ynah-grad .text-white\/60,.ynah-grad .text-white\/40{color:#3b1f63}
+.ynah-grad .text-emerald-400{color:#047857}
+.ynah-grad .text-rose-400{color:#be123c}
