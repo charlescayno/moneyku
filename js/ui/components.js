@@ -1322,7 +1322,9 @@ export function recurringPaymentsCardHtml() {
       </div>
       <p class="text-xs font-black text-teal-300">${peso(totalMonthly)}</p>
     </summary>
-    <div class="p-2.5 pt-0 space-y-1">${rows || `<div class="text-center py-2 text-[10px] text-slate-500">No recurring payments for this month</div>`}</div>
+    <div class="p-2.5 pt-0 space-y-1">${rows || `<div class="text-center py-2 text-[10px] text-slate-500">No recurring payments for this month</div>`}
+      <button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" aria-label="Add recurring bill" class="w-full mt-1 py-2 rounded-lg border border-dashed border-teal-400/30 text-teal-300 flex items-center justify-center"><span class="material-icons" style="font-size:18px">add</span></button>
+    </div>
   </details>`;
 }
 
