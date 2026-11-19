@@ -219,13 +219,26 @@ export function cardOwed() {
   return cardOwedNow(); // { total, byMonth, any } from the card statements
 }
 
-export function realMoney() {
+// Per person: Charles (default) has the BPI Platinum card; the partner has only her own accounts.
+export function realMoney(who = "charlie") {
   const k = getSelectedKey();
   const t = monthTotals(k);
-  const cash = accountsTotal();
+  if (who === "partner") {
+    const cash = accountsTotal("partner");
+    const owed = { total: 0, byMonth: {}, any: false };
+    return { cash, owed, real: cash, afterAll: cash + t.pToReceive - t.pToPay, toReceive: t.pToReceive, toPay: t.pToPay };
+  }
+  const cash = accountsTotal("charlie");
   const owed = cardOwed();
   const real = cash - owed.total;
   // bills still to pay this month, minus the card part that is already subtracted above
-  const afterAll = real + t.toReceive - (t.toPay - (owed.byMonth[k] || 0));
-  return { cash, owed, real, afterAll, toReceive: t.toReceive };
+  const toPay = t.toPay - (owed.byMonth[k] || 0);
+  const afterAll = real + t.toReceive - toPay;
+  return { cash, owed, real, afterAll, toReceive: t.toReceive, toPay };
+}
+
+/** Real money of both people added together. */
+export function householdRealMoney() {
+  const c = realMoney("charlie"), p = realMoney("partner");
+  return { real: c.real + p.real, afterAll: c.afterAll + p.afterAll, cash: c.cash + p.cash };
 }

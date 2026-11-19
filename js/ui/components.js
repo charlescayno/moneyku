@@ -9,7 +9,7 @@ import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../
 import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
-import { budgetAlert, budgetBefore } from '../insights.js';
+import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
 import { lastMonthOneTimes } from '../extras.js';
 import { toast } from './core.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
@@ -453,6 +453,7 @@ function subtotalBlockHtml(title, v, titleCls, strong = false) {
         <div class="border-t border-white/10 mt-1.5 pt-1.5 space-y-0.5">
           ${subRow("Net (inflow &minus; outflow)", spSigned(v.net), netCls)}
           ${subRow("Cash &amp; bank", peso(v.cash), "text-slate-100")}
+          ${v.realMoney != null ? subRow("Real money", spSigned(v.realMoney), v.realMoney >= 0 ? "text-white" : "text-rose-400") : ""}
           ${Math.abs(v.debtNet) > 0.005 ? subRow("Debt net", spSigned(v.debtNet), v.debtNet >= 0 ? "text-indigo-300" : "text-orange-300") : ""}
           ${subRow(`Projected (${monthShort(getSelectedKey())})`, hide ? "••••••" : spSigned(v.projected), v.projected >= 0 ? "text-white" : "text-rose-400")}
         </div>
@@ -477,9 +478,9 @@ export function householdCardHtml() {
       <p class="text-xs font-black ${h.net >= 0 ? "text-emerald-400" : "text-rose-400"}">${sp(h.net)}</p>
     </summary>
     <div class="p-2.5 pt-0 space-y-2">
-      ${block(`Subtotal · ${OWNERS.charlie.label}`, h.charlie, OWNERS.charlie.text)}
-      ${block(`Subtotal · ${OWNERS.partner.label}`, h.partner, OWNERS.partner.text)}
-      ${block("Total (all)", h, "text-indigo-300", true)}
+      ${block(`Subtotal · ${OWNERS.charlie.label}`, { ...h.charlie, realMoney: realMoney("charlie").real }, OWNERS.charlie.text)}
+      ${block(`Subtotal · ${OWNERS.partner.label}`, { ...h.partner, realMoney: realMoney("partner").real }, OWNERS.partner.text)}
+      ${block("Total (all)", { ...h, realMoney: householdRealMoney().real }, "text-indigo-300", true)}
     </div>
   </details>`;
 }
@@ -554,7 +555,7 @@ export function personSectionHtml(who, includeDebt = true) {
       </div>
       ${who === "charlie" ? cardSectionHtml(k) : ""}
       ${debtSectionHtml}
-      ${who === "charlie" || who === "partner" ? `<div class="border-t border-white/[0.08] pt-2">${subtotalBlockHtml(`Subtotal · ${o.label}`, householdTotals(k)[who], o.text)}</div>` : ""}
+      ${who === "charlie" || who === "partner" ? `<div class="border-t border-white/[0.08] pt-2">${subtotalBlockHtml(`Subtotal · ${o.label}`, { ...householdTotals(k)[who], realMoney: realMoney(who).real }, o.text)}</div>` : ""}
     </div>
   </div>`;
 }

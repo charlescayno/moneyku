@@ -1,7 +1,7 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
-import { dueSoonCardHtml, realMoney } from '../insights.js';
+import { dueSoonCardHtml, householdRealMoney, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
 import { accountsCardHtml, debtTrackerCardHtml, fetchInvestmentRates, householdCardHtml, installmentsCardHtml, investmentsCardHtml, monthOverviewCardHtml, personSectionHtml, statsGridHtml } from './components.js';
 import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
@@ -22,7 +22,9 @@ export function renderBudget() {
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
 
   const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
-  const rm = realMoney();
+  const rm = realMoney("charlie");
+  const rmP = realMoney("partner");
+  const rmAll = householdRealMoney();
   // Future months: the projection already deducts every BPI Platinum bill due up to that month, i.e. it assumes they are paid in full. Say so.
   let cardNote = "";
   if (!hideProjected && cmpKey(k, currentKey()) > 0) {
@@ -70,14 +72,20 @@ export function renderBudget() {
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
       <details data-persist="kpi" class="group">
       <summary class="flex items-center justify-between cursor-pointer list-none select-none px-1">
-        <span class="text-[10px] font-bold text-slate-400">Real money <span class="text-xl font-black ${rm.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rm.real)}</span></span>
+        <span class="text-[10px] font-bold text-slate-400">Real money · all <span class="text-xl font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></span>
         <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
       </summary>
       <div class="mt-1.5 rounded-lg bg-black/20 px-2.5 py-1.5 space-y-1 text-[11px]">
+        <p class="text-[9px] font-black uppercase tracking-wider text-blue-300">${OWNERS.charlie.label} real money <span class="text-white normal-case text-[11px]">${sp(rm.real)}</span></p>
         <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rm.cash)}</span></div>
         ${rm.owed.total > 0 ? `<div class="flex justify-between"><span class="text-slate-400">BPI Platinum owed</span><span class="font-black text-rose-300">-${peso(rm.owed.total)}</span></div>
         ${owedBreak ? `<p class="text-[9px] text-slate-500 text-right">${owedBreak}</p>` : ""}` : ""}
         <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rm.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rm.afterAll)}</span></div>
+        <p class="text-[9px] font-black uppercase tracking-wider text-ynah border-t border-white/10 pt-1.5">${OWNERS.partner.label} real money <span class="text-white normal-case text-[11px]">${sp(rmP.real)}</span></p>
+        <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rmP.cash)}</span></div>
+        <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rmP.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rmP.afterAll)}</span></div>
+        <div class="flex justify-between border-t border-white/10 pt-1.5"><span class="font-bold text-slate-200">All: real money</span><span class="font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></div>
+        <div class="flex justify-between"><span class="font-bold text-slate-200">All: after remaining</span><span class="font-black ${rmAll.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rmAll.afterAll)}</span></div>
       </div>
       <details data-persist="kpi-how" class="group/h mt-1.5 rounded-lg bg-black/20">
         <summary class="flex items-center gap-1 px-2.5 py-1.5 cursor-pointer list-none select-none text-[11px] font-bold text-indigo-300"><span class="material-icons" style="font-size:14px">help_outline</span>How is this calculated?<span class="material-icons ml-auto transition-transform group-open/h:rotate-180" style="font-size:14px">expand_more</span></summary>
