@@ -1012,7 +1012,7 @@ export function statsGridHtml() {
     </div>`;
   return (
     cell("account_balance_wallet", "text-white/70", "Current Money", "text-white", peso(current)) +
-    cell("savings", savColor, "Savings", savColor, signedPeso(t.savings)) +
+    cell("savings", savColor, "Month surplus", savColor, signedPeso(t.savings)) +
     cell("south_west", "text-emerald-400", "To receive", "text-emerald-400", signedPeso(t.toReceive)) +
     cell("north_east", "text-rose-400", "To pay", "text-rose-400", signedPeso(-t.toPay))
   );

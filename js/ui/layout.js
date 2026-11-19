@@ -55,22 +55,26 @@ export function renderBudget() {
   // Chips in priority order: below zero, then stale balances, then the monthly change, then "all good".
   // Only the first shows on the card; the rest live in the details below.
   const projChips = [];
-  if (neg.all) projChips.push(projChip("bg-rose-500/20 text-rose-300", `Goes below zero in ${monthShort(neg.all)}`));
+  const shortAt = (m, w) => { const r = orows.find((x) => x.m === m); return r ? Math.max(0, -r[w].bal) : 0; }; // how much is missing in month m
+  if (neg.all) projChips.push(projChip("bg-rose-500/20 text-rose-300", `Short ${peso(shortAt(neg.all, "all"))} by end of ${monthShort(neg.all)} · top up or cut bills`));
   else if ((showC && neg.charlie) || (showP && neg.partner)) {
-    if (showC && neg.charlie) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.charlie.label} below zero in ${monthShort(neg.charlie)}`));
-    if (showP && neg.partner) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.partner.label} below zero in ${monthShort(neg.partner)}`));
+    if (showC && neg.charlie) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.charlie.label} short ${peso(shortAt(neg.charlie, "charlie"))} by end of ${monthShort(neg.charlie)}`));
+    if (showP && neg.partner) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.partner.label} short ${peso(shortAt(neg.partner, "partner"))} by end of ${monthShort(neg.partner)}`));
   }
   if (staleDays > 7) projChips.push(projChip("bg-amber-500/20 text-amber-200", `Oldest balance updated ${staleDays}d ago`));
   if (pj.delta != null && !hideProjected) projChips.push(projChip(pj.delta >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300", `${pj.delta >= 0 ? "+" : "-"}${peso(Math.abs(pj.delta))} vs prev. month`));
   if (!neg.all && !(showC && neg.charlie) && !(showP && neg.partner) && okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
   const ht = includedTotals(k);
   const current = ht.current;
+  const dRecv = (showC ? t.debtToReceive : 0) + (showP ? t.pDebtToReceive : 0), dPay = (showC ? t.debtToPay : 0) + (showP ? t.pDebtToPay : 0);
+  const toRecvAll = ht.toReceive + dRecv, toPayAll = ht.toPay + dPay; // same rule as the projection: debts included
   const savColor = ht.savings > 0.005 ? "text-emerald-400" : ht.savings < -0.005 ? "text-rose-400" : "text-amber-300";
 
   const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
   const rm = realMoney("charlie");
   const rmP = realMoney("partner");
   const rmAll = householdRealMoney();
+  const realDiffers = Math.abs(rmAll.real - current) > 0.005; // show "real money" only when it differs from current money
   // Future months: the projection already deducts every BPI Platinum bill due up to that month, i.e. it assumes they are paid in full. Say so.
   let cardNote = "";
   if (showC && !hideProjected && cmpKey(k, currentKey()) > 0) {
@@ -120,10 +124,9 @@ export function renderBudget() {
       <!-- Four tiles: icon + label above, value below -->
       <div class="grid grid-cols-2 gap-2">
         <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">account_balance_wallet</span>current money</span><span class="text-base font-extrabold tabular-nums truncate ${onlyCls || "text-white"}">${peso(current)}</span></div>
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">savings</span>savings</span><span class="text-base font-extrabold tabular-nums truncate ${savColor}">${signedPeso(ht.savings)}</span></div>
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">south_west</span>to receive</span><span class="text-base font-extrabold tabular-nums truncate text-emerald-400">${signedPeso(ht.toReceive)}</span></div>
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="text-base font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-ht.toPay)}</span></div>
-        ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `<div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2 flex items-center justify-between col-span-2"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">swap_horiz</span>debt net</span><span class="text-base font-extrabold tabular-nums ${(t.debtToReceive - t.debtToPay) >= 0 ? 'text-indigo-300' : 'text-orange-300'}">${signedPeso(t.debtToReceive - t.debtToPay)}</span></div>` : ''}
+        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">savings</span>month surplus</span><span class="text-base font-extrabold tabular-nums truncate ${savColor}">${signedPeso(ht.savings)}</span></div>
+        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">south_west</span>to receive</span><span class="text-base font-extrabold tabular-nums truncate text-emerald-400">${signedPeso(toRecvAll)}</span></div>
+        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="text-base font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-toPayAll)}</span></div>
       </div>
       ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
       <details data-persist="proj-details" class="group/pd">
@@ -131,7 +134,7 @@ export function renderBudget() {
           <span class="material-icons transition-transform" style="font-size:15px">chevron_right</span>How is this made up?
         </summary>
         <div class="space-y-1.5 pt-1 pl-1">
-          <p class="text-[11px] text-slate-300 leading-snug">${hideProjected ? "Cash &amp; pending hidden" : `Cash <b class="text-white">${peso(pj.cash)}</b> + to receive <b class="text-emerald-300">${peso(pj.inc)}</b> &minus; to pay <b class="text-rose-300">${peso(pj.out)}</b>`}</p>
+          <p class="text-[11px] text-slate-300 leading-snug">${hideProjected ? "Cash &amp; pending hidden" : `Cash <b class="text-white">${peso(pj.cash)}</b> + to receive <b class="text-emerald-300">${peso(pj.inc)}</b> &minus; to pay <b class="text-rose-300">${peso(pj.out)}</b> = <b class="${projected >= 0 ? "text-white" : "text-rose-300"}">${sp(projected)}</b>`}</p>
           ${hideProjected ? "" : `<button type="button" data-action="openOutlook" data-arg0="all" data-arg1="cons" class="text-left text-[11px] text-slate-300 leading-snug">Worst case (recurring income only): <b class="${worstCase >= 0 ? "text-white" : "text-rose-300"}">${sp(worstCase)}</b> <span class="text-indigo-300 font-bold">See why &rsaquo;</span></button>`}
           ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
         </div>
@@ -139,7 +142,7 @@ export function renderBudget() {
       ${cardNote}
 
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
-      <details data-persist="kpi" class="group">
+      ${realDiffers ? `<details data-persist="kpi" class="group">
       <summary class="flex flex-wrap items-center justify-between gap-y-1 cursor-pointer list-none select-none px-1 pt-2 border-t border-white/5">
         <span class="text-[11px] font-bold text-slate-400 flex items-baseline gap-2">Real money · ${showC && showP ? "all" : OWNERS[showC ? "charlie" : "partner"].label} <span class="text-base font-extrabold tabular-nums ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></span>
         <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
@@ -153,14 +156,14 @@ export function renderBudget() {
         <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rm.cash)}</span></div>
         ${rm.owed.total > 0 ? `<div class="flex justify-between"><span class="text-slate-400">BPI Platinum owed</span><span class="font-black text-rose-300">-${peso(rm.owed.total)}</span></div>
         ${owedBreak ? `<p class="text-[9px] text-slate-500 text-right">${owedBreak}</p>` : ""}` : ""}
-        <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rm.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rm.afterAll)}</span></div>` : ""}
+        ` : ""}
         ${showP ? `<p class="text-[9px] font-black uppercase tracking-wider text-ynah ${showC ? "border-t border-white/10 pt-1.5" : ""}">${OWNERS.partner.label} real money <span class="text-white normal-case text-[11px]">${sp(rmP.real)}</span></p>
         <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rmP.cash)}</span></div>
-        <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rmP.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rmP.afterAll)}</span></div>` : ""}
+        ` : ""}
         ${showC && showP ? `<div class="flex justify-between border-t border-white/10 pt-1.5"><span class="font-bold text-slate-200">All: real money</span><span class="font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></div>
-        <div class="flex justify-between"><span class="font-bold text-slate-200">All: after remaining</span><span class="font-black ${rmAll.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rmAll.afterAll)}</span></div>` : ""}
+        ` : ""}
       </div>
-      </details>
+      </details>` : ""}
     </div>
   `;
 
