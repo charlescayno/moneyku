@@ -4,7 +4,7 @@
 // =============================
 import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso } from "./utils.js";
 import { exportData } from "./ui/actions.js";
-import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, runningFundsAt, setAppData, timeline } from "./state.js";
+import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, outlookRows, runningFundsAt, setAppData, timeline } from "./state.js";
 import { normalize, syncSet } from "./firebase.js";
 import { addItemData } from "./itemOps.js";
 import { CARD_METHOD, charges, statement } from "./card.js";
@@ -208,7 +208,7 @@ export function openExport() {
     </div>
     <div class="space-y-1.5">
       ${row("exportMonthCsv", "table_view", "Selected months", "Income and expenses for the months above (CSV)")}
-      ${row("exportOutlookCsv", "insights", "12-month outlook", "Per-month income, spending, net and balance. One month selected = 12 months from it (CSV)")}
+      ${row("exportOutlookCsv", "insights", "12-month outlook", "Per-month inflow, outflow, net and balance for everyone, Charles and Ynah. One month selected = 12 months from it (CSV)")}
       ${row("exportItemsCsv", "list_alt", "All income &amp; expenses", "Every item with dates, amounts and category (CSV)")}
       ${row("exportCardCsv", "credit_card", "BPI Platinum charges", "Statements due in the months above, with their charges (CSV)")}
       ${row("exportData", "backup", "Full backup", "Everything, to restore later (JSON)")}
@@ -220,12 +220,12 @@ export function exportOutlookCsv() {
   const { from, to, keys } = exportRange();
   const list = [];
   if (from === to) { for (let i = 0; i < 13; i++) list.push(addMonths(from, i)); } else list.push(...keys);
-  const rows = [["Month", "Income", "Expenses", "Net", "Projected balance"]];
-  for (const m of list) {
-    if (!timeline().includes(m)) continue;
-    const t = monthTotals(m);
-    const inc = t.income + t.dI, out = t.expenses + t.dE;
-    rows.push([m, inc.toFixed(2), out.toFixed(2), (inc - out).toFixed(2), runningFundsAt(m).toFixed(2)]);
+  // Inflow/Outflow = what is still to come that month, so Net is the change in the projected balance
+  const rows = [["Month", "Inflow", "Outflow", "Net", "Projected balance (all)", "Charles inflow", "Charles outflow", "Charles net", "Charles balance", "Ynah inflow", "Ynah outflow", "Ynah net", "Ynah balance"]];
+  const f = (n) => n.toFixed(2);
+  for (const r of outlookRows(list.filter((m) => timeline().includes(m)))) {
+    const { all, charlie: c, partner: p } = r;
+    rows.push([r.m, f(all.inc), f(all.out), f(all.net), f(all.bal), f(c.inc), f(c.out), f(c.net), f(c.bal), f(p.inc), f(p.out), f(p.net), f(p.bal)]);
   }
   downloadCsv(`moneyku_outlook_${from}${from === to ? "" : "_to_" + to}.csv`, rows);
 }

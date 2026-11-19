@@ -29,6 +29,7 @@ export {
   acctGroupHtml,
   accountsCardHtml,
   setAccountsView,
+  setOutlookWho,
   getAccountsView,
   investmentsCardHtml,
   fetchInvestmentRates,

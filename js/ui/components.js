@@ -6,7 +6,7 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
@@ -1049,6 +1049,21 @@ export function installmentsCardHtml() {
 }
 
 /** 13-month outlook (this month + 12): income, spending, net and balance per month, with plain-language findings. */
+const OUTLOOK_KEY = "moneyku_outlook_who";
+export function getOutlookWho() {
+  try { const v = localStorage.getItem(OUTLOOK_KEY); return v === "charlie" || v === "partner" ? v : "all"; } catch (e) { return "all"; }
+}
+// Switch the outlook between everyone, Charles' and Ynah's and redraw just that card
+export function setOutlookWho(w) {
+  try { localStorage.setItem(OUTLOOK_KEY, w === "charlie" || w === "partner" ? w : "all"); } catch (e) { /* ignore */ }
+  const el = document.querySelector('details[data-persist="outlook"]');
+  if (!el) return;
+  const tmp = document.createElement("div");
+  tmp.innerHTML = yearOutlookCardHtml();
+  const next = tmp.firstElementChild;
+  if (next) { next.open = el.open; el.replaceWith(next); }
+}
+
 export function yearOutlookCardHtml() {
   const start = currentKey();
   const tl = timeline();
@@ -1057,25 +1072,28 @@ export function yearOutlookCardHtml() {
   for (let i = 0; i < 13; i++) { const m = addMonths(start, i); if (tl.includes(m)) keys.push(m); }
   if (!keys.length) return "";
   const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  const view = getOutlookWho(); // "all" | "charlie" | "partner"
+  const viewLabel = view === "all" ? "Everyone" : OWNERS[view].label;
+  const all = outlookRows(keys);
   let totIn = 0, totOut = 0, low = null, neg = [], peak = null;
-  const rows = keys.map((m) => {
-    const t = monthTotals(m);
-    const inc = t.income + t.dI, out = t.expenses + t.dE, net = inc - out, bal = runningFundsAt(m);
+  const rows = all.map((r) => {
+    const { inc, out, net, bal } = r[view];
     totIn += inc; totOut += out;
-    if (!low || bal < low.bal) low = { m, bal };
-    if (bal < 0) neg.push(m);
-    if (!peak || out > peak.out) peak = { m, out };
-    return { m, inc, out, net, bal };
+    if (!low || bal < low.bal) low = { m: r.m, bal };
+    if (bal < 0) neg.push(r.m);
+    if (!peak || out > peak.out) peak = { m: r.m, out };
+    return { m: r.m, inc, out, net, bal, c: r.charlie.bal, p: r.partner.bal };
   });
   const last = keys[keys.length - 1];
-  const insts = allInstallments().filter((i) => cmpKey(i.end, start) >= 0 && cmpKey(i.end, last) <= 0).sort((a, b) => cmpKey(a.end, b.end));
+  const instOwners = view === "all" ? ["charlie", "debt", "partner", "pdebt"] : view === "charlie" ? ["charlie", "debt"] : ["partner", "pdebt"];
+  const insts = instOwners.flatMap((w) => getItems(w, "expenses").filter((it) => it.recurring && it.end)).filter((i) => cmpKey(i.end, start) >= 0 && cmpKey(i.end, last) <= 0).sort((a, b) => cmpKey(a.end, b.end));
   const freed = insts.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const net = totIn - totOut;
   const end = rows[rows.length - 1].bal;
   const maxBal = Math.max(1, ...rows.map((r) => Math.abs(r.bal)));
   const finding = (icon, tone, html) => `<div class="flex items-start gap-2 text-[11px] leading-snug"><span class="material-icons ${tone}" style="font-size:15px;margin-top:1px">${icon}</span><p class="text-slate-300">${html}</p></div>`;
   const finds = [
-    finding(net >= 0 ? "trending_up" : "trending_down", net >= 0 ? "text-emerald-400" : "text-rose-400", `Over ${keys.length} months you take in <b class="text-white">${peso(totIn)}</b> and spend <b class="text-white">${peso(totOut)}</b>: net <b class="${net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(net)}</b> (${totIn > 0 ? Math.round((net / totIn) * 100) : 0}% of income).`),
+    finding(net >= 0 ? "trending_up" : "trending_down", net >= 0 ? "text-emerald-400" : "text-rose-400", `${viewLabel}: over ${keys.length} months <b class="text-white">${peso(totIn)}</b> still comes in and <b class="text-white">${peso(totOut)}</b> goes out: net <b class="${net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(net)}</b> (${totIn > 0 ? Math.round((net / totIn) * 100) : 0}% of income).`),
     finding("flag", "text-indigo-300", `Projected balance goes from <b class="text-white">${sp(rows[0].bal)}</b> in ${monthShort(rows[0].m)} to <b class="text-white">${sp(end)}</b> in ${monthShort(last)}.`),
     neg.length
       ? finding("warning", "text-rose-400", `Balance dips below zero in <b class="text-rose-300">${neg.length} month${neg.length === 1 ? "" : "s"}</b> (${neg.slice(0, 4).map(monthShort).join(", ")}${neg.length > 4 ? "…" : ""}). Lowest: <b class="text-rose-300">${sp(low.bal)}</b> in ${monthShort(low.m)}.`)
@@ -1083,29 +1101,46 @@ export function yearOutlookCardHtml() {
     finding("local_fire_department", "text-amber-300", `Heaviest month: <b class="text-white">${monthShort(peak.m)}</b> with ${peso(peak.out)} going out.`),
     insts.length ? finding("hourglass_bottom", "text-fuchsia-300", `${insts.length} installment${insts.length === 1 ? "" : "s"} finish in this window (${insts.slice(0, 4).map((i) => `${escapeHtml(i.name)} ${monthShort(i.end)}`).join(", ")}${insts.length > 4 ? "…" : ""}), freeing about <b class="text-white">${peso(freed)}</b> a month.`) : "",
   ].join("");
+  // In the everyone view, also say what happens to each person's own balance
+  const personFind = (w) => {
+    const bals = rows.map((r) => ({ m: r.m, bal: w === "charlie" ? r.c : r.p }));
+    const lo = bals.reduce((a, b) => (b.bal < a.bal ? b : a), bals[0]);
+    const ng = bals.filter((b) => b.bal < 0).map((b) => b.m);
+    const name = OWNERS[w].label;
+    return ng.length
+      ? finding("person", "text-rose-400", `${name} balance dips below zero in <b class="text-rose-300">${ng.length} month${ng.length === 1 ? "" : "s"}</b> (${ng.slice(0, 4).map(monthShort).join(", ")}${ng.length > 4 ? "…" : ""}). Lowest: <b class="text-rose-300">${sp(lo.bal)}</b> in ${monthShort(lo.m)}.`)
+      : finding("person", "text-emerald-400", `${name} balance stays above zero. Lowest: <b class="text-white">${sp(lo.bal)}</b> in ${monthShort(lo.m)}.`);
+  };
+  const personFinds = view === "all" ? personFind("charlie") + personFind("partner") : "";
+  const toggle = ["all", "charlie", "partner"].map((w) => {
+    const on = w === view;
+    return `<button type="button" data-action="setOutlookWho" data-arg0="${w}" aria-pressed="${on}" class="flex-1 py-1.5 rounded-lg text-[11px] font-black ${on ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${w === "all" ? "All" : OWNERS[w].label}</button>`;
+  }).join("");
   const tr = rows.map((r) => `<div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 items-center py-1 text-[10px] font-bold border-t border-white/[0.04] ${r.m === start ? "bg-indigo-500/10 rounded" : ""}">
       <span class="text-slate-300">${monthShort(r.m)}</span>
       <span class="text-right text-emerald-300">${peso(r.inc)}</span>
       <span class="text-right text-slate-300">${peso(r.out)}</span>
       <span class="text-right ${r.net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(r.net)}</span>
       <span class="text-right font-black ${r.bal >= 0 ? "text-white" : "text-rose-400"}">${sp(r.bal)}</span></div>
+    ${view === "all" ? `<div class="flex justify-end gap-3 pb-0.5 text-[9px] font-bold"><span class="${r.c >= 0 ? "text-blue-300" : "text-rose-400"}">${OWNERS.charlie.label} ${sp(r.c)}</span><span class="${r.p >= 0 ? "text-ynah" : "text-rose-400"}">${OWNERS.partner.label} ${sp(r.p)}</span></div>` : ""}
     <div class="h-[3px] rounded-full bg-slate-800 mb-0.5"><div class="h-full rounded-full ${r.bal >= 0 ? "bg-indigo-400/70" : "bg-rose-500/70"}" style="width:${Math.max(2, Math.round((Math.abs(r.bal) / maxBal) * 100))}%"></div></div>`).join("");
   return `<details open data-persist="outlook" class="glass-card rounded-xl overflow-hidden w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">insights</span></div>
-        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">12-month outlook</h3><p class="text-[10px] text-slate-400">${monthShort(keys[0])} &rarr; ${monthShort(last)}</p></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">12-month outlook</h3><p class="text-[10px] text-slate-400">${viewLabel} · ${monthShort(keys[0])} &rarr; ${monthShort(last)}</p></div>
       </div>
       <p class="text-xs font-black ${end >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(end)}</p>
     </summary>
     <div class="px-3 pb-3 space-y-2.5">
-      <div class="space-y-1.5">${finds}</div>
+      <div class="flex gap-1.5">${toggle}</div>
+      <div class="space-y-1.5">${finds}${personFinds}</div>
       <div class="rounded-lg bg-black/20 px-2 py-1.5">
         <div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide text-slate-500"><span>Month</span><span class="text-right">In</span><span class="text-right">Out</span><span class="text-right">Net</span><span class="text-right">Balance</span></div>
         ${tr}
       </div>
       <button type="button" data-action="exportOutlookCsv" class="w-full py-2 text-[11px] font-bold text-indigo-300 rounded-lg bg-slate-800/60 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">download</span>Export outlook (CSV)</button>
-      <p class="text-[10px] text-slate-500 leading-snug">Uses everything currently planned: recurring income and bills, installments, debts you are owed, and each BPI Platinum bill in the month it falls due. One-time items you have not added yet are not included.</p>
+      <p class="text-[10px] text-slate-500 leading-snug">In and Out are what is still to come: this month only counts what is not yet received or paid, later months count the full plan. So each month's Net is exactly the change in Balance. Includes recurring income and bills, installments, both debt trackers and Charles' BPI Platinum bill in the month it falls due. One-time items you have not added yet are not included.</p>
     </div>
   </details>`;
 }

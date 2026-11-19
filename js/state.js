@@ -282,6 +282,27 @@ export function runningFundsAt(k, who = "charlie") {
   return bal;
 }
 
+/**
+ * Money still to come in and go out in month m for "charlie", "partner" or "all" (debt trackers included).
+ * It is the same pending amount runningFundsAt adds each month, so net equals the change in balance.
+ */
+export function monthFlow(m, who = "all") {
+  const t = monthTotals(m);
+  const c = { inc: t.toReceive + t.debtToReceive, out: t.toPay + t.debtToPay };
+  const p = { inc: t.pToReceive + t.pDebtToReceive, out: t.pToPay + t.pDebtToPay };
+  const f = who === "partner" ? p : who === "charlie" ? c : { inc: c.inc + p.inc, out: c.out + p.out };
+  return { inc: f.inc, out: f.out, net: f.inc - f.out };
+}
+
+/** Per-month outlook rows for each view: { m, charlie, partner, all }, each { inc, out, net, bal }. */
+export function outlookRows(keys) {
+  return keys.map((m) => {
+    const c = { ...monthFlow(m, "charlie"), bal: runningFundsAt(m, "charlie") };
+    const p = { ...monthFlow(m, "partner"), bal: runningFundsAt(m, "partner") };
+    return { m, charlie: c, partner: p, all: { inc: c.inc + p.inc, out: c.out + p.out, net: c.net + p.net, bal: c.bal + p.bal } };
+  });
+}
+
 /** Overall projection: Charles' projected funds plus his partner's. */
 export function householdProjectedAt(k) {
   return runningFundsAt(k, "charlie") + runningFundsAt(k, "partner");

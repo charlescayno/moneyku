@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeData } from "./setup.mjs";
 import { mondaysInMonth } from "../js/utils.js";
-import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals, householdTotals, accountsTotal, runningFundsAt, householdProjectedAt } from "../js/state.js";
+import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals, householdTotals, accountsTotal, runningFundsAt, householdProjectedAt, outlookRows } from "../js/state.js";
 
 test("mondaysInMonth counts 4 or 5 Mondays", () => {
   assert.equal(mondaysInMonth("2026-12"), 4);
@@ -98,6 +98,16 @@ test("partner items stay out of Charles' totals; household combines both", () =>
   const pj = (w) => runningFundsAt(cur, w);
   assert.equal(pj("partner"), 400 + (30000 - 5000) + 700); // her cash + her income - bills + debts owed to her
   assert.equal(householdProjectedAt(cur), pj("charlie") + pj("partner"));
+  // Outlook: each month's net equals the change in projected balance, per person and for all
+  const keys = [cur, addMonths(cur, 1), addMonths(cur, 2)];
+  const rowsO = outlookRows(keys);
+  for (const w of ["charlie", "partner", "all"]) {
+    assert.equal(Math.round(rowsO[0][w].bal * 100), Math.round((w === "all" ? accountsTotal() + accountsTotal("partner") : accountsTotal(w)) * 100 + rowsO[0][w].net * 100));
+    for (let i = 1; i < rowsO.length; i++) {
+      assert.equal(Math.round((rowsO[i][w].bal - rowsO[i - 1][w].bal) * 100), Math.round(rowsO[i][w].net * 100));
+    }
+  }
+  assert.equal(rowsO[1].all.bal, rowsO[1].charlie.bal + rowsO[1].partner.bal);
   assert.equal(accountsTotal(), 1000);
   assert.equal(accountsTotal("partner"), 400);
   assert.equal(h.cash, 1400);
@@ -105,7 +115,7 @@ test("partner items stay out of Charles' totals; household combines both", () =>
   assert.equal(h.charlie.income + h.partner.income, h.income);
 });
 
-import { stepKey, yearStepKey, currentKey } from "../js/utils.js";
+import { stepKey, yearStepKey, currentKey, addMonths } from "../js/utils.js";
 test("stepKey clamps and steps", () => {
   const tl = ["2026-10", "2026-11", "2026-12", "2027-01"];
   assert.equal(stepKey(tl, "2026-11", 1), "2026-12");
