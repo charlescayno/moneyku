@@ -1439,3 +1439,8 @@ details[data-persist="outlook-more"][open] > summary .material-icons { transform
 /* The explain breakdown is opened from the (i) in the card header; closed it takes no room */
 details[data-persist=proj-details]:not([open]) { margin-top: -0.75rem; }
 
+
+/* Debt tracker header chevron (outer details cannot use the group variant, it would rotate the inner ones) */
+details[open] > summary > div > .dt-chev { transform: rotate(90deg); }
+details > summary > div > .dt-chev { transition: transform .15s; }
+

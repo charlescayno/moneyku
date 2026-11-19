@@ -381,44 +381,43 @@ export function debtTrackerCardHtml(who = "debt") {
   const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", who);
   const dO = OWNERS[who];
 
+  const hdrStyle = (rgb) => `background:rgba(${rgb},.10);border-radius:8px;padding:7px 8px`;
+  const lbl = (txt) => `<p class="font-black uppercase tracking-[0.12em] text-slate-400" style="font-size:11px">${txt}</p>`;
+  const chev = `<span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>`;
+
   return `
-    <details open data-persist="debts${isP ? "-p" : ""}" class="glass-card rounded-xl border ${isP ? "border-ynah" : "border-rose-500/20"} overflow-hidden w-full flex-shrink-0">
-      <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${isP ? "ynah-grad" : "from-rose-500 to-pink-600"} flex items-center justify-center flex-shrink-0 shadow-sm">
-            <span class="material-icons text-white" style="font-size:14px">handshake</span>
-          </div>
-          <div>
-            <h4 class="text-xs font-black uppercase tracking-wider text-white">${isP ? OWNERS.partner.label + " " : ""}Debt Tracker</h4>
-            <p class="text-[8px] text-slate-400">Owed to me &amp; owe others</p>
+    <details open data-persist="debts${isP ? "-p" : ""}" class="w-full flex-shrink-0">
+      <summary class="flex items-center justify-between cursor-pointer list-none select-none" style="${hdrStyle("99,102,241")}">
+        <div class="flex items-center gap-1">
+          <span class="material-icons text-slate-500 dt-chev" style="font-size:12px">chevron_right</span>
+          <div class="flex items-baseline gap-1.5">
+            ${lbl((isP ? OWNERS.partner.label + " " : "") + "Debt Tracker")}
           </div>
         </div>
-        <div class="text-right">
-          <p class="text-[10px] font-black text-rose-400">${peso(debtIncTot)} <span class="text-slate-500 font-normal">/</span> ${peso(debtExpTot)}</p>
-        </div>
+        <p class="font-bold" style="font-size:14px"><span class="text-emerald-400">${peso(debtIncTot)}</span> <span class="text-slate-500 font-normal">/</span> <span class="text-rose-400">${peso(debtExpTot)}</span></p>
       </summary>
-      <div class="p-2.5 pt-1 space-y-2 bg-slate-950/40 border-t border-white/[0.04]">
+      <div class="mt-2">
         <details open class="group">
-          <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+          <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("16,185,129")}">
             <div class="flex items-center gap-1">
-              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
+              ${chev}
               <div class="flex items-baseline gap-1.5">
-                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">Owed To Me</p>
-                <span class="text-[11px] font-bold text-emerald-400">${peso(debtIncTot)}</span>
+                ${lbl("Owed To Me")}
+                <span class="font-bold text-emerald-400" style="font-size:14px">${peso(debtIncTot)}</span>
               </div>
             </div>
             <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
           </summary>
           <div class="space-y-0.5 mt-1">${debtIncHtml}</div>
         </details>
-        <div class="border-t border-white/[0.04] pt-1.5">
+        <div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
           <details open class="group">
-            <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+            <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("244,63,94")}">
               <div class="flex items-center gap-1">
-                <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
+                ${chev}
                 <div class="flex items-baseline gap-1.5">
-                  <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">I Owe</p>
-                  <span class="text-[11px] font-bold text-rose-400">${peso(debtExpTot)}</span>
+                  ${lbl("I Owe")}
+                  <span class="font-bold text-rose-400" style="font-size:14px">${peso(debtExpTot)}</span>
                 </div>
               </div>
               <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
@@ -502,7 +501,7 @@ export function personSectionHtml(who, includeDebt = true) {
 
   let debtSectionHtml = "";
   if ((who === "charlie" || who === "partner") && includeDebt) {
-    debtSectionHtml = `<div class="border-t border-white/[0.08] pt-2 mt-1">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
+    debtSectionHtml = `<div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
   }
 
   return `<div class="glass-card rounded-xl overflow-hidden border ${o.ring} w-full flex flex-col">
