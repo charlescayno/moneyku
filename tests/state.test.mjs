@@ -144,3 +144,14 @@ test("yearStepKey keeps month, clamps at ends", () => {
   assert.equal(yearStepKey(tl, "2026-11", 1), "2027-12");
   assert.equal(yearStepKey(tl, "2027-10", 1), "2027-12");
 });
+
+test("excluded items stay in the list but are left out of totals", () => {
+  const d = makeData();
+  d.items.charlie.expenses.push({ id: "x", name: "Household", amount: 1000, recurring: true, start: "2026-08" }, { id: "y", name: "Rent", amount: 500, recurring: true, start: "2026-08" });
+  setAppData(d);
+  assert.equal(monthTotals("2026-09").cE, 1500);
+  d.items.charlie.expenses[0].excluded = true;
+  setAppData(d);
+  assert.equal(monthTotals("2026-09").cE, 500);
+  assert.equal(monthTotals("2026-09").toPay, 500);
+});

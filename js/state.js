@@ -179,6 +179,7 @@ export function itemTotal(it, k) {
 }
 
 export function itemAmts(it, k) {
+  if (it.excluded) return { total: 0, paid: 0 }; // switched off: kept in the list, left out of every total
   const kids = getKids(it, k);
   if (!kids.length) { 
     const a = itemTotal(it, k); 

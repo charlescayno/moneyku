@@ -163,6 +163,16 @@ export function openItemModal(who, kind, id, presetDay) {
     </button>
   </div>`;
 
+  if (kind === "expenses") {
+    const incl = !(it && it.excluded);
+    body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
+    <div><p class="text-sm font-bold text-white">Include in computation</p><p class="text-[10px] text-slate-500">Off = shown in the list but left out of totals &amp; projections</p></div>
+    <button type="button" id="f-include" data-on="${incl}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${incl ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
+      <span class="absolute top-1 ${incl ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span>
+    </button>
+  </div>`;
+  }
+
   let lastPm = "cash";
   try { lastPm = localStorage.getItem("moneyku_last_pm") || "cash"; } catch { /* ignore */ }
   const knownPm = (id) => id === "cash" || [...CREDIT_CARD_METHODS, ...ACCOUNT_PAYMENT_METHODS].some((c) => c.id === id);

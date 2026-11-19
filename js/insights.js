@@ -50,7 +50,7 @@ export function dueSoonCardHtml(owner = "charlie") {
   for (const who of isP ? ["partner", "pdebt"] : ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
       const dd = dueDayFor(it);
-      if (dd == null) continue;
+      if (dd == null || it.excluded) continue;
       if (itemActiveIn(it, k) && unpaid(it, k)) {
         const diff = Math.min(dd, dim) - today;
         if (diff <= 7) rows.push({ who, it, diff, amt: itemTotal(it, k) });

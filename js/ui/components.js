@@ -102,11 +102,12 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
   const kidsIds = kids.map(c => c.id).join(",");
   
   return `<details data-persist="parent-${it.id}" class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
-    <summary class="parent-summary flex items-center gap-4 p-5 cursor-pointer list-none ${allPaid ? "opacity-70" : ""}">
+    <summary class="parent-summary flex items-center gap-4 p-5 cursor-pointer list-none ${allPaid || it.excluded ? "opacity-70" : ""}">
       <div class="acct-icon w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 shadow-lg">${iconInner}</div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1.5">
           <p class="item-name text-lg font-black text-white truncate ${allPaid ? "line-through" : ""}">${escapeHtml(it.name)}</p>
+          ${it.excluded ? `<span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 flex-shrink-0">Not counted</span>` : ""}
           <span class="parent-caret material-icons text-slate-500 transition-transform duration-300 group-open:-rotate-180" style="font-size:20px">expand_more</span>
         </div>
         <div class="flex items-center gap-3 mt-1.5">
@@ -1713,6 +1714,7 @@ async function saveModalInner() {
       it.txDay = txDay;
       it.cutoffDay = cutoffDay;
       if (txDate) it.txDate = txDate; else delete it.txDate;
+      if ($("f-include")) { if ($("f-include").dataset.on === "true") delete it.excluded; else it.excluded = true; }
       if ($("f-category")) { if (category) it.category = category; else delete it.category; }
       if (getKids(it).length) {
         // Amount is sum of children
