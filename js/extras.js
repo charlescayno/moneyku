@@ -442,7 +442,7 @@ export function tipCardHtml() {
   return `<div id="tip-card" class="flex items-start gap-2 bg-indigo-500/10 border border-indigo-500/25 rounded-xl px-3 py-2">
     <span class="material-icons text-indigo-300" style="font-size:16px;margin-top:1px">swipe</span>
     <p class="flex-1 text-[11px] text-indigo-100 leading-snug"><b>Tips:</b> swipe a row right to mark it paid, left to edit. Tap the + button to add an item.</p>
-    <button type="button" data-action="dismissTip" class="text-[11px] font-bold text-indigo-300 flex-shrink-0">Got it</button></div>`;
+    <button type="button" data-action="dismissTip" class="text-[11px] font-bold text-indigo-300 flex-shrink-0" style="padding:10px 8px;margin:-10px -4px -10px 0">Got it</button></div>`;
 }
 export function dismissTip() { lsSet("moneyku_tip_seen", "1"); document.getElementById("tip-card")?.remove(); document.querySelectorAll(".nudge-hint").forEach((e) => e.classList.remove("nudge-hint")); }
 

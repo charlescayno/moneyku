@@ -1408,3 +1408,15 @@ details[data-persist="outlook-more"][open] > summary .material-icons { transform
 /* Month navigation stays visible under the header while scrolling */
 #month-nav { position: sticky; top: var(--hdr-h, 0px); z-index: 30; background: #0f172a; }
 
+
+/* Phones: title and the More button share one row (the old wrapped layout was made for 8 buttons) */
+@media (max-width: 639px) {
+  header.app-header { flex-wrap: nowrap; align-items: center; row-gap: 0; }
+  header.app-header .app-header-title { flex: 1 1 0; }
+  header.app-header .app-header-tools { flex: 0 0 auto; width: auto; }
+}
+
+@media (max-width: 639px) {
+  header.app-header .app-header-tools button { flex: 0 0 auto !important; width: 2.75rem !important; min-width: 2.75rem !important; max-width: none !important; }
+}
+
