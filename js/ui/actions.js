@@ -260,7 +260,7 @@ export function refreshRealized() {
   const t = monthTotals(selectedKey);
   const proj = $("sum-projected");
   const hideProjected = getHideProjected();
-  if (proj) proj.textContent = hideProjected ? '••••••' : peso(householdProjectedAt(selectedKey));
+  if (proj) proj.textContent = hideProjected ? '••••••' : (() => { const n = householdProjectedAt(selectedKey); return n < 0 ? '-' + peso(-n) : peso(n); })();
   const sgn = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
   const pc = $("sum-projected-c"), pp = $("sum-projected-p");
   if (pc) pc.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "charlie"));
