@@ -662,7 +662,8 @@ export function setAccountsView(v) {
 
 export function accountsCardHtml(who = "charlie") {
   const appData = getAppData();
-  const accts = (appData?.accounts || []).filter((a) => acctOwner(a) === who);
+  const accts = (appData?.accounts || []).filter((a) => acctOwner(a) === who)
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true }));
   const view = getAccountsView();
   const groups = [];
   const idx = {};
