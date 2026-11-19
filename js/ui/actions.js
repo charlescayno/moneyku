@@ -363,7 +363,7 @@ export function exportData() {
 // Density Mode Helpers
 // =============================
 export function getDensityMode() {
-  return localStorage.getItem("moneyku_density") || "comfortable";
+  return "comfortable"; // the Compact view was removed; always Comfortable
 }
 
 export function applyDensityMode(mode) {
