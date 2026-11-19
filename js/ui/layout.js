@@ -20,7 +20,7 @@ export function renderBudget() {
   const hideProjected = getHideProjected();
   // Top-bar switches: who counts in the combined numbers (per-person numbers are always shown)
   const inclW = includedWho();
-  const inclBtn = (w) => `<button type="button" data-action="togglePersonIncluded" data-arg0="${w}" aria-pressed="${inclW.includes(w)}" title="${inclW.includes(w) ? "Counted in the combined total · tap to leave out" : "Left out of the combined total · tap to count"}" class="flex items-center focus:outline-none ${inclW.includes(w) ? "text-emerald-300" : "text-amber-300"}"><span class="material-icons" style="font-size:20px">${inclW.includes(w) ? "check_box" : "check_box_outline_blank"}</span></button>`;
+  const inclBtn = (w) => `<button type="button" data-action="togglePersonIncluded" data-arg0="${w}" aria-pressed="${inclW.includes(w)}" title="${inclW.includes(w) ? "Counted in the combined total · tap to leave out" : "Left out of the combined total · tap to count"}" class="flex items-center focus:outline-none ${inclW.includes(w) ? "text-emerald-300" : "text-amber-300"}"><span class="material-icons" style="font-size:20px">${inclW.includes(w) ? "check_circle" : "radio_button_unchecked"}</span></button>`;
   const projC = runningFundsAt(k, "charlie"), projP = runningFundsAt(k, "partner");
   // What the projected number is made of, early warnings, a worst case, and stale-balance nudge
   const pj = projectionBreakdown(k);

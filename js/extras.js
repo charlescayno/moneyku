@@ -123,7 +123,7 @@ export function openCopyPicker() {
   const todo = lastMonthOneTimes();
   if (!todo.length) return toast("Nothing to copy", "error");
   const rows = todo.map(({ kind, it }) => `<button type="button" data-action="copyToggle" data-arg0="${it.id}" data-copy="${it.id}" data-on="true" class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900/50 text-left">
-      <span class="material-icons text-emerald-300 copy-box" style="font-size:20px">check_box</span>
+      <span class="material-icons text-emerald-300 copy-box" style="font-size:20px">check_circle</span>
       <span class="flex-1 min-w-0 text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span>
       <span class="text-xs font-black flex-shrink-0 ${kind === "income" ? "text-emerald-400" : "text-rose-400"}">${peso(it.amount)}</span></button>`).join("");
   showSheet(`Copy from ${monthShort(addMonths(getSelectedKey(), -1))}`,
@@ -138,7 +138,7 @@ export function copyToggle(id) {
   const on = el.dataset.on !== "true";
   el.dataset.on = String(on);
   const box = el.querySelector(".copy-box");
-  if (box) { box.textContent = on ? "check_box" : "check_box_outline_blank"; box.className = `material-icons copy-box ${on ? "text-emerald-300" : "text-slate-500"}`; }
+  if (box) { box.textContent = on ? "check_circle" : "radio_button_unchecked"; box.className = `material-icons copy-box ${on ? "text-emerald-300" : "text-slate-500"}`; }
   const n = document.querySelectorAll('[data-copy][data-on="true"]').length;
   const go = document.getElementById("copy-go");
   if (go) { go.textContent = n ? `Copy ${n}` : "Copy"; go.style.opacity = n ? "1" : ".5"; }
