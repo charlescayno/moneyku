@@ -41,3 +41,14 @@ test("renderBudget draws the Projected block without throwing, with and without 
     assert.ok(html.includes(hide ? "Cash &amp; pending hidden" : "to receive"));
   }
 });
+
+test("outlook card renders chart, tappable months and collapsed extra insights", async () => {
+  const { yearOutlookCardHtml } = await import("../js/ui/components.js");
+  for (const who of ["all", "charlie", "partner"]) {
+    localStorage.setItem("moneyku_outlook_who", who);
+    const html = yearOutlookCardHtml();
+    assert.ok(html.includes("<svg"), who + " chart");
+    assert.ok(html.includes('data-action="openOutlookMonth"'), who + " tappable months");
+    assert.ok(html.includes("more insight"), who + " extra insights collapsed");
+  }
+});

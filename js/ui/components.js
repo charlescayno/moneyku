@@ -1106,10 +1106,14 @@ export function openOutlookMonth(m) {
     return `<div class="space-y-1"><div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-wider ${cls}">${title}</p><p class="text-xs font-black ${cls}">${sp(tot)}</p></div>${rowsHtml || `<p class="text-[11px] text-slate-500">Nothing</p>`}${more}</div>`;
   };
   const inc = income.reduce((s, x) => s + x.amt, 0), out = expense.reduce((s, x) => s + x.amt, 0);
+  const ks = outlookKeys();
+  const balRow = ks.includes(m) ? outlookRows(ks, opts).find((r) => r.m === m) : null;
+  const bal = balRow ? balRow[view].bal : null;
   const note = [opts.cons ? "recurring income only" : "", opts.noInst ? "without installments" : ""].filter(Boolean).join(" · ");
   showSheet(`${monthName(m)} · ${view === "all" ? "Everyone" : OWNERS[view].label}`,
     `<div class="space-y-3">${section("Inflow", "text-emerald-400", income)}${section("Outflow", "text-rose-400", expense)}
       <div class="flex items-center justify-between border-t border-white/10 pt-2 text-[12px]"><span class="font-bold text-slate-300">Net</span><span class="font-black ${inc - out >= 0 ? "text-emerald-400" : "text-rose-400"}">${sp(inc - out)}</span></div>
+      ${bal == null ? "" : `<div class="flex items-center justify-between text-[12px]"><span class="font-bold text-slate-300">Projected balance</span><span class="font-black ${bal >= 0 ? "text-white" : "text-rose-400"}">${sp(bal)}</span></div>`}
       <p class="text-[10px] text-slate-500">Still to receive / pay${cmpKey(m, currentKey()) === 0 ? " this month (already settled items are not counted)" : ""}.${note ? ` Showing ${note}.` : ""}</p></div>`,
     `<button type="button" data-action="qlClose" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Close</button>`);
 }
@@ -1158,6 +1162,7 @@ export function yearOutlookCardHtml() {
       <svg viewBox="0 0 ${CW} ${CH}" class="w-full h-20" role="img" aria-label="Projected balance by month">
         ${yMin < 0 ? `<line x1="0" x2="${CW}" y1="${yAt(0).toFixed(1)}" y2="${yAt(0).toFixed(1)}" stroke="#fb7185" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>` : ""}
         ${series.map((s) => `<path d="${pathOf(s.v)}" fill="none" stroke="${s.stroke}" stroke-width="${s.w}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`).join("")}
+        ${rows.map((r, i) => { const cw = (CW - 2 * PAD) / Math.max(1, rows.length - 1); return `<rect data-action="openOutlookMonth" data-arg0="${r.m}" x="${(xAt(i) - cw / 2).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${CH}" fill="transparent" style="cursor:pointer"><title>${monthShort(r.m)}: ${sp(r.bal)}</title></rect><circle cx="${xAt(i).toFixed(1)}" cy="${yAt(r.bal).toFixed(1)}" r="1.6" fill="${r.bal < 0 ? "#fb7185" : "#e0e7ff"}" pointer-events="none"/>`; }).join("")}
         <circle cx="${xAt(lowIdx).toFixed(1)}" cy="${yAt(mainVals[lowIdx]).toFixed(1)}" r="3.2" fill="${mainVals[lowIdx] < 0 ? "#fb7185" : "#fbbf24"}"/>
       </svg>
       <div class="flex items-center justify-between text-[9px] font-bold text-slate-500"><span>${monthShort(rows[0].m)}</span><span class="${mainVals[lowIdx] < 0 ? "text-rose-300" : "text-amber-300"}">low ${sp(mainVals[lowIdx])} · ${monthShort(rows[lowIdx].m)}</span><span>${monthShort(rows[rows.length - 1].m)}</span></div>
@@ -1172,7 +1177,7 @@ export function yearOutlookCardHtml() {
       : finding("check_circle", "text-emerald-400", `Balance stays above zero. Lowest point: <b class="text-white">${sp(low.bal)}</b> in ${monthShort(low.m)}.`),
     finding("local_fire_department", "text-amber-300", `Heaviest month: <b class="text-white">${monthShort(peak.m)}</b> with ${peso(peak.out)} going out.`),
     insts.length ? finding("hourglass_bottom", "text-fuchsia-300", `${insts.length} installment${insts.length === 1 ? "" : "s"} finish in this window (${insts.slice(0, 4).map((i) => `${escapeHtml(i.name)} ${monthShort(i.end)}`).join(", ")}${insts.length > 4 ? "…" : ""}), freeing about <b class="text-white">${peso(freed)}</b> a month.`) : "",
-  ].join("");
+  ].filter(Boolean);
   // In the everyone view, also say what happens to each person's own balance
   const personFind = (w) => {
     const bals = rows.map((r) => ({ m: r.m, bal: w === "charlie" ? r.c : r.p }));
@@ -1183,7 +1188,9 @@ export function yearOutlookCardHtml() {
       ? finding("person", "text-rose-400", `${name} balance dips below zero in <b class="text-rose-300">${ng.length} month${ng.length === 1 ? "" : "s"}</b> (${ng.slice(0, 4).map(monthShort).join(", ")}${ng.length > 4 ? "…" : ""}). Lowest: <b class="text-rose-300">${sp(lo.bal)}</b> in ${monthShort(lo.m)}.`)
       : finding("person", "text-emerald-400", `${name} balance stays above zero. Lowest: <b class="text-white">${sp(lo.bal)}</b> in ${monthShort(lo.m)}.`);
   };
-  const personFinds = view === "all" ? personFind("charlie") + personFind("partner") : "";
+  const allFinds = [...finds, ...(view === "all" ? [personFind("charlie"), personFind("partner")] : [])];
+  const topFinds = allFinds.slice(0, 3).join("");
+  const moreFinds = allFinds.slice(3);
   const toggle = ["all", "charlie", "partner"].map((w) => {
     const on = w === view;
     return `<button type="button" data-action="setOutlookWho" data-arg0="${w}" aria-pressed="${on}" class="flex-1 py-1.5 rounded-lg text-[11px] font-black ${on ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${w === "all" ? "All" : OWNERS[w].label}</button>`;
@@ -1210,7 +1217,8 @@ export function yearOutlookCardHtml() {
       <div class="flex gap-1.5">${toggle}</div>
       ${optsRow}
       ${chart}
-      <div class="space-y-1.5">${finds}${personFinds}</div>
+      <div class="space-y-1.5">${topFinds}</div>
+      ${moreFinds.length ? `<details data-persist="outlook-more" class="group/om"><summary class="flex items-center gap-1 cursor-pointer list-none select-none text-[11px] font-bold text-indigo-300 py-0.5"><span class="material-icons" style="font-size:15px">chevron_right</span>${moreFinds.length} more insight${moreFinds.length === 1 ? "" : "s"}</summary><div class="space-y-1.5 pt-1">${moreFinds.join("")}</div></details>` : ""}
       <div class="rounded-lg bg-black/20 px-2 py-1.5">
         <div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide text-slate-500"><span>Month</span><span class="text-right">In</span><span class="text-right">Out</span><span class="text-right">Net</span><span class="text-right">Balance</span></div>
         ${tr}

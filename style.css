@@ -1399,3 +1399,4 @@ html.app-ready.kb-open .fab-add {
 #modal-body .spend-add input[type="date"] { padding: 0.55rem 0.75rem !important; min-height: 2.6rem; }
 
 details[data-persist="proj-details"][open] > summary .material-icons { transform: rotate(90deg); }
+details[data-persist="outlook-more"][open] > summary .material-icons { transform: rotate(90deg); }
