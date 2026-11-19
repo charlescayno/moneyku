@@ -11,6 +11,7 @@ import { CARD_METHOD, charges, statement } from "./card.js";
 import { catInfo, categoryOf } from "./categories.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
+import { canUndo, undoLabel } from "./history.js";
 import { closeModal, openChildModal, openItemModal } from "./ui/modals.js";
 import { qlClose, showSheet } from "./ui/quicklog.js";
 
@@ -451,4 +452,22 @@ export function initExtras() {
     if (now - lastDel < 900) { e.stopPropagation(); e.preventDefault(); }
     lastDel = now;
   }, true);
+}
+
+// ---------- Header "more" menu: the less-used buttons live here ----------
+export function openHeaderMenu() {
+  const row = (action, icon, label, sub = "", off = false) => `<button type="button" data-action="headerMenuGo" data-arg0="${action}" ${off ? "disabled" : ""} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-900/50 text-left ${off ? "opacity-40" : ""}"><span class="material-icons text-slate-300" style="font-size:20px">${icon}</span><span class="flex-1 min-w-0"><span class="block text-sm font-bold text-slate-100">${label}</span>${sub ? `<span class="block text-[11px] text-slate-500 truncate">${escapeHtml(sub)}</span>` : ""}</span></button>`;
+  const u = canUndo();
+  showSheet("More",
+    `<div class="space-y-1.5">
+      ${row("histUndo", "undo", "Undo", u ? undoLabel() : "Nothing to undo", !u)}
+      ${row("openHistory", "history", "History")}
+      ${row("openMore", "insights", "Overview")}
+      ${row("toggleMonthPicker", "calendar_month", "Jump to month")}
+      ${row("openSettings", "settings", "Settings")}
+    </div>`, CLOSE_BTN);
+}
+export function headerMenuGo(action) {
+  qlClose();
+  setTimeout(() => { if (typeof window[action] === "function") window[action](); }, 120);
 }
