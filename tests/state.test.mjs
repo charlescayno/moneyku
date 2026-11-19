@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeData } from "./setup.mjs";
 import { mondaysInMonth } from "../js/utils.js";
-import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals, householdTotals, accountsTotal } from "../js/state.js";
+import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals, householdTotals, accountsTotal, runningFundsAt, householdProjectedAt } from "../js/state.js";
 
 test("mondaysInMonth counts 4 or 5 Mondays", () => {
   assert.equal(mondaysInMonth("2026-12"), 4);
@@ -94,6 +94,10 @@ test("partner items stay out of Charles' totals; household combines both", () =>
   assert.equal(monthTotals("2026-09").pdI, 700);
   assert.equal(monthTotals("2026-09").netPending, 38000); // Charles' projection unaffected by Ynah's debts
   assert.equal(householdTotals("2026-09").partner.debtNet, 700);
+  const cur = currentKey();
+  const pj = (w) => runningFundsAt(cur, w);
+  assert.equal(pj("partner"), 400 + (30000 - 5000) + 700); // her cash + her income - bills + debts owed to her
+  assert.equal(householdProjectedAt(cur), pj("charlie") + pj("partner"));
   assert.equal(accountsTotal(), 1000);
   assert.equal(accountsTotal("partner"), 400);
   assert.equal(h.cash, 1400);
@@ -101,7 +105,7 @@ test("partner items stay out of Charles' totals; household combines both", () =>
   assert.equal(h.charlie.income + h.partner.income, h.income);
 });
 
-import { stepKey, yearStepKey } from "../js/utils.js";
+import { stepKey, yearStepKey, currentKey } from "../js/utils.js";
 test("stepKey clamps and steps", () => {
   const tl = ["2026-10", "2026-11", "2026-12", "2027-01"];
   assert.equal(stepKey(tl, "2026-11", 1), "2026-12");

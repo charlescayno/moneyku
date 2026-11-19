@@ -1,7 +1,7 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { applyChildOrder } from '../itemOps.js';
 import { choosePayment, applyPayment, refundPayment, recordPayment, paidMessage, nameOf } from '../payfrom.js';
-import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { openMore, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
@@ -256,7 +256,11 @@ export function refreshRealized() {
   const t = monthTotals(selectedKey);
   const proj = $("sum-projected");
   const hideProjected = getHideProjected();
-  if (proj) proj.textContent = hideProjected ? '••••••' : peso(runningFundsAt(selectedKey));
+  if (proj) proj.textContent = hideProjected ? '••••••' : peso(householdProjectedAt(selectedKey));
+  const sgn = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  const pc = $("sum-projected-c"), pp = $("sum-projected-p");
+  if (pc) pc.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "charlie"));
+  if (pp) pp.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "partner"));
   const stats = $("sum-stats");
   if (stats) stats.innerHTML = statsGridHtml(t);
   const cardSlot = $("card-summary-slot");

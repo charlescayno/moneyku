@@ -238,6 +238,7 @@ export function monthTotals(k) {
   return {
     pI, pE, pToReceive: pI - pRecv, pToPay: pE - pPaid,
     pdI, pdE, pDebtToReceive: pdI - pdRecv, pDebtToPay: pdE - pdPaid,
+    pNetPending: (pI - pRecv) - (pE - pPaid) + (pdI - pdRecv) - (pdE - pdPaid),
     cI, dI, cE, dE, income, expenses, savings: income - toPay,
     incomeReceived: incRecv, expensePaid: expPaid,
     toReceive, toPay,
@@ -256,8 +257,9 @@ export function householdTotals(k) {
     charlieNet: t.cI - t.cE, partnerNet: t.pI - t.pE,
     cash: accountsTotal("charlie") + accountsTotal("partner"),
     debtNet: (t.debtToReceive - t.debtToPay) + (t.pDebtToReceive - t.pDebtToPay),
-    charlie: { debtNet: t.debtToReceive - t.debtToPay, cash: accountsTotal("charlie"), income: t.cI, expenses: t.cE, net: t.cI - t.cE, toReceive: t.toReceive, toPay: t.toPay },
-    partner: { debtNet: t.pDebtToReceive - t.pDebtToPay, cash: accountsTotal("partner"), income: t.pI, expenses: t.pE, net: t.pI - t.pE, toReceive: t.pToReceive, toPay: t.pToPay },
+    projected: householdProjectedAt(k),
+    charlie: { projected: runningFundsAt(k, "charlie"), debtNet: t.debtToReceive - t.debtToPay, cash: accountsTotal("charlie"), income: t.cI, expenses: t.cE, net: t.cI - t.cE, toReceive: t.toReceive, toPay: t.toPay },
+    partner: { projected: runningFundsAt(k, "partner"), debtNet: t.pDebtToReceive - t.pDebtToPay, cash: accountsTotal("partner"), income: t.pI, expenses: t.pE, net: t.pI - t.pE, toReceive: t.pToReceive, toPay: t.pToPay },
   };
 }
 
@@ -267,16 +269,22 @@ export function householdTotals(k) {
  * Months before the current one are not carried forward: your balances already reflect them, so their
  * leftover unpaid items would be counted twice. A past month just shows its own outstanding amount.
  */
-export function runningFundsAt(k) {
-  let bal = accountsTotal();
+export function runningFundsAt(k, who = "charlie") {
+  let bal = accountsTotal(who);
   const now = currentKey();
-  if (cmpKey(k, now) < 0) return bal + monthTotals(k).netPending;
+  const pend = (m) => (who === "partner" ? monthTotals(m).pNetPending : monthTotals(m).netPending);
+  if (cmpKey(k, now) < 0) return bal + pend(k);
   for (const mk of timeline()) {
     if (cmpKey(mk, now) < 0) continue;
-    bal += monthTotals(mk).netPending;
+    bal += pend(mk);
     if (mk === k) break;
   }
   return bal;
+}
+
+/** Overall projection: Charles' projected funds plus his partner's. */
+export function householdProjectedAt(k) {
+  return runningFundsAt(k, "charlie") + runningFundsAt(k, "partner");
 }
 
 export function currentMoneyAt() { 
