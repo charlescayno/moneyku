@@ -41,7 +41,7 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20261120_phone1" />
+    <link rel="stylesheet" href="style.css?v=20261120_phone2" />
     <link rel="stylesheet" href="theme.css?v=20261119_flat2" />
   </head>
   <body
@@ -158,6 +158,7 @@
           </p>
         </div>
         <div class="app-header-tools flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+          <button type="button" id="fab-add" data-action="qlAddChooser" title="Add" aria-label="Add income or expense" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl" style="background:#6366f1;box-shadow:0 6px 14px -4px rgba(79,70,229,.55)"><span class="material-icons text-white">add</span></button>
           <button type="button" data-action="openHeaderMenu" title="More" aria-label="More" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-300">more_horiz</span></button>
         </div>
       </header>
@@ -196,11 +197,6 @@
         </div>
       </main>
     </div>
-
-    <!-- ADD BUTTON (floating) -->
-    <button type="button" id="fab-add" class="fab-add" data-action="qlAddChooser" aria-label="Add income or expense" title="Add">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
 
     <!-- MOBILE TAB BAR -->
     <nav id="tabbar" aria-label="Sections" class="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-slate-900/95 border-t border-white/10 flex" style="padding-bottom:env(safe-area-inset-bottom)">

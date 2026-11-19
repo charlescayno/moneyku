@@ -1420,3 +1420,14 @@ details[data-persist="outlook-more"][open] > summary .material-icons { transform
   header.app-header .app-header-tools button { flex: 0 0 auto !important; width: 2.75rem !important; min-width: 2.75rem !important; max-width: none !important; }
 }
 
+
+/* Phones: compact top area (less wasted space) */
+@media (max-width: 639px) {
+  header.app-header { padding-top: 0.625rem; padding-bottom: 0.5rem; }
+  header.app-header .app-header-title { display: flex; align-items: baseline; gap: 0.5rem; }
+  header.app-header .app-header-title p { margin-top: 0; }
+  #person-tiles { padding-top: 0.5rem; }
+  #month-nav { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  #month-nav button { height: 2.5rem; }
+}
+
