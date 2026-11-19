@@ -91,6 +91,8 @@ import {
   initQuickLog,
   toggleProjected,
   togglePersonIncluded,
+  next5Shift,
+  next5Reset,
   toggleInvestments,
   toggleExpenseSort,
   toggleArrange,
@@ -189,6 +191,8 @@ initQuickLog();
 import { initArrangeDrag } from "./arrange.js";
 window.toggleProjected = toggleProjected;
 window.togglePersonIncluded = togglePersonIncluded;
+window.next5Shift = next5Shift;
+window.next5Reset = next5Reset;
 window.toggleInvestments = toggleInvestments;
 window.toggleExpenseSort = toggleExpenseSort;
 window.toggleArrange = toggleArrange;

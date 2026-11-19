@@ -52,3 +52,16 @@ test("outlook card renders chart, tappable months and collapsed extra insights",
     assert.ok(html.includes("more insight"), who + " extra insights collapsed");
   }
 });
+
+test("next-5-months card scrolls forward and back", async () => {
+  const { next5CardHtml, next5Shift, next5Reset } = await import("../js/ui/next5.js");
+  const { setHideProjected } = await import("../js/state.js");
+  setHideProjected(false);
+  const first = next5CardHtml();
+  assert.ok(first.includes("Next 5 months"));
+  next5Shift(1); // no live card element in the stub, so the offset change is what we check next
+  const later = next5CardHtml();
+  assert.ok(!later.includes("Next 5 months") && later.includes("Earlier months"));
+  next5Reset();
+  assert.ok(next5CardHtml().includes("Next 5 months"));
+});
