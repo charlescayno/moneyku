@@ -126,6 +126,7 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
       <div class="child-list" data-who="${who}" data-parent="${it.id}">${childRows}</div>
       <div class="px-6 mt-3 flex items-center gap-2">
         ${arrange ? "" : `<button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>`}
+        ${arrange ? "" : `<button data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}" class="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">edit</span>Edit group</button>`}
         ${kids.length > 1 ? `<button data-action="toggleArrange" data-arg0="${it.id}" aria-pressed="${arrange}" class="${arrange ? "flex-1 bg-indigo-600 text-white" : "text-slate-500 hover:text-white"} py-2.5 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">${arrange ? "check" : "swap_vert"}</span>${arrange ? "Done" : "Arrange"}</button>` : ""}
       </div>
     </div>
