@@ -3,7 +3,7 @@
 // =============================
 
 import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
-import { openSearch, srOpen, qlAddChooser, qlSpendPick, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip, initExtras } from "./extras.js";
+import { openSearch, srOpen, qlAddChooser, qlSpendPick, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
 import { initHistory, openHistory, histUndo, histRedo, histRestore } from "./ui/historyui.js";
 import { rebaseHistory } from "./history.js";
@@ -209,7 +209,7 @@ window.tabGo = tabGo;
 initHistory();
 Object.assign(window, { openHistory, histUndo, histRedo, histRestore });
 Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo });
-Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
+Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
 initExtras();
 initTabs();
 window.fetchInvestmentRates = fetchInvestmentRates;

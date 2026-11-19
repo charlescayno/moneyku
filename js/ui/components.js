@@ -515,7 +515,7 @@ export function personSectionHtml(who, includeDebt = true) {
   const incHtml = groupedRowsHtml(income, k, "income", who);
   const emptyRow = (w, kind) => `<button type="button" data-action="openItemModal" data-arg0="${w}" data-arg1="${kind}" class="w-full py-3 text-[11px] font-bold text-slate-500 border border-dashed border-slate-700 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>No ${kind === "income" ? "income" : "expenses"} this month · add one</button>`;
   const copyN = who === "charlie" ? lastMonthOneTimes().length : 0;
-  const copyBtn = copyN ? `<button type="button" data-action="copyLastMonth" class="w-full mt-1 py-2 text-[11px] font-bold text-indigo-300 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy ${copyN} one-time item${copyN === 1 ? "" : "s"} from last month</button>` : "";
+  const copyBtn = copyN ? `<button type="button" data-action="openCopyPicker" class="w-full mt-1 py-2 text-[11px] font-bold text-indigo-300 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from last month (${copyN})</button>` : "";
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
 
   let debtSectionHtml = "";

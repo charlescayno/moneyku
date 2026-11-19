@@ -118,13 +118,41 @@ export function lastMonthOneTimes() {
   return out;
 }
 
-export async function copyLastMonth() {
-  const k = getSelectedKey();
+// Pick which of last month's one-time items to copy into this month (all ticked to start)
+export function openCopyPicker() {
   const todo = lastMonthOneTimes();
   if (!todo.length) return toast("Nothing to copy", "error");
-  await applyWithUndo((d) => { todo.forEach(({ kind, it }) => d.items.charlie[kind].push(cloneItem(it, { start: k }))); }, `Copied ${todo.length} item${todo.length === 1 ? "" : "s"}`);
+  const rows = todo.map(({ kind, it }) => `<button type="button" data-action="copyToggle" data-arg0="${it.id}" data-copy="${it.id}" data-on="true" class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900/50 text-left">
+      <span class="material-icons text-emerald-300 copy-box" style="font-size:20px">check_box</span>
+      <span class="flex-1 min-w-0 text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span>
+      <span class="text-xs font-black flex-shrink-0 ${kind === "income" ? "text-emerald-400" : "text-rose-400"}">${peso(it.amount)}</span></button>`).join("");
+  showSheet(`Copy from ${monthShort(addMonths(getSelectedKey(), -1))}`,
+    `<div class="space-y-1">${rows}</div>`,
+    `<button type="button" data-action="qlClose" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Cancel</button>
+     <button type="button" id="copy-go" data-action="copyLastMonth" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-indigo-600">Copy ${todo.length}</button>`);
 }
 
+export function copyToggle(id) {
+  const el = document.querySelector(`[data-copy="${id}"]`);
+  if (!el) return;
+  const on = el.dataset.on !== "true";
+  el.dataset.on = String(on);
+  const box = el.querySelector(".copy-box");
+  if (box) { box.textContent = on ? "check_box" : "check_box_outline_blank"; box.className = `material-icons copy-box ${on ? "text-emerald-300" : "text-slate-500"}`; }
+  const n = document.querySelectorAll('[data-copy][data-on="true"]').length;
+  const go = document.getElementById("copy-go");
+  if (go) { go.textContent = n ? `Copy ${n}` : "Copy"; go.style.opacity = n ? "1" : ".5"; }
+}
+
+/** Copies the ticked items from the picker into this month. */
+export async function copyLastMonth() {
+  const k = getSelectedKey();
+  const ids = new Set([...document.querySelectorAll('[data-copy][data-on="true"]')].map((e) => e.dataset.copy));
+  const todo = lastMonthOneTimes().filter(({ it }) => ids.has(it.id));
+  if (!todo.length) return toast("Tick at least one item", "error");
+  qlClose();
+  await applyWithUndo((d) => { todo.forEach(({ kind, it }) => d.items.charlie[kind].push(cloneItem(it, { start: k }))); }, `Copied ${todo.length} item${todo.length === 1 ? "" : "s"}`);
+}
 // ---------- Settings (text size, exports, key) ----------
 export function applyTextSize() {
   const large = lsGet("moneyku_text") === "large";
