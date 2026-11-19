@@ -1,7 +1,7 @@
 // =============================
 // Insights: due soon, category budgets, month-over-month
 // =============================
-import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
+import { $, OWNERS, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
 import { accountsTotal, amountIn, getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline } from "./state.js";
 import { syncSet } from "./firebase.js";
 import { childAmt } from "./state.js";
@@ -36,7 +36,8 @@ const cardShell = (key, border, icon, grad, title, sub, right, body) => `<detail
 </details>`;
 
 // ---------- 5. Due soon / overdue ----------
-export function dueSoonCardHtml() {
+export function dueSoonCardHtml(owner = "charlie") {
+  const isP = owner === "partner";
   const k = getSelectedKey();
   if (k !== currentKey()) return "";
   const now = new Date();
@@ -46,7 +47,7 @@ export function dueSoonCardHtml() {
   const nextK = addMonths(k, 1);
   const rows = [];
   const unpaid = (it, key) => { const kids = getKids(it, key); return kids.length ? !kids.every((c) => isPaid(c.id, key)) : !isPaid(it.id, key); };
-  for (const who of ["charlie", "debt"]) {
+  for (const who of isP ? ["partner", "pdebt"] : ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
       const dd = dueDayFor(it);
       if (dd == null) continue;
@@ -71,8 +72,8 @@ export function dueSoonCardHtml() {
       <p class="text-xs font-bold text-slate-100 truncate flex-1">${escapeHtml(r.it.name)}</p>
       <p class="text-xs font-black text-white flex-shrink-0">${peso(r.amt)}</p>
       ${r.next ? "" : `<button type="button" data-action="dueMarkPaid" data-arg0="${r.it.id}" title="Mark paid" aria-label="Mark ${escapeHtml(r.it.name)} paid" class="w-7 h-7 rounded-lg border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-400"><span class="material-icons" style="font-size:16px">check</span></button>`}</div>`).join("") + (rows.length > 6 ? `<p class="text-[10px] text-slate-500 text-center">+${rows.length - 6} more</p>` : "");
-  return cardShell("due", overdue ? "border-rose-500/30" : "border-amber-500/25", "notifications_active", overdue ? "from-rose-500 to-red-600" : "from-amber-500 to-orange-600",
-    "Today", `${overdue ? `${overdue} overdue · ` : ""}${rows.length - overdue} due in the next 7 days`, `<p class="text-sm font-black text-white">${peso(total)}</p>`, body);
+  return cardShell(isP ? "due-p" : "due", overdue ? "border-rose-500/30" : "border-amber-500/25", "notifications_active", overdue ? "from-rose-500 to-red-600" : "from-amber-500 to-orange-600",
+    isP ? `Today · ${OWNERS.partner.label}` : "Today", `${overdue ? `${overdue} overdue · ` : ""}${rows.length - overdue} due in the next 7 days`, `<p class="text-sm font-black text-white">${peso(total)}</p>`, body);
 }
 
 // ---------- 9. Category budgets ----------

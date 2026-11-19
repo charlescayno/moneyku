@@ -118,9 +118,7 @@ export function renderBudget() {
   $("budget-body").innerHTML = `
     <div class="w-full flex flex-col gap-2 budget-pad">
       ${kpiBar}
-      <div id="card-summary-slot" class="contents">${cardSummaryHtml()}</div>
       ${tipCardHtml()}
-      ${dueSoonCardHtml()}
       <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->
@@ -133,10 +131,13 @@ export function renderBudget() {
 
         <!-- Charlie's budget (left) and partner's budget (right on wide screens, stacked on phones) -->
         <div class="order-2 grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start min-w-0">
-          <div class="flex flex-col min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
+          <div class="flex flex-col gap-2 min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
+            <div id="card-summary-slot" class="contents">${cardSummaryHtml()}</div>
+            ${dueSoonCardHtml("charlie")}
             ${personSectionHtml("charlie", true)}
           </div>
-          <div class="flex flex-col min-w-0" id="sec-partner" style="scroll-margin-top:5.5rem">
+          <div class="flex flex-col gap-2 min-w-0" id="sec-partner" style="scroll-margin-top:5.5rem">
+            ${dueSoonCardHtml("partner")}
             ${personSectionHtml("partner", true)}
           </div>
         </div>
