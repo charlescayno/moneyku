@@ -524,7 +524,7 @@ export function personSectionHtml(who, includeDebt = true) {
     </div>
     <div class="p-2.5 space-y-2 no-scrollbar">
       <details open data-persist="sec-income${who === "partner" ? "-p" : ""}" class="group">
-        <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(16,185,129,.10);border-left:3px solid #34d399;border-radius:8px;padding:7px 8px">
+        <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(16,185,129,.10);border-radius:8px;padding:7px 8px">
           <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
             <div class="flex items-baseline gap-1.5">
@@ -538,7 +538,7 @@ export function personSectionHtml(who, includeDebt = true) {
       </details>
       <div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
         <details open data-persist="sec-expenses${who === "partner" ? "-p" : ""}" class="group">
-          <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(244,63,94,.10);border-left:3px solid #fb7185;border-radius:8px;padding:7px 8px">
+          <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(244,63,94,.10);border-radius:8px;padding:7px 8px">
             <div class="flex items-center gap-1">
               <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
               <div class="flex items-baseline gap-1.5">
