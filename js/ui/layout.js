@@ -166,7 +166,6 @@ export function renderBudget() {
     <div class="w-full flex flex-col gap-2 budget-pad">
       ${kpiBar}
       ${next5CardHtml()}
-      ${tipCardHtml()}
       <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->
