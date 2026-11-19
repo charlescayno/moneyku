@@ -226,7 +226,7 @@ function whenIntroDone(fn) {
   const quick =
     sessionStorage.getItem("moneyku_intro_seen") === "1" ||
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const wait = Math.max(0, (quick ? 250 : 1600) - (performance.now() - bootStart));
+  const wait = Math.max(0, (quick ? 0 : 0) - (performance.now() - bootStart));
   setTimeout(fn, wait);
 }
 

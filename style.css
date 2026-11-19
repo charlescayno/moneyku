@@ -1401,3 +1401,6 @@ html.app-ready.kb-open .fab-add {
 
 details[data-persist="proj-details"][open] > summary .material-icons { transform: rotate(90deg); }
 details[data-persist="outlook-more"][open] > summary .material-icons { transform: rotate(90deg); }
+
+/* No branded intro: the splash is just a plain dark cover until the app is ready */
+#intro-content, #intro-particles { display: none !important; }
