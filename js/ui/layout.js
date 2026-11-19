@@ -89,25 +89,29 @@ export function renderBudget() {
       </details>`;
   }  const owedBreak = Object.entries(rm.owed.byMonth).sort(([a], [b]) => (a < b ? -1 : 1)).map(([m, v]) => `${monthShort(m)} ${peso(v)}`).join(" · ");
   const kpiBar = `
-    <div class="w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-xl px-3 py-2 flex flex-col items-stretch gap-2 shadow-md flex-shrink-0">
-      <!-- Projected Hero Stat -->
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
-          <span class="material-icons" style="font-size:14px">account_balance</span>
+    <div class="w-full bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex flex-col items-stretch gap-3 flex-shrink-0">
+      <!-- Projected hero: small label, one big number -->
+      <div class="flex flex-col gap-1 px-1">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[11px] font-bold text-slate-400" style="text-transform:lowercase">projected · ${inclW.length === 2 ? "all" : OWNERS[inclW[0]].label + " only"} (${monthShort(k)})</span>
+          <button data-action="toggleProjected" aria-label="${hideProjected ? "Show amounts" : "Hide amounts"}" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center">
+            <span class="material-icons" style="font-size:14px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
+          </button>
+          <button data-action="openOutlook" data-arg0="all" class="ml-auto flex items-center text-[11px] font-bold text-indigo-300 hover:text-white focus:outline-none">12-mo outlook<span class="material-icons" style="font-size:14px">chevron_right</span></button>
         </div>
-        <div>
-          <div class="flex items-center gap-1">
-            <span class="text-[8px] font-black uppercase tracking-wider text-indigo-300">Projected · ${inclW.length === 2 ? "all" : OWNERS[inclW[0]].label + " only"} (${monthShort(k)})</span>
-            <button data-action="toggleProjected" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center">
-              <span class="material-icons" style="font-size: 11px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
-            </button>
-            <button data-action="openOutlook" data-arg0="all" class="ml-1 flex items-center text-[10px] font-bold text-indigo-300 hover:text-white focus:outline-none">12-mo outlook<span class="material-icons" style="font-size:13px">chevron_right</span></button>
-          </div>
-          <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer text-sm sm:text-base font-black ${riskText} leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
+        <div class="flex items-end justify-between gap-3">
+          <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer font-black tracking-tight tabular-nums ${riskText}" style="font-size:38px;line-height:1.05">${hideProjected ? '••••••' : peso(projected)}</p>
+          ${sparkHtml}
         </div>
-        ${sparkHtml}
       </div>
-      <div class="grid grid-cols-2 gap-1.5">
+      <!-- Four tiles: icon + label above, value below -->
+      <div class="grid grid-cols-2 gap-2">
+        <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">account_balance_wallet</span>current money</span><span class="text-lg font-black tabular-nums truncate text-white">${peso(current)}</span></div>
+        <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">savings</span>savings</span><span class="text-lg font-black tabular-nums truncate ${savColor}">${signedPeso(t.savings)}</span></div>
+        <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">south_west</span>to receive</span><span class="text-lg font-black tabular-nums truncate text-emerald-400">${signedPeso(t.toReceive)}</span></div>
+        <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="text-lg font-black tabular-nums truncate text-rose-400">${signedPeso(-t.toPay)}</span></div>
+        ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `<div class="bg-black/20 rounded-2xl px-4 py-3 flex items-center justify-between col-span-2"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">swap_horiz</span>debt net</span><span class="text-lg font-black tabular-nums ${(t.debtToReceive - t.debtToPay) >= 0 ? 'text-indigo-300' : 'text-orange-300'}">${signedPeso(t.debtToReceive - t.debtToPay)}</span></div>` : ''}
+      </div>      <div class="grid grid-cols-2 gap-1.5">
         <div data-action="openOutlook" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between ${inclW.includes("charlie") ? "" : "opacity-50"}"><span class="flex items-center gap-1">${inclBtn("charlie")}<span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span></span><span class="flex items-center gap-1">${pDelta("charlie")}<span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></span></div>
         <div data-action="openOutlook" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between ${inclW.includes("partner") ? "" : "opacity-50"}"><span class="flex items-center gap-1">${inclBtn("partner")}<span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span></span><span class="flex items-center gap-1">${pDelta("partner")}<span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></span></div>
       </div>
@@ -161,29 +165,6 @@ export function renderBudget() {
           <p><b class="text-white">Projected</b> = Cash &amp; bank + income to receive &minus; bills to pay (card bill included) &plus; debts, from this month up to the month you are viewing. It assumes everything arrives and is paid on time.</p>
         </div>
       </details>
-      <div class="flex-1 min-w-0 grid grid-cols-2 gap-1.5 items-center mt-1.5">
-        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
-          <span class="text-[8px] font-bold uppercase text-slate-400">Current</span>
-          <span class="text-xs font-black text-white">${peso(current)}</span>
-        </div>
-        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
-          <span class="text-[8px] font-bold uppercase text-slate-400">Savings</span>
-          <span class="text-xs font-black ${savColor}">${signedPeso(t.savings)}</span>
-        </div>
-        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
-          <span class="text-[8px] font-bold uppercase text-slate-400">To Receive</span>
-          <span class="text-xs font-black text-emerald-400">${signedPeso(t.toReceive)}</span>
-        </div>
-        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between">
-          <span class="text-[8px] font-bold uppercase text-slate-400">To Pay</span>
-          <span class="text-xs font-black text-rose-400">${signedPeso(-t.toPay)}</span>
-        </div>
-        ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `
-        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between col-span-2">
-          <span class="text-[8px] font-bold uppercase text-slate-400">Debt Net</span>
-          <span class="text-xs font-black ${(t.debtToReceive - t.debtToPay) >= 0 ? 'text-indigo-300' : 'text-orange-300'}">${signedPeso(t.debtToReceive - t.debtToPay)}</span>
-        </div>` : ''}
-      </div>
       </details>
     </div>
   `;
