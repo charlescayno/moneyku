@@ -447,24 +447,6 @@ function realFields(who) {
 // A label/value row; `sub` rows are indented "of which" lines
 const subRow = (label, val, cls, sub = false) => `<div class="flex items-center justify-between ${sub ? "pl-4 text-[10px]" : "text-[11px]"}"><span class="${sub ? "text-slate-500" : "font-bold text-slate-300"}">${label}</span><span class="font-black ${cls}">${val}</span></div>`;
 const subHead = (label, cls) => `<p class="text-[9px] font-black uppercase tracking-[0.15em] ${cls} pt-1.5 pb-0.5">${label}</p>`;
-// One person's subtotal, kept short: inflow, outflow, net, then the money position. v comes from householdTotals(k)
-function subtotalBlockHtml(title, v, titleCls) {
-  const hide = getHideProjected();
-  const netCls = v.net >= 0 ? "text-emerald-400" : "text-rose-400";
-  return `<div>
-      <p class="text-[10px] font-black uppercase tracking-wider ${titleCls} px-0.5 mb-0.5">${title}</p>
-      <div class="rounded-lg bg-black/20 px-2.5 py-2 space-y-1">
-        ${subRow("Inflow", peso(v.income), "text-emerald-400")}
-        ${subRow("Outflow", peso(v.expenses), "text-rose-400")}
-        ${subRow("Net", spSigned(v.net), netCls)}
-        <div class="border-t border-white/10 pt-1 space-y-1">
-          ${subRow("Cash &amp; bank", peso(v.cash), "text-slate-100")}
-          ${v.realMoney != null ? subRow("Real money", spSigned(v.realMoney), v.realMoney >= 0 ? "text-white" : "text-rose-400") : ""}
-          ${subRow(`Projected (${monthShort(getSelectedKey())})`, hide ? "••••••" : spSigned(v.projected), v.projected >= 0 ? "text-white" : "text-rose-400")}
-        </div>
-      </div>
-    </div>`;
-}
 
 // Household total: one compact table, a column per person plus the combined total
 export function householdCardHtml() {
@@ -572,7 +554,6 @@ export function personSectionHtml(who, includeDebt = true) {
       </div>
       ${who === "charlie" ? cardSectionHtml(k) : ""}
       ${debtSectionHtml}
-      ${who === "charlie" || who === "partner" ? `<div class="border-t border-white/[0.08] pt-2">${subtotalBlockHtml(`Subtotal · ${o.label}`, { ...householdTotals(k)[who], ...realFields(who) }, o.text)}</div>` : ""}
     </div>
   </div>`;
 }
