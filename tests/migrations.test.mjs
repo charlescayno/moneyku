@@ -93,3 +93,13 @@ test("migrateRenameFamilyExpense renames once and is a no-op when missing", () =
   assert.equal(d.items.charlie.expenses.at(-1).name, "Cayno Family Expenses");
   assert.equal(migrateRenameFamilyExpense(d), false);
 });
+
+import { migrateAddHouseholdExpense } from "../js/migrations.js";
+test("migrateAddHouseholdExpense adds the group once", () => {
+  const d = makeData();
+  assert.equal(migrateAddHouseholdExpense(d), true);
+  const it = d.items.charlie.expenses.find((e) => e.name === "Charles + Ynah Household Expense");
+  assert.ok(it && it.recurring && Array.isArray(it.children));
+  assert.equal(migrateAddHouseholdExpense(d), false);
+  assert.equal(d.items.charlie.expenses.length, 1);
+});

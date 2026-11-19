@@ -2,7 +2,7 @@
 // One-time data migrations, applied automatically when the data loads.
 // Each returns true when it changed something (the caller then saves to the cloud).
 // =============================
-import { cmpKey, generateId } from "./utils.js";
+import { cmpKey, currentKey, generateId } from "./utils.js";
 
 const GROCERY_FROM = "2026-12";
 const GROCERY_RATE = 3000;
@@ -97,5 +97,21 @@ export function migrateRenameFamilyExpense(d) {
   if (!it) return false;
   it.name = FAMILY_NAME;
   d.settings.familyRenamed = true;
+  return true;
+}
+
+const HOUSEHOLD_NAME = "Charles + Ynah Household Expense";
+/**
+ * Adds a monthly "Charles + Ynah Household Expense" group (sub-expenses to be added) under Charles' card, once.
+ * Skipped if an item with that name already exists.
+ */
+export function migrateAddHouseholdExpense(d) {
+  if (!d || !d.items) return false;
+  d.settings = d.settings || {};
+  if (d.settings.householdAdded) return false;
+  d.settings.householdAdded = true;
+  d.items.charlie = d.items.charlie || { income: [], expenses: [] };
+  const exists = (d.items.charlie.expenses || []).some((x) => x && (x.name || "").trim().toLowerCase() === HOUSEHOLD_NAME.toLowerCase());
+  if (!exists) d.items.charlie.expenses.push({ id: generateId(), name: HOUSEHOLD_NAME, amount: 0, recurring: true, start: currentKey(), children: [] });
   return true;
 }
