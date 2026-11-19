@@ -188,8 +188,8 @@ export function renderBudget() {
         <!-- Charlie's budget (left) and partner's budget (right on wide screens, stacked on phones) -->
         <div class="order-2 grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start min-w-0">
           <div class="flex flex-col gap-2 min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
-            <div id="card-summary-slot" class="contents">${cardSummaryHtml()}</div>
             ${personSectionHtml("charlie", true)}
+            <div id="card-summary-slot" class="contents">${cardSummaryHtml()}</div>
           </div>
           <div class="flex flex-col gap-2 min-w-0" id="sec-partner" style="scroll-margin-top:5.5rem">
             ${personSectionHtml("partner", true)}
