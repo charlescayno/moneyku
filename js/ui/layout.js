@@ -108,7 +108,6 @@ export function renderBudget() {
             <span class="material-icons" style="font-size:14px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
           </button>
           <button type="button" data-action="toggleExplain" title="Explain the numbers" aria-label="Explain the numbers" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center flex-shrink-0" style="padding:7px;margin:-7px"><span class="material-icons" style="font-size:15px">info_outline</span></button>
-          <button data-action="openOutlook" data-arg0="all" class="ml-auto flex items-center text-[11px] font-bold text-indigo-300 hover:text-white focus:outline-none whitespace-nowrap flex-shrink-0" style="padding:8px 0;margin:-8px 0">12-mo outlook<span class="material-icons" style="font-size:14px">chevron_right</span></button>
         </div>
         <div class="flex items-end justify-between gap-3">
           <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer font-black tracking-tight tabular-nums ${riskText}" style="font-size:34px;line-height:1.1">${hideProjected ? '••••••' : sp(projected)}</p>
