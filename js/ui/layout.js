@@ -1,5 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
-import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, projectionBreakdown, monthFlow, outlookKeys, outlookRows, firstNegative, staleBalanceDays, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, projectionBreakdown, includedWho, monthFlow, outlookKeys, outlookRows, firstNegative, staleBalanceDays, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { dueSoonCardHtml, householdRealMoney, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
@@ -17,6 +17,9 @@ export function renderBudget() {
   const t = monthTotals(k);
   const projected = householdProjectedAt(k);
   const hideProjected = getHideProjected();
+  // Top-bar switches: who counts in the combined numbers (per-person numbers are always shown)
+  const inclW = includedWho();
+  const inclBtn = (w) => `<button type="button" data-action="togglePersonIncluded" data-arg0="${w}" aria-pressed="${inclW.includes(w)}" title="${inclW.includes(w) ? "Counted in the combined total · tap to leave out" : "Left out of the combined total · tap to count"}" class="flex items-center text-white/70 focus:outline-none"><span class="material-icons" style="font-size:14px">${inclW.includes(w) ? "check_box" : "check_box_outline_blank"}</span></button>`;
   const projC = runningFundsAt(k, "charlie"), projP = runningFundsAt(k, "partner");
   // What the projected number is made of, early warnings, a worst case, and stale-balance nudge
   const pj = projectionBreakdown(k);
@@ -93,7 +96,7 @@ export function renderBudget() {
         </div>
         <div>
           <div class="flex items-center gap-1">
-            <span class="text-[8px] font-black uppercase tracking-wider text-indigo-300">Projected · all (${monthShort(k)})</span>
+            <span class="text-[8px] font-black uppercase tracking-wider text-indigo-300">Projected · ${inclW.length === 2 ? "all" : OWNERS[inclW[0]].label + " only"} (${monthShort(k)})</span>
             <button data-action="toggleProjected" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center">
               <span class="material-icons" style="font-size: 11px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
             </button>
@@ -104,8 +107,8 @@ export function renderBudget() {
         ${sparkHtml}
       </div>
       <div class="grid grid-cols-2 gap-1.5">
-        <div data-action="openOutlook" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span><span class="flex items-center gap-1">${pDelta("charlie")}<span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></span></div>
-        <div data-action="openOutlook" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span><span class="flex items-center gap-1">${pDelta("partner")}<span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></span></div>
+        <div data-action="openOutlook" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between ${inclW.includes("charlie") ? "" : "opacity-50"}"><span class="flex items-center gap-1">${inclBtn("charlie")}<span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span></span><span class="flex items-center gap-1">${pDelta("charlie")}<span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></span></div>
+        <div data-action="openOutlook" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between ${inclW.includes("partner") ? "" : "opacity-50"}"><span class="flex items-center gap-1">${inclBtn("partner")}<span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span></span><span class="flex items-center gap-1">${pDelta("partner")}<span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></span></div>
       </div>
       ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
       <details data-persist="proj-details" class="group/pd">

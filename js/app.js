@@ -90,6 +90,7 @@ import {
   qlConfirm,
   initQuickLog,
   toggleProjected,
+  togglePersonIncluded,
   toggleInvestments,
   toggleExpenseSort,
   toggleArrange,
@@ -187,6 +188,7 @@ window.qlConfirm = qlConfirm;
 initQuickLog();
 import { initArrangeDrag } from "./arrange.js";
 window.toggleProjected = toggleProjected;
+window.togglePersonIncluded = togglePersonIncluded;
 window.toggleInvestments = toggleInvestments;
 window.toggleExpenseSort = toggleExpenseSort;
 window.toggleArrange = toggleArrange;

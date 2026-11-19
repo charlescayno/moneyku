@@ -155,3 +155,23 @@ test("excluded items stay in the list but are left out of totals", () => {
   assert.equal(monthTotals("2026-09").cE, 500);
   assert.equal(monthTotals("2026-09").toPay, 500);
 });
+
+import { includedWho, setWhoIncluded } from "../js/state.js";
+test("switching a person off removes them from combined numbers only", () => {
+  const d = makeData({ accounts: [{ id: "a", name: "A", amount: 1000 }, { id: "b", name: "B", amount: 400, owner: "partner" }] });
+  d.items.charlie.income = [{ id: "i1", name: "S", amount: 100, recurring: true, start: "2026-08" }];
+  d.items.partner = { income: [{ id: "p1", name: "P", amount: 50, recurring: true, start: "2026-08" }], expenses: [] };
+  d.items.pdebt = { income: [], expenses: [] };
+  setAppData(d);
+  const cur = currentKey();
+  const both = householdProjectedAt(cur), cOnly = runningFundsAt(cur, "charlie");
+  assert.equal(both, runningFundsAt(cur, "charlie") + runningFundsAt(cur, "partner"));
+  assert.equal(setWhoIncluded("partner", false), true);
+  assert.deepEqual(includedWho(), ["charlie"]);
+  assert.equal(householdProjectedAt(cur), cOnly);
+  assert.equal(runningFundsAt(cur, "partner"), 400 + 50); // her own number is unchanged
+  assert.equal(outlookRows([cur])[0].all.bal, cOnly);
+  assert.equal(setWhoIncluded("charlie", false), false); // can't switch both off
+  assert.equal(setWhoIncluded("partner", true), true);
+  assert.deepEqual(includedWho(), ["charlie", "partner"]);
+});

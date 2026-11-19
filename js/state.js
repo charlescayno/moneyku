@@ -251,13 +251,14 @@ export function monthTotals(k) {
 // Combined Charles + partner view (Debt Tracker and Accounts excluded)
 export function householdTotals(k) {
   const t = monthTotals(k);
-  const income = t.cI + t.pI, expenses = t.cE + t.pE;
-  const toReceive = t.toReceive + t.pToReceive, toPay = t.toPay + t.pToPay;
+  const ci = includedWho().includes("charlie") ? 1 : 0, pi = includedWho().includes("partner") ? 1 : 0;
+  const income = ci * t.cI + pi * t.pI, expenses = ci * t.cE + pi * t.pE;
+  const toReceive = ci * t.toReceive + pi * t.pToReceive, toPay = ci * t.toPay + pi * t.pToPay;
   return {
     income, expenses, net: income - expenses, toReceive, toPay,
     charlieNet: t.cI - t.cE, partnerNet: t.pI - t.pE,
-    cash: accountsTotal("charlie") + accountsTotal("partner"),
-    debtNet: (t.debtToReceive - t.debtToPay) + (t.pDebtToReceive - t.pDebtToPay),
+    cash: ci * accountsTotal("charlie") + pi * accountsTotal("partner"),
+    debtNet: ci * (t.debtToReceive - t.debtToPay) + pi * (t.pDebtToReceive - t.pDebtToPay),
     projected: householdProjectedAt(k),
     charlie: { projected: runningFundsAt(k, "charlie"), debtNet: t.debtToReceive - t.debtToPay, cash: accountsTotal("charlie"), income: t.cI, expenses: t.cE, net: t.cI - t.cE, toReceive: t.toReceive, toPay: t.toPay },
     partner: { projected: runningFundsAt(k, "partner"), debtNet: t.pDebtToReceive - t.pDebtToPay, cash: accountsTotal("partner"), income: t.pI, expenses: t.pE, net: t.pI - t.pE, toReceive: t.pToReceive, toPay: t.pToPay },
@@ -340,7 +341,8 @@ function flowsFor(m, opts = {}) {
 export function monthFlow(m, who = "all", opts = {}) {
   const f = flowsFor(m, opts);
   if (who === "charlie" || who === "partner") return f[who];
-  const inc = f.charlie.inc + f.partner.inc, out = f.charlie.out + f.partner.out;
+  const ws = includedWho();
+  const inc = ws.reduce((s, w) => s + f[w].inc, 0), out = ws.reduce((s, w) => s + f[w].out, 0);
   return { inc, out, net: inc - out };
 }
 
@@ -373,14 +375,16 @@ export function outlookRows(keys, opts = {}) {
     const f = fl(m);
     const c = { ...f.charlie, bal: bal("charlie", m) };
     const p = { ...f.partner, bal: bal("partner", m) };
-    return { m, charlie: c, partner: p, all: { inc: c.inc + p.inc, out: c.out + p.out, net: c.net + p.net, bal: c.bal + p.bal } };
+    const pr = { charlie: c, partner: p }, ws = includedWho();
+    const sum = (k) => ws.reduce((s, w) => s + pr[w][k], 0);
+    return { m, charlie: c, partner: p, all: { inc: sum("inc"), out: sum("out"), net: sum("net"), bal: sum("bal") } };
   });
 }
 
 /** What the projected number is made of, for the month k: cash now + pending in - pending out (this month up to k). */
 export function projectionBreakdown(k) {
   const now = currentKey();
-  const cash = accountsTotal("charlie") + accountsTotal("partner");
+  const cash = includedWho().reduce((s, w) => s + accountsTotal(w), 0);
   let inc = 0, out = 0;
   if (cmpKey(k, now) < 0) { const f = monthFlow(k, "all"); inc = f.inc; out = f.out; }
   else for (const mk of timeline()) {
@@ -414,7 +418,24 @@ export function staleBalanceDays(who) {
 
 /** Overall projection: Charles' projected funds plus his partner's. */
 export function householdProjectedAt(k) {
-  return runningFundsAt(k, "charlie") + runningFundsAt(k, "partner");
+  return includedWho().reduce((s, w) => s + runningFundsAt(k, w), 0);
+}
+
+const INCL_KEY = "moneyku_incl";
+/** Which people count in the combined (all) numbers; per-person numbers are never affected. */
+export function includedWho() {
+  let o = {};
+  try { o = JSON.parse(localStorage.getItem(INCL_KEY) || "{}"); } catch (e) { /* ignore */ }
+  const ws = ["charlie", "partner"].filter((w) => o[w] !== false);
+  return ws.length ? ws : ["charlie", "partner"];
+}
+export function setWhoIncluded(who, on) {
+  let o = {};
+  try { o = JSON.parse(localStorage.getItem(INCL_KEY) || "{}"); } catch (e) { /* ignore */ }
+  o[who] = !!on;
+  if (o.charlie === false && o.partner === false) return false; // keep at least one person in the total
+  try { localStorage.setItem(INCL_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ }
+  return true;
 }
 
 export function currentMoneyAt() { 

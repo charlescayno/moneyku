@@ -6,7 +6,7 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, flowItems, staleBalanceDays, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, flowItems, staleBalanceDays, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
@@ -1092,7 +1092,7 @@ export function openOutlook(w, opt) {
 // What is in a month's In and Out for the chosen view
 export function openOutlookMonth(m) {
   const view = getOutlookWho(), opts = getOutlookOpts();
-  const people = view === "all" ? ["charlie", "partner"] : [view];
+  const people = view === "all" ? includedWho() : [view];
   const income = [], expense = [];
   for (const w of people) {
     const f = flowItems(m, w, opts);

@@ -2,7 +2,7 @@
 // Insights: due soon, category budgets, month-over-month
 // =============================
 import { $, OWNERS, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
-import { accountsTotal, amountIn, getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline } from "./state.js";
+import { accountsTotal, amountIn, getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline, includedWho } from "./state.js";
 import { syncSet } from "./firebase.js";
 import { childAmt } from "./state.js";
 import { SPEND_CATS, catInfo, categoryOf } from "./categories.js";
@@ -239,6 +239,8 @@ export function realMoney(who = "charlie") {
 
 /** Real money of both people added together. */
 export function householdRealMoney() {
-  const c = realMoney("charlie"), p = realMoney("partner");
-  return { real: c.real + p.real, afterAll: c.afterAll + p.afterAll, cash: c.cash + p.cash };
+  const ws = includedWho();
+  const rs = ws.map((w) => realMoney(w));
+  const sum = (k) => rs.reduce((s, r) => s + r[k], 0);
+  return { real: sum("real"), afterAll: sum("afterAll"), cash: sum("cash") };
 }

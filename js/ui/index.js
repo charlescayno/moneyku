@@ -87,6 +87,7 @@ export {
   applyPaidVisual,
   refreshRealized,
   toggleProjected,
+  togglePersonIncluded,
   toggleInvestments,
   toggleExpenseSort,
   toggleArrange,
