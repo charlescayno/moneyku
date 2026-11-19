@@ -1,6 +1,6 @@
 // "Projected in next 6 months": projected balance at the end of each of the next six months, as figures plus a line.
 import { MONTHS_SHORT, addMonths, cmpKey, currentKey, keyParts, peso } from "../utils.js";
-import { getHideProjected, getSelectedKey, outlookRows, timeline } from "../state.js";
+import { getHideProjected, getSelectedKey, includedWho, outlookRows, timeline } from "../state.js";
 
 const COUNT = 6;
 let offset = 0; // months from the current month where the window starts (scrolled with the arrows or a swipe)
@@ -53,11 +53,12 @@ export function next5CardHtml() {
   if (keys.length < 2) return "";
   // Amounts follow the same hide switch as the rest of the projections
   if (getHideProjected()) {
-    return `<div id="next5-card" class="glass-card rounded-2xl border border-white/5 px-4 py-3 flex items-center justify-between gap-3">
+    return `<div id="next5-card" class="bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex items-center justify-between gap-3">
       <div class="min-w-0"><h3 class="text-sm font-black text-white">Projected in next ${keys.length} months</h3><p class="text-[11px] text-slate-500">Projected balances are hidden</p></div>
       <button type="button" data-action="toggleProjected" class="flex-shrink-0 flex items-center gap-1 text-[11px] font-bold text-indigo-300 px-3 py-1.5 rounded-lg bg-white/5"><span class="material-icons" style="font-size:14px">visibility</span>Show</button>
     </div>`;
   }
+  const w = includedWho(); const ac = w.length === 1 ? (w[0] === "partner" ? "#DFC5FE" : "#93c5fd") : "#a5b4fc"; // same person colors as the big card: blue = Charles, purple = Ynah
   const vals = outlookRows(keys).map((r) => r.all.bal);
   const sel = getSelectedKey();
 
@@ -72,20 +73,20 @@ export function next5CardHtml() {
   const step = niceStep(span / 3), ticks = [];
   for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) ticks.push(Math.round(v / step) * step);
   const grid = ticks.filter((v) => Math.abs(v) > 1e-9).map((v) => `<line x1="0" x2="${W}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#475569" stroke-width="1" opacity=".35" vector-effect="non-scaling-stroke"/><text x="2" y="${(Y(v) - 3).toFixed(1)}" font-size="13" fill="#64748b" font-weight="700">${cmp(v)}</text>`).join("") + (lo <= 0 && hi >= 0 ? `<text x="2" y="${(Y(0) - 3).toFixed(1)}" font-size="13" fill="#64748b" font-weight="700">₱0</text>` : "");
-  const dots = vals.map((v, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i === 0 ? 6 : 4.5}" fill="${v < 0 ? "#fb7185" : "#a5b4fc"}"/>`).join("");
+  const dots = vals.map((v, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i === 0 ? 6 : 4.5}" fill="${v < 0 ? "#fb7185" : ac}"/>`).join("");
   const zero = `<line x1="${(X(0) - 8).toFixed(1)}" x2="${(X(keys.length - 1) + 8).toFixed(1)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 4" opacity=".8"/>`;
   const cols = (cell) => `<div class="grid" style="grid-template-columns:repeat(${keys.length},minmax(0,1fr))">${keys.map(cell).join("")}</div>`;
 
   const figures = cols((m, i) => `<button type="button" data-action="selectMonth" data-arg0="${m}" class="text-center text-[11px] font-black tabular-nums truncate px-0.5 ${vals[i] < 0 ? "text-rose-400" : "text-white"}" aria-label="${MONTHS_SHORT[keyParts(m).m]}: ${sp(vals[i])}">${cmp(vals[i])}</button>`);
   const labels = cols((m) => `<button type="button" data-action="selectMonth" data-arg0="${m}" class="text-center text-[11px] font-bold ${m === sel ? "text-indigo-300" : "text-slate-500"}" style="text-transform:lowercase">${MONTHS_SHORT[keyParts(m).m]}</button>`);
 
-  return `<div id="next5-card" class="glass-card rounded-2xl border border-white/5 px-4 py-3">
+  return `<div id="next5-card" class="bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4">
     ${header(keys)}
     ${figures}
     <svg viewBox="0 0 ${W} ${H}" class="w-full block my-1" role="img" aria-label="Projected balance, next ${keys.length} months">
       ${grid}
       ${zero}
-      <path d="${path}" fill="none" stroke="#a5b4fc" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <path d="${path}" fill="none" stroke="${ac}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
       ${dots}
     </svg>
     ${labels}
