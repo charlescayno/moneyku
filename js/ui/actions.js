@@ -265,6 +265,8 @@ export function refreshRealized() {
   const pc = $("sum-projected-c"), pp = $("sum-projected-p");
   if (pc) pc.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "charlie"));
   if (pp) pp.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "partner"));
+  const pa = $("sum-projected-all");
+  if (pa) pa.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "charlie") + runningFundsAt(selectedKey, "partner"));
   const stats = $("sum-stats");
   if (stats) stats.innerHTML = statsGridHtml(t);
   const cardSlot = $("card-summary-slot");
@@ -281,6 +283,7 @@ export function togglePersonIncluded(who) {
 
 /** Tapping a person's tile shows only that person; tapping them again (when alone) shows everyone. */
 export function focusPerson(who) {
+  if (who === "all") { setWhoIncluded("charlie", true); setWhoIncluded("partner", true); renderBudget(); return; }
   const inc = includedWho();
   const alone = inc.length === 1 && inc[0] === who;
   const other = who === "charlie" ? "partner" : "charlie";
