@@ -128,23 +128,40 @@ export function openCopyPicker() {
       <span class="flex-1 min-w-0 text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span>
       <span class="text-xs font-black flex-shrink-0 ${kind === "income" ? "text-emerald-400" : "text-rose-400"}">${peso(it.amount)}</span></button>`).join("");
   showSheet(`Copy from ${monthShort(addMonths(getSelectedKey(), -1))}`,
-    `<div class="space-y-1">${rows}</div>`,
+    `<div class="flex justify-end pb-1"><button type="button" id="copy-all" data-action="copyAll" class="text-[11px] font-bold text-indigo-300 px-2 py-1 rounded-lg bg-white/5">Deselect all</button></div><div class="space-y-1">${rows}</div>`,
     `<button type="button" data-action="qlClose" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Cancel</button>
      <button type="button" id="copy-go" data-action="copyLastMonth" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-indigo-600">Copy ${todo.length}</button>`);
+}
+
+// Redraw the circles, the Copy count and the select-all label from each row's data-on
+function copySync() {
+  const rows = [...document.querySelectorAll("[data-copy]")];
+  rows.forEach((el) => {
+    const on = el.dataset.on === "true";
+    const box = el.querySelector(".copy-box");
+    if (box) { box.textContent = on ? "check_circle" : "radio_button_unchecked"; box.className = `material-icons copy-box ${on ? "text-emerald-300" : "text-slate-500"}`; }
+  });
+  const n = rows.filter((el) => el.dataset.on === "true").length;
+  const go = document.getElementById("copy-go");
+  if (go) { go.textContent = n ? `Copy ${n}` : "Copy"; go.style.opacity = n ? "1" : ".5"; }
+  const all = document.getElementById("copy-all");
+  if (all) all.textContent = n === rows.length ? "Deselect all" : "Select all";
 }
 
 export function copyToggle(id) {
   const el = document.querySelector(`[data-copy="${id}"]`);
   if (!el) return;
-  const on = el.dataset.on !== "true";
-  el.dataset.on = String(on);
-  const box = el.querySelector(".copy-box");
-  if (box) { box.textContent = on ? "check_circle" : "radio_button_unchecked"; box.className = `material-icons copy-box ${on ? "text-emerald-300" : "text-slate-500"}`; }
-  const n = document.querySelectorAll('[data-copy][data-on="true"]').length;
-  const go = document.getElementById("copy-go");
-  if (go) { go.textContent = n ? `Copy ${n}` : "Copy"; go.style.opacity = n ? "1" : ".5"; }
+  el.dataset.on = String(el.dataset.on !== "true");
+  copySync();
 }
 
+/** Select everything, or deselect everything when all are already selected. */
+export function copyAll() {
+  const rows = [...document.querySelectorAll("[data-copy]")];
+  const allOn = rows.every((el) => el.dataset.on === "true");
+  rows.forEach((el) => { el.dataset.on = String(!allOn); });
+  copySync();
+}
 /** Copies the ticked items from the picker into this month. */
 export async function copyLastMonth() {
   const k = getSelectedKey();
