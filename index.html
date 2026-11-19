@@ -41,7 +41,7 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20261119_nointro" />
+    <link rel="stylesheet" href="style.css?v=20261119_mstrip" />
     <link rel="stylesheet" href="theme.css?v=20261119_flat2" />
   </head>
   <body
@@ -199,11 +199,9 @@
           class="flex flex-col"
         >
           <!-- Month nav bar -->
-          <div id="month-nav" class="flex items-center gap-2 px-5 sm:px-6 md:px-8 pt-5 pb-3 flex-shrink-0">
-            <button id="mn-prev" data-action="stepMonth" data-arg0="-1" aria-label="Previous month" class="w-11 h-11 rounded-xl bg-slate-800/70 text-slate-200 flex items-center justify-center disabled:opacity-30"><span class="material-icons">chevron_left</span></button>
-            <button id="mn-label" data-action="toggleMonthPicker" aria-label="Pick month" class="flex-1 h-11 rounded-xl bg-slate-800/70 text-slate-100 text-sm font-black uppercase tracking-wider flex items-center justify-center gap-1">Month<span class="material-icons" style="font-size:18px">arrow_drop_down</span></button>
-            <button id="mn-next" data-action="stepMonth" data-arg0="1" aria-label="Next month" class="w-11 h-11 rounded-xl bg-slate-800/70 text-slate-200 flex items-center justify-center disabled:opacity-30"><span class="material-icons">chevron_right</span></button>
-            <button id="mn-today" data-action="goToday" class="hidden h-11 px-3 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-wider">Today</button>
+          <!-- Month strip: years above their months, current month underlined, a dot marks today -->
+          <div id="month-nav" class="px-5 sm:px-6 md:px-8 pt-5 pb-3 flex-shrink-0">
+            <div id="month-strip" class="mstrip" role="tablist" aria-label="Months"></div>
           </div>
           <div id="month-banner" class="px-5 sm:px-6 md:px-8 pb-2 empty:hidden flex-shrink-0"></div>
 
