@@ -54,12 +54,6 @@ export function renderBudget() {
   // Chips in priority order: below zero, then stale balances, then the monthly change, then "all good".
   // Only the first shows on the card; the rest live in the details below.
   const projChips = [];
-  const shortAt = (m, w) => { const r = orows.find((x) => x.m === m); return r ? Math.max(0, -r[w].bal) : 0; }; // how much is missing in month m
-  if (neg.all) projChips.push(projChip("bg-rose-500/20 text-rose-300", `Short ${peso(shortAt(neg.all, "all"))} by end of ${monthShort(neg.all)} · top up or cut bills`));
-  else if ((showC && neg.charlie) || (showP && neg.partner)) {
-    if (showC && neg.charlie) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.charlie.label} short ${peso(shortAt(neg.charlie, "charlie"))} by end of ${monthShort(neg.charlie)}`));
-    if (showP && neg.partner) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.partner.label} short ${peso(shortAt(neg.partner, "partner"))} by end of ${monthShort(neg.partner)}`));
-  }
   if (staleDays > 7) projChips.push(projChip("bg-amber-500/20 text-amber-200", `Oldest balance updated ${staleDays}d ago`));
   if (pj.delta != null && !hideProjected) projChips.push(projChip(pj.delta >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300", `${pj.delta >= 0 ? "+" : "-"}${peso(Math.abs(pj.delta))} vs prev. month`));
   if (!neg.all && !(showC && neg.charlie) && !(showP && neg.partner) && okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
