@@ -63,7 +63,7 @@ export function next5CardHtml() {
   const sel = getSelectedKey();
 
   // chart: one column per month, points centred in their column so they line up with the figures above
-  const W = 500, H = 110, PADY = 12;
+  const W = 500, H = 130, PADY = 12;
   const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), span = hi - lo || 1;
   const X = (i) => ((i + 0.5) / keys.length) * W;
   const Y = (v) => PADY + ((hi - v) / span) * (H - 2 * PADY);
@@ -73,7 +73,8 @@ export function next5CardHtml() {
   const step = niceStep(span / 3), ticks = [];
   for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) ticks.push(Math.round(v / step) * step);
   const grid = ticks.filter((v) => Math.abs(v) > 1e-9).map((v) => `<line x1="0" x2="${W}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#475569" stroke-width="1" opacity=".35" vector-effect="non-scaling-stroke"/><text x="2" y="${(Y(v) - 3).toFixed(1)}" font-size="13" fill="#64748b" font-weight="700">${cmp(v)}</text>`).join("") + (lo <= 0 && hi >= 0 ? `<text x="2" y="${(Y(0) - 3).toFixed(1)}" font-size="13" fill="#64748b" font-weight="700">₱0</text>` : "");
-  const dots = vals.map((v, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i === 0 ? 6 : 4.5}" fill="${v < 0 ? "#fb7185" : ac}"/>`).join("");
+  const bw = (W / keys.length) * 0.5;
+  const dots = vals.map((v, i) => { const y0 = Y(0), y1 = Y(v), top = Math.min(y0, y1), h = Math.max(2, Math.abs(y1 - y0)); return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${v < 0 ? "#fb7185" : ac}" opacity="${keys[i] === sel || i === 0 ? 1 : 0.8}"/>`; }).join("");
   const zero = `<line x1="${(X(0) - 8).toFixed(1)}" x2="${(X(keys.length - 1) + 8).toFixed(1)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 4" opacity=".8"/>`;
   const cols = (cell) => `<div class="grid" style="grid-template-columns:repeat(${keys.length},minmax(0,1fr))">${keys.map(cell).join("")}</div>`;
 
@@ -85,9 +86,8 @@ export function next5CardHtml() {
     ${figures}
     <svg viewBox="0 0 ${W} ${H}" class="w-full block my-1" role="img" aria-label="Projected balance, next ${keys.length} months">
       ${grid}
-      ${zero}
-      <path d="${path}" fill="none" stroke="${ac}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
       ${dots}
+      ${zero}
     </svg>
     ${labels}
   </div>`;
