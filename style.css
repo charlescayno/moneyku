@@ -1404,3 +1404,7 @@ details[data-persist="outlook-more"][open] > summary .material-icons { transform
 
 /* No branded intro: the splash is just a plain dark cover until the app is ready */
 #intro-content, #intro-particles { display: none !important; }
+
+/* Month navigation stays visible under the header while scrolling */
+#month-nav { position: sticky; top: var(--hdr-h, 0px); z-index: 30; background: #0f172a; }
+
