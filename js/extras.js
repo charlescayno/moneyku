@@ -145,9 +145,7 @@ export function openSettings() {
      ${row("openExport", "ios_share", "Export data (CSV / backup)&hellip;")}
      ${row("exportData", "download", "Full backup (JSON)")}
      ${row("openRestore", "settings_backup_restore", "Restore from a backup")}
-     ${row("importCardAsk", "credit_card", "Import BPI Platinum charges (Oct 15 - Nov 13)")}
-     <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 pt-2">Quick log</p>
-     ${row("qlOpenKey", "key", "Gemini API key")}`, CLOSE_BTN);
+     ${row("importCardAsk", "credit_card", "Import BPI Platinum charges (Oct 15 - Nov 13)")}`, CLOSE_BTN);
 }
 
 /** Months chosen in the Export sheet (From / To). Falls back to the month being viewed. */
