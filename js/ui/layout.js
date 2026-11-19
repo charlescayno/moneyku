@@ -50,19 +50,19 @@ export function renderBudget() {
     sparkHtml = `<svg viewBox="0 0 100 28" class="ml-auto w-24 h-7 flex-shrink-0" role="img" aria-label="Projected balance trend, next 12 months" data-action="openOutlook" data-arg0="all">${lo < 0 ? `<line x1="0" x2="100" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#fb7185" stroke-width="1" stroke-dasharray="2 2" opacity=".7"/>` : ""}<path d="${d}" fill="none" stroke="${Math.min(...vals) < 0 ? "#fb7185" : "#a5b4fc"}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
   }
   const worstCase = outlookRows([k], { cons: true })[0].all.bal;
-  const staleDays = Math.max(staleBalanceDays("charlie") ?? -1, staleBalanceDays("partner") ?? -1);
+  const staleDays = Math.max(showC ? (staleBalanceDays("charlie") ?? -1) : -1, showP ? (staleBalanceDays("partner") ?? -1) : -1);
   const projChip = (cls, txt) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${txt}</span>`;
   // Chips in priority order: below zero, then stale balances, then the monthly change, then "all good".
   // Only the first shows on the card; the rest live in the details below.
   const projChips = [];
   if (neg.all) projChips.push(projChip("bg-rose-500/20 text-rose-300", `Goes below zero in ${monthShort(neg.all)}`));
-  else if (neg.charlie || neg.partner) {
-    if (neg.charlie) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.charlie.label} below zero in ${monthShort(neg.charlie)}`));
-    if (neg.partner) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.partner.label} below zero in ${monthShort(neg.partner)}`));
+  else if ((showC && neg.charlie) || (showP && neg.partner)) {
+    if (showC && neg.charlie) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.charlie.label} below zero in ${monthShort(neg.charlie)}`));
+    if (showP && neg.partner) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.partner.label} below zero in ${monthShort(neg.partner)}`));
   }
   if (staleDays > 7) projChips.push(projChip("bg-amber-500/20 text-amber-200", `Oldest balance updated ${staleDays}d ago`));
   if (pj.delta != null && !hideProjected) projChips.push(projChip(pj.delta >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300", `${pj.delta >= 0 ? "+" : "-"}${peso(Math.abs(pj.delta))} vs prev. month`));
-  if (!neg.all && !neg.charlie && !neg.partner && okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
+  if (!neg.all && !(showC && neg.charlie) && !(showP && neg.partner) && okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
   const ht = includedTotals(k);
   const current = ht.current;
   const savColor = ht.savings > 0.005 ? "text-emerald-400" : ht.savings < -0.005 ? "text-rose-400" : "text-amber-300";
