@@ -95,18 +95,18 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
   const icon = opts.hideIcon ? null : iconFor(it.name);
   const iconInner = icon
     ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[icon] || ''}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
-    : `<span class="material-icons text-white" style="font-size:24px">home_work</span>`;
+    : `<span class="material-icons text-white" style="font-size:22px">home_work</span>`;
   const iconBg = icon ? "bg-slate-800" : "bg-gradient-to-br from-fuchsia-500 to-purple-600";
   const arrange = isArranging(it.id) && kids.length > 1;
   const childRows = kids.map((c, i) => childRowHtml(it.id, c, k, who, kind, arrange ? { i, n: kids.length } : null)).join("");
   const kidsIds = kids.map(c => c.id).join(",");
   
-  return `<details data-persist="parent-${it.id}" class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
-    <summary class="parent-summary flex items-center gap-4 p-5 cursor-pointer list-none ${allPaid || it.excluded ? "opacity-70" : ""}">
-      <div class="acct-icon w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 shadow-lg">${iconInner}</div>
+  return `<details data-persist="parent-${it.id}" class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden" style="margin:8px 0" data-parent="${it.id}" data-who="${who}">
+    <summary class="parent-summary flex items-center cursor-pointer list-none ${allPaid || it.excluded ? "opacity-70" : ""}" style="gap:12px;padding:12px 14px">
+      <div class="acct-icon rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0" style="width:44px;height:44px">${iconInner}</div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1.5">
-          <p class="item-name text-lg font-black text-white truncate ${allPaid ? "line-through" : ""}">${escapeHtml(it.name)}</p>
+          <p class="item-name font-black text-white truncate ${allPaid ? "line-through" : ""}" style="font-size:15px">${escapeHtml(it.name)}</p>
           ${it.excluded ? `<span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 flex-shrink-0">Not counted</span>` : ""}
           <span class="parent-caret material-icons text-slate-500 transition-transform duration-300 group-open:-rotate-180" style="font-size:20px">expand_more</span>
         </div>
@@ -116,7 +116,7 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
         </div>
       </div>
       <div class="flex flex-col items-end gap-1 flex-shrink-0">
-        <p class="text-lg font-black text-white">${peso(total)}</p>
+        <p class="font-black text-white" style="font-size:15px">${peso(total)}</p>
         <button data-action="togglePaidGroup" data-arg0="${kidsIds}" data-arg1="${k}" data-arg2="${kind}" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="text-slate-500 hover:text-purple-400 transition-colors flex items-center gap-1 ${allPaid ? "text-purple-500" : ""}">
           <span class="material-icons" style="font-size:16px">${allPaid ? "done_all" : "checklist"}</span>
         </button>

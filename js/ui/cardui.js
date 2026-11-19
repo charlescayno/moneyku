@@ -110,14 +110,14 @@ export function cardSectionHtml(k) {
   const count = getItems("charlie", "expenses").filter(isCardItem).length;
   const empty = `<div class="px-3 py-3 text-center"><p class="text-[11px] font-bold text-slate-500">${count ? "No card statements to show for this month." : "No card expenses yet."}</p>
       <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p></div>`;
-  return `<div id="sec-card" class="border-t border-white/[0.04] pt-2" style="scroll-margin-top:5.5rem">
+  return `<div id="sec-card" style="scroll-margin-top:5.5rem;border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
     <details data-persist="sec-card-v2" class="group">
-      <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+      <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(99,102,241,.12);border-radius:8px;padding:7px 8px">
         <div class="flex items-center gap-1">
           <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
           <div class="flex items-baseline gap-1.5">
-            <p class="text-[9px] font-black uppercase tracking-[0.15em] text-indigo-300">&#128179; ${CARD_NAME}</p>
-            <span class="text-[11px] font-bold ${owed > 0.005 ? "text-rose-400" : "text-slate-500"}">${peso(owed)}</span>
+            <p class="font-black uppercase tracking-[0.12em] text-slate-400" style="font-size:11px">&#128179; ${CARD_NAME}</p>
+            <span class="font-bold ${owed > 0.005 ? "text-rose-400" : "text-slate-500"}" style="font-size:14px">${peso(owed)}</span>
           </div>
         </div>
         <button type="button" data-action="cardSettingsOpen" title="Card settings" aria-label="Card settings" class="text-slate-500 px-1"><span class="material-icons" style="font-size:14px">tune</span></button>
