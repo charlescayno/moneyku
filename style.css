@@ -1395,3 +1395,5 @@ html.app-ready.kb-open .fab-add {
 .ynah-grad .text-white,.ynah-grad .text-white\/60,.ynah-grad .text-white\/40{color:#3b1f63}
 .ynah-grad .text-emerald-400{color:#047857}
 .ynah-grad .text-rose-400{color:#be123c}
+
+#modal-body .spend-add input[type="date"] { padding: 0.55rem 0.75rem !important; min-height: 2.6rem; }

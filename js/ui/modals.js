@@ -144,6 +144,9 @@ export function openItemModal(who, kind, id, presetDay) {
     }
   }
 
+  // Spending log sits up front (not under "More options") so adding spending is one tap away
+  if (!isNew && !kids.length && kind === "expenses") body += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
+
   body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
     <div><p class="text-sm font-bold text-white">Recurring</p><p class="text-[10px] text-slate-500">Repeats every month</p></div>
     <button type="button" id="f-recurring" data-on="${recurring}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${recurring ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
@@ -216,9 +219,6 @@ export function openItemModal(who, kind, id, presetDay) {
     <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" /></div>`;
 
   if (!isNew && !kids.length) {
-    if (kind === "expenses") {
-      more += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
-    }
     const verb = kind === "income" ? "Received" : "Paid";
     let hint = kind === "income" ? "Mark this month's income received" : "Mark this month settled";
     if (kind === "expenses") {

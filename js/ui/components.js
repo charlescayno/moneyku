@@ -1291,7 +1291,7 @@ export function spendSectionHtml(it) {
   const rows = list.map((e, i) => `
     <div class="flex items-center gap-2 py-2 px-3 bg-slate-900/60 rounded-xl">
       <span class="material-icons text-emerald-400" style="font-size:16px">payments</span>
-      <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}${e.acct ? ` <span class="text-indigo-300">&middot; from ${escapeHtml(accountName(e.acct))}</span>` : ""}</span>
+      <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}${e.date ? ` <span class="text-slate-300">&middot; ${escapeHtml(new Date(e.date + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric" }))}</span>` : ""}${e.acct ? ` <span class="text-indigo-300">&middot; from ${escapeHtml(accountName(e.acct))}</span>` : ""}</span>
       <span class="text-[13px] font-black text-white">${peso(e.amount)}</span>
       <button type="button" data-action="deleteSpend" data-arg0="${e.id}" title="Remove" class="text-slate-500 hover:text-rose-400 flex-shrink-0"><span class="material-icons" style="font-size:16px">close</span></button>
     </div>`).join("");
@@ -1305,10 +1305,18 @@ export function spendSectionHtml(it) {
       <span class="text-[11px] font-bold text-slate-400 flex-shrink-0">${peso(spent)} / ${peso(est)}</span>
     </div>
     ${rows ? `<div class="space-y-1.5">${rows}</div>` : `<p class="text-[11px] text-slate-600 text-center py-1">No spending logged yet.</p>`}
-    <div class="spend-add flex items-center gap-2">
-      <select id="f-spend-acct" title="Subtracted from this account&#39;s balance" aria-label="Account" class="flex-shrink-0 w-[7.5rem] bg-slate-900 rounded-xl py-3 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select>
-      <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Add spending  ₱0" class="spend-amt bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" />
-      <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 flex items-center justify-center active:scale-95 transition-transform"><span class="material-icons" style="font-size:22px">add</span></button>
+    <div class="spend-add rounded-xl border border-emerald-400/50 bg-emerald-500/10 p-3 space-y-2">
+      <p class="text-[11px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1"><span class="material-icons" style="font-size:16px">add_circle</span>Add spending</p>
+      <div class="flex items-center gap-2">
+        <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Amount  ₱0" class="spend-amt bg-slate-900 rounded-xl text-[14px] font-bold text-white focus:outline-none" />
+        <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 h-12 px-4 rounded-xl bg-emerald-500 text-slate-950 font-black text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform"><span class="material-icons" style="font-size:20px">add</span>Add</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">From account</label>
+          <select id="f-spend-acct" title="Subtracted from this account&#39;s balance" aria-label="Account" class="w-full bg-slate-900 rounded-xl py-2.5 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select></div>
+        <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">Date <span class="text-slate-500">(optional)</span></label>
+          <input type="date" id="f-spend-date" min="${k}-01" max="${k}-${String(new Date(keyParts(k).y, keyParts(k).m + 1, 0).getDate()).padStart(2, "0")}" aria-label="Date (optional)" class="w-full bg-slate-900 rounded-xl text-[12px] font-bold text-white focus:outline-none" /></div>
+      </div>
     </div>
   </div>`;
 }
@@ -1332,7 +1340,10 @@ export async function addSpend() {
   // Taking it from an account subtracts it from that balance now (and Delete gives it back)
   const account = acct ? (appData.accounts || []).find((a) => a.id === acct) : null;
   if (account) account.amount = Math.round(((Number(account.amount) || 0) - amount + Number.EPSILON) * 100) / 100;
-  cur.push(account ? { id: generateId(), amount, acct, ded: true } : { id: generateId(), amount });
+  const date = $("f-spend-date")?.value || ""; // optional, YYYY-MM-DD
+  const entry = account ? { id: generateId(), amount, acct, ded: true } : { id: generateId(), amount };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) entry.date = date;
+  cur.push(entry);
   appData.spend = appData.spend || {};
   appData.spend[k] = appData.spend[k] || {};
   appData.spend[k][id] = cur;
