@@ -88,6 +88,7 @@ export {
   refreshRealized,
   toggleProjected,
   togglePersonIncluded,
+  focusPerson,
   toggleInvestments,
   toggleExpenseSort,
   toggleArrange,

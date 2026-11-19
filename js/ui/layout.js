@@ -20,6 +20,7 @@ export function renderBudget() {
   const hideProjected = getHideProjected();
   // Top-bar switches: who counts in the combined numbers (per-person numbers are always shown)
   const inclW = includedWho();
+  const showC = inclW.includes("charlie"), showP = inclW.includes("partner"); // only ticked people's sections show
   const inclBtn = (w) => `<button type="button" data-action="togglePersonIncluded" data-arg0="${w}" aria-pressed="${inclW.includes(w)}" title="${inclW.includes(w) ? "Counted in the combined total · tap to leave out" : "Left out of the combined total · tap to count"}" class="flex items-center focus:outline-none ${inclW.includes(w) ? "text-emerald-300" : "text-amber-300"}"><span class="material-icons" style="font-size:20px">${inclW.includes(w) ? "check_circle" : "radio_button_unchecked"}</span></button>`;
   const projC = runningFundsAt(k, "charlie"), projP = runningFundsAt(k, "partner");
   // What the projected number is made of, early warnings, a worst case, and stale-balance nudge
@@ -115,8 +116,8 @@ export function renderBudget() {
         <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="text-lg font-black tabular-nums truncate text-rose-400">${signedPeso(-ht.toPay)}</span></div>
         ${(Math.abs(t.debtToReceive) > 0.005 || Math.abs(t.debtToPay) > 0.005) ? `<div class="bg-black/20 rounded-2xl px-4 py-3 flex items-center justify-between col-span-2"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">swap_horiz</span>debt net</span><span class="text-lg font-black tabular-nums ${(t.debtToReceive - t.debtToPay) >= 0 ? 'text-indigo-300' : 'text-orange-300'}">${signedPeso(t.debtToReceive - t.debtToPay)}</span></div>` : ''}
       </div>      <div class="grid grid-cols-2 gap-1.5">
-        <div data-action="togglePersonIncluded" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${inclW.includes("charlie") ? "" : "border border-dashed border-amber-400/60"}"><span class="flex items-center gap-1.5">${inclBtn("charlie")}<img src="assets/avatar-charles.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0"><span class="text-[9px] font-bold uppercase text-blue-300 leading-tight">${OWNERS.charlie.label} Projected</span></span><span class="flex items-center gap-1 pl-0.5">${pDelta("charlie")}<span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></span></div>
-        <div data-action="togglePersonIncluded" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${inclW.includes("partner") ? "" : "border border-dashed border-amber-400/60"}"><span class="flex items-center gap-1.5">${inclBtn("partner")}<img src="assets/avatar-ynah.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0"><span class="text-[9px] font-bold uppercase text-ynah leading-tight">${OWNERS.partner.label} Projected</span></span><span class="flex items-center gap-1 pl-0.5">${pDelta("partner")}<span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></span></div>
+        <div data-action="focusPerson" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${inclW.includes("charlie") ? "" : "border border-dashed border-amber-400/60"}"><span class="flex items-center gap-1.5">${inclBtn("charlie")}<img src="assets/avatar-charles.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0"><span class="text-[9px] font-bold uppercase text-blue-300 leading-tight">${OWNERS.charlie.label} Projected</span></span><span class="flex items-center gap-1 pl-0.5">${pDelta("charlie")}<span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></span></div>
+        <div data-action="focusPerson" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${inclW.includes("partner") ? "" : "border border-dashed border-amber-400/60"}"><span class="flex items-center gap-1.5">${inclBtn("partner")}<img src="assets/avatar-ynah.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0"><span class="text-[9px] font-bold uppercase text-ynah leading-tight">${OWNERS.partner.label} Projected</span></span><span class="flex items-center gap-1 pl-0.5">${pDelta("partner")}<span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></span></div>
       </div>
       ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
       <details data-persist="proj-details" class="group/pd">
@@ -167,20 +168,20 @@ export function renderBudget() {
         <!-- Col 1: Liquid Accounts & Debt -->
         <div class="contents">
           <div class="order-1 grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start min-w-0" style="scroll-margin-top:5.5rem">
-            <div class="min-w-0" id="sec-accounts">${accountsCardHtml("charlie")}</div>
-            <div class="min-w-0" id="sec-accounts-partner">${accountsCardHtml("partner")}</div>
+            ${showC ? `<div class="min-w-0" id="sec-accounts">${accountsCardHtml("charlie")}</div>` : ""}
+            ${showP ? `<div class="min-w-0" id="sec-accounts-partner">${accountsCardHtml("partner")}</div>` : ""}
           </div>
         </div>
 
         <!-- Charlie's budget (left) and partner's budget (right on wide screens, stacked on phones) -->
         <div class="order-2 grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start min-w-0">
-          <div class="flex flex-col gap-2 min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
+          ${showC ? `<div class="flex flex-col gap-2 min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
             ${personSectionHtml("charlie", true)}
             <div id="card-summary-slot" class="contents">${cardSummaryHtml()}</div>
-          </div>
-          <div class="flex flex-col gap-2 min-w-0" id="sec-partner" style="scroll-margin-top:5.5rem">
+          </div>` : ""}
+          ${showP ? `<div class="flex flex-col gap-2 min-w-0" id="sec-partner" style="scroll-margin-top:5.5rem">
             ${personSectionHtml("partner", true)}
-          </div>
+          </div>` : ""}
         </div>
 
       </div>
