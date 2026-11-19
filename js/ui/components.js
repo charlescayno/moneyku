@@ -583,7 +583,8 @@ export function personSectionHtml(who, includeDebt = true) {
 export function acctIconHtml(a) {
   const key = bankIconFor(a.name);
   const domain = key && BANK_DOMAINS[key];
-  const fallback = `<span class="material-icons text-slate-300" style="font-size:18px">account_balance</span>`;
+  const isCash = !key && /cash/i.test(a.name || "");
+  const fallback = `<span class="material-icons text-slate-300" style="font-size:18px">${isCash ? "payments" : "account_balance"}</span>`;
   if (!domain) return fallback;
   // Bank logo (favicon service); falls back to the generic bank icon if it can't load (offline)
   return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=128" alt="${escapeHtml(BANK_LABELS[key] || a.name)}" loading="lazy" class="w-full h-full object-cover bg-white" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
