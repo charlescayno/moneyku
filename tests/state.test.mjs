@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeData } from "./setup.mjs";
 import { mondaysInMonth } from "../js/utils.js";
-import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals, householdTotals, accountsTotal, runningFundsAt, householdProjectedAt, outlookRows } from "../js/state.js";
+import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals, householdTotals, accountsTotal, runningFundsAt, householdProjectedAt, outlookRows, flowItems, projectionBreakdown, firstNegative, staleBalanceDays } from "../js/state.js";
 
 test("mondaysInMonth counts 4 or 5 Mondays", () => {
   assert.equal(mondaysInMonth("2026-12"), 4);
@@ -108,6 +108,19 @@ test("partner items stay out of Charles' totals; household combines both", () =>
     }
   }
   assert.equal(rowsO[1].all.bal, rowsO[1].charlie.bal + rowsO[1].partner.bal);
+  // Drill-down items add up to the month's flow; recurring-only never exceeds the full inflow
+  for (const w of ["charlie", "partner"]) {
+    const f = flowItems(cur, w);
+    assert.equal(Math.round(f.income.reduce((s, x) => s + x.amt, 0) * 100), Math.round(rowsO[0][w].inc * 100));
+    assert.equal(Math.round(f.expense.reduce((s, x) => s + x.amt, 0) * 100), Math.round(rowsO[0][w].out * 100));
+  }
+  const cons = outlookRows(keys, { cons: true }), noI = outlookRows(keys, { noInst: true });
+  assert.ok(cons[0].all.inc <= rowsO[0].all.inc);
+  assert.ok(noI[0].all.out <= rowsO[0].all.out);
+  const pb = projectionBreakdown(cur);
+  assert.equal(Math.round((pb.cash + pb.inc - pb.out) * 100), Math.round(rowsO[0].all.bal * 100));
+  assert.equal(firstNegative(rowsO).all, rowsO.find((r) => r.all.bal < 0)?.m ?? null);
+  assert.equal(staleBalanceDays("charlie"), null); // no account has a date in the fixture
   assert.equal(accountsTotal(), 1000);
   assert.equal(accountsTotal("partner"), 400);
   assert.equal(h.cash, 1400);

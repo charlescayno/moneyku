@@ -6,10 +6,11 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, flowItems, staleBalanceDays, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
+import { showSheet } from './quicklog.js';
 import { lastMonthOneTimes } from '../extras.js';
 import { toast } from './core.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
@@ -710,7 +711,7 @@ export function accountsCardHtml(who = "charlie") {
         </div>
         <div>
           <h3 class="text-xs font-black text-white uppercase tracking-wide">${isP ? OWNERS.partner.label + " " : ""}Accounts</h3>
-          <p class="text-[8px] text-slate-400">Balances on hand</p>
+          <p class="text-[8px] text-slate-400">Balances on hand${(() => { const d = staleBalanceDays(who); return d != null && d > 7 ? ` · <span class="text-amber-300">oldest update ${d}d ago</span>` : ""; })()}</p>
         </div>
       </div>
       <p class="text-xs font-black text-emerald-400">${peso(accountsTotal(who))}</p>
@@ -1053,15 +1054,61 @@ const OUTLOOK_KEY = "moneyku_outlook_who";
 export function getOutlookWho() {
   try { const v = localStorage.getItem(OUTLOOK_KEY); return v === "charlie" || v === "partner" ? v : "all"; } catch (e) { return "all"; }
 }
-// Switch the outlook between everyone, Charles' and Ynah's and redraw just that card
-export function setOutlookWho(w) {
-  try { localStorage.setItem(OUTLOOK_KEY, w === "charlie" || w === "partner" ? w : "all"); } catch (e) { /* ignore */ }
+const OUTLOOK_OPTS_KEY = "moneyku_outlook_opts";
+// "cons" = count only recurring income; "noInst" = leave installments out (what-if)
+export function getOutlookOpts() {
+  try { const o = JSON.parse(localStorage.getItem(OUTLOOK_OPTS_KEY) || "{}"); return { cons: !!o.cons, noInst: !!o.noInst }; } catch (e) { return { cons: false, noInst: false }; }
+}
+function redrawOutlook() {
   const el = document.querySelector('details[data-persist="outlook"]');
   if (!el) return;
   const tmp = document.createElement("div");
   tmp.innerHTML = yearOutlookCardHtml();
   const next = tmp.firstElementChild;
   if (next) { next.open = el.open; el.replaceWith(next); }
+}
+// Switch the outlook between everyone, Charles' and Ynah's and redraw just that card
+export function setOutlookWho(w) {
+  try { localStorage.setItem(OUTLOOK_KEY, w === "charlie" || w === "partner" ? w : "all"); } catch (e) { /* ignore */ }
+  redrawOutlook();
+}
+export function toggleOutlookOpt(name) {
+  const o = getOutlookOpts();
+  if (name === "cons" || name === "noInst") o[name] = !o[name];
+  try { localStorage.setItem(OUTLOOK_OPTS_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ }
+  redrawOutlook();
+}
+// Open Overview straight on the outlook, for a person or everyone (used by the Projected block at the top)
+export function openOutlook(w) {
+  try { localStorage.setItem(OUTLOOK_KEY, w === "charlie" || w === "partner" ? w : "all"); } catch (e) { /* ignore */ }
+  openMore();
+  setTimeout(() => document.querySelector('details[data-persist="outlook"]')?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+}
+// What is in a month's In and Out for the chosen view
+export function openOutlookMonth(m) {
+  const view = getOutlookWho(), opts = getOutlookOpts();
+  const people = view === "all" ? ["charlie", "partner"] : [view];
+  const income = [], expense = [];
+  for (const w of people) {
+    const f = flowItems(m, w, opts);
+    income.push(...f.income); expense.push(...f.expense);
+  }
+  const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  const label = (x) => (view === "all" ? ` <span class="${x.who === "partner" || x.who === "pdebt" ? "text-ynah" : "text-blue-300"}">${x.who === "partner" || x.who === "pdebt" ? OWNERS.partner.label : OWNERS.charlie.label}</span>` : "");
+  const section = (title, cls, list) => {
+    const sorted = [...list].sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt));
+    const tot = list.reduce((s, x) => s + x.amt, 0);
+    const rowsHtml = sorted.slice(0, 8).map((x) => `<div class="flex items-center justify-between gap-2 text-[12px]"><span class="truncate text-slate-200">${escapeHtml(x.name)}${label(x)}</span><span class="font-black ${cls} flex-shrink-0">${sp(x.amt)}</span></div>`).join("");
+    const more = sorted.length > 8 ? `<p class="text-[10px] text-slate-500">+${sorted.length - 8} smaller item${sorted.length - 8 === 1 ? "" : "s"} (${sp(sorted.slice(8).reduce((s, x) => s + x.amt, 0))})</p>` : "";
+    return `<div class="space-y-1"><div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-wider ${cls}">${title}</p><p class="text-xs font-black ${cls}">${sp(tot)}</p></div>${rowsHtml || `<p class="text-[11px] text-slate-500">Nothing</p>`}${more}</div>`;
+  };
+  const inc = income.reduce((s, x) => s + x.amt, 0), out = expense.reduce((s, x) => s + x.amt, 0);
+  const note = [opts.cons ? "recurring income only" : "", opts.noInst ? "without installments" : ""].filter(Boolean).join(" · ");
+  showSheet(`${monthName(m)} · ${view === "all" ? "Everyone" : OWNERS[view].label}`,
+    `<div class="space-y-3">${section("Inflow", "text-emerald-400", income)}${section("Outflow", "text-rose-400", expense)}
+      <div class="flex items-center justify-between border-t border-white/10 pt-2 text-[12px]"><span class="font-bold text-slate-300">Net</span><span class="font-black ${inc - out >= 0 ? "text-emerald-400" : "text-rose-400"}">${sp(inc - out)}</span></div>
+      <p class="text-[10px] text-slate-500">Still to receive / pay${cmpKey(m, currentKey()) === 0 ? " this month (already settled items are not counted)" : ""}.${note ? ` Showing ${note}.` : ""}</p></div>`,
+    `<button type="button" data-action="qlClose" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Close</button>`);
 }
 
 export function yearOutlookCardHtml() {
@@ -1074,7 +1121,8 @@ export function yearOutlookCardHtml() {
   const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
   const view = getOutlookWho(); // "all" | "charlie" | "partner"
   const viewLabel = view === "all" ? "Everyone" : OWNERS[view].label;
-  const all = outlookRows(keys);
+  const opts = getOutlookOpts();
+  const all = outlookRows(keys, opts);
   let totIn = 0, totOut = 0, low = null, neg = [], peak = null;
   const rows = all.map((r) => {
     const { inc, out, net, bal } = r[view];
@@ -1090,7 +1138,28 @@ export function yearOutlookCardHtml() {
   const freed = insts.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const net = totIn - totOut;
   const end = rows[rows.length - 1].bal;
-  const maxBal = Math.max(1, ...rows.map((r) => Math.abs(r.bal)));
+  // Balance line chart: the selected view in white (everyone view also draws each person), zero line, lowest point
+  const series = view === "all"
+    ? [{ v: rows.map((r) => r.c), stroke: "#93c5fd", w: 1.2 }, { v: rows.map((r) => r.p), stroke: "#DFC5FE", w: 1.2 }, { v: rows.map((r) => r.bal), stroke: "#ffffff", w: 2 }]
+    : [{ v: rows.map((r) => r.bal), stroke: view === "charlie" ? "#93c5fd" : "#DFC5FE", w: 2 }];
+  const allVals = series.flatMap((s) => s.v);
+  const yMin = Math.min(0, ...allVals), yMax = Math.max(0, ...allVals);
+  const span = yMax - yMin || 1;
+  const CW = 300, CH = 84, PAD = 5;
+  const xAt = (i) => (rows.length < 2 ? CW / 2 : PAD + (i * (CW - 2 * PAD)) / (rows.length - 1));
+  const yAt = (v) => PAD + ((yMax - v) / span) * (CH - 2 * PAD);
+  const pathOf = (vals) => vals.map((v, i) => `${i ? "L" : "M"}${xAt(i).toFixed(1)} ${yAt(v).toFixed(1)}`).join(" ");
+  const mainVals = series[series.length - 1].v;
+  const lowIdx = mainVals.reduce((bi, v, i) => (v < mainVals[bi] ? i : bi), 0);
+  const chart = `<div class="rounded-lg bg-black/20 px-2 pt-2 pb-1">
+      <svg viewBox="0 0 ${CW} ${CH}" class="w-full h-20" role="img" aria-label="Projected balance by month">
+        ${yMin < 0 ? `<line x1="0" x2="${CW}" y1="${yAt(0).toFixed(1)}" y2="${yAt(0).toFixed(1)}" stroke="#fb7185" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>` : ""}
+        ${series.map((s) => `<path d="${pathOf(s.v)}" fill="none" stroke="${s.stroke}" stroke-width="${s.w}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`).join("")}
+        <circle cx="${xAt(lowIdx).toFixed(1)}" cy="${yAt(mainVals[lowIdx]).toFixed(1)}" r="3.2" fill="${mainVals[lowIdx] < 0 ? "#fb7185" : "#fbbf24"}"/>
+      </svg>
+      <div class="flex items-center justify-between text-[9px] font-bold text-slate-500"><span>${monthShort(rows[0].m)}</span><span class="${mainVals[lowIdx] < 0 ? "text-rose-300" : "text-amber-300"}">low ${sp(mainVals[lowIdx])} · ${monthShort(rows[lowIdx].m)}</span><span>${monthShort(rows[rows.length - 1].m)}</span></div>
+      ${view === "all" ? `<div class="flex items-center justify-center gap-3 text-[9px] font-bold text-slate-400 pt-0.5"><span><b style="color:#fff">&mdash;</b> All</span><span><b style="color:#93c5fd">&mdash;</b> ${OWNERS.charlie.label}</span><span><b style="color:#DFC5FE">&mdash;</b> ${OWNERS.partner.label}</span></div>` : ""}
+    </div>`;
   const finding = (icon, tone, html) => `<div class="flex items-start gap-2 text-[11px] leading-snug"><span class="material-icons ${tone}" style="font-size:15px;margin-top:1px">${icon}</span><p class="text-slate-300">${html}</p></div>`;
   const finds = [
     finding(net >= 0 ? "trending_up" : "trending_down", net >= 0 ? "text-emerald-400" : "text-rose-400", `${viewLabel}: over ${keys.length} months <b class="text-white">${peso(totIn)}</b> still comes in and <b class="text-white">${peso(totOut)}</b> goes out: net <b class="${net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(net)}</b> (${totIn > 0 ? Math.round((net / totIn) * 100) : 0}% of income).`),
@@ -1116,31 +1185,35 @@ export function yearOutlookCardHtml() {
     const on = w === view;
     return `<button type="button" data-action="setOutlookWho" data-arg0="${w}" aria-pressed="${on}" class="flex-1 py-1.5 rounded-lg text-[11px] font-black ${on ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${w === "all" ? "All" : OWNERS[w].label}</button>`;
   }).join("");
-  const tr = rows.map((r) => `<div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 items-center py-1 text-[10px] font-bold border-t border-white/[0.04] ${r.m === start ? "bg-indigo-500/10 rounded" : ""}">
+  const optBtn = (name, label) => `<button type="button" data-action="toggleOutlookOpt" data-arg0="${name}" aria-pressed="${opts[name]}" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold ${opts[name] ? "bg-amber-500/25 text-amber-200 border border-amber-400/40" : "bg-slate-900 text-slate-400 border border-transparent"}">${label}</button>`;
+  const optsRow = `<div class="flex gap-1.5">${optBtn("cons", "Recurring income only")}${optBtn("noInst", "Without installments")}</div>`;
+  const optsNote = [opts.cons ? "recurring income only" : "", opts.noInst ? "without installments" : ""].filter(Boolean).join(", ");
+  const tr = rows.map((r) => `<div data-action="openOutlookMonth" data-arg0="${r.m}" role="button" tabindex="0" title="See what makes up ${monthShort(r.m)}" class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 items-center py-1 text-[10px] font-bold border-t border-white/[0.04] cursor-pointer active:bg-white/5 ${r.m === start ? "bg-indigo-500/10 rounded" : ""}">
       <span class="text-slate-300">${monthShort(r.m)}</span>
       <span class="text-right text-emerald-300">${peso(r.inc)}</span>
       <span class="text-right text-slate-300">${peso(r.out)}</span>
       <span class="text-right ${r.net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(r.net)}</span>
       <span class="text-right font-black ${r.bal >= 0 ? "text-white" : "text-rose-400"}">${sp(r.bal)}</span></div>
-    ${view === "all" ? `<div class="flex justify-end gap-3 pb-0.5 text-[9px] font-bold"><span class="${r.c >= 0 ? "text-blue-300" : "text-rose-400"}">${OWNERS.charlie.label} ${sp(r.c)}</span><span class="${r.p >= 0 ? "text-ynah" : "text-rose-400"}">${OWNERS.partner.label} ${sp(r.p)}</span></div>` : ""}
-    <div class="h-[3px] rounded-full bg-slate-800 mb-0.5"><div class="h-full rounded-full ${r.bal >= 0 ? "bg-indigo-400/70" : "bg-rose-500/70"}" style="width:${Math.max(2, Math.round((Math.abs(r.bal) / maxBal) * 100))}%"></div></div>`).join("");
+    ${view === "all" ? `<div class="flex justify-end gap-3 pb-0.5 text-[9px] font-bold"><span class="${r.c >= 0 ? "text-blue-300" : "text-rose-400"}">${OWNERS.charlie.label} ${sp(r.c)}</span><span class="${r.p >= 0 ? "text-ynah" : "text-rose-400"}">${OWNERS.partner.label} ${sp(r.p)}</span></div>` : ""}`).join("");
   return `<details open data-persist="outlook" class="glass-card rounded-xl overflow-hidden w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">insights</span></div>
-        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">12-month outlook</h3><p class="text-[10px] text-slate-400">${viewLabel} · ${monthShort(keys[0])} &rarr; ${monthShort(last)}</p></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">12-month outlook</h3><p class="text-[10px] text-slate-400">${viewLabel}${optsNote ? ` (${optsNote})` : ""} · ${monthShort(keys[0])} &rarr; ${monthShort(last)}</p></div>
       </div>
       <p class="text-xs font-black ${end >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(end)}</p>
     </summary>
     <div class="px-3 pb-3 space-y-2.5">
       <div class="flex gap-1.5">${toggle}</div>
+      ${optsRow}
+      ${chart}
       <div class="space-y-1.5">${finds}${personFinds}</div>
       <div class="rounded-lg bg-black/20 px-2 py-1.5">
         <div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide text-slate-500"><span>Month</span><span class="text-right">In</span><span class="text-right">Out</span><span class="text-right">Net</span><span class="text-right">Balance</span></div>
         ${tr}
       </div>
       <button type="button" data-action="exportOutlookCsv" class="w-full py-2 text-[11px] font-bold text-indigo-300 rounded-lg bg-slate-800/60 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">download</span>Export outlook (CSV)</button>
-      <p class="text-[10px] text-slate-500 leading-snug">In and Out are what is still to come: this month only counts what is not yet received or paid, later months count the full plan. So each month's Net is exactly the change in Balance. Includes recurring income and bills, installments, both debt trackers and Charles' BPI Platinum bill in the month it falls due. One-time items you have not added yet are not included.</p>
+      <p class="text-[10px] text-slate-500 leading-snug">In and Out are what is still to come: this month only counts what is not yet received or paid, later months count the full plan. So each month's Net is exactly the change in Balance. Tap a month to see what it is made of. "Recurring income only" drops one-time income and debts owed to you (a worst case); "Without installments" shows the balance if installments did not exist. Includes recurring income and bills, installments, both debt trackers and Charles' BPI Platinum bill in the month it falls due. One-time items you have not added yet are not included.</p>
     </div>
   </details>`;
 }
@@ -1543,7 +1616,9 @@ async function saveModalInner() {
       const a = appData.accounts.find((x) => x.id === activeEdit.id);
       if (a) { a.name = name; a.amount = amount; a.owner = owner; a.type = $("f-type")?.value || "bank"; }
     } else {
-      appData.accounts.push({ id: generateId(), name, amount, owner, type: $("f-type")?.value || "bank" });
+      const dn = new Date();
+      const today = `${dn.getFullYear()}-${String(dn.getMonth() + 1).padStart(2, "0")}-${String(dn.getDate()).padStart(2, "0")}`;
+      appData.accounts.push({ id: generateId(), name, amount, owner, type: $("f-type")?.value || "bank", updated: today });
     }
     await syncSet(appData);
     closeModal(); renderAll(); toast("Saved");

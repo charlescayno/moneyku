@@ -128,7 +128,21 @@ export function getPendingEchoes() {
   return pendingEchoes;
 }
 
+// Remember when each account balance last changed (any edit, transfer or payment) so the app can say
+// when a balance may be out of date. Accounts without a date yet are "unknown" until they change.
+function stampAccountDates(appData) {
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  for (const a of appData?.accounts || []) {
+    if (!a) continue;
+    const amt = Number(a.amount) || 0;
+    if (a.lastAmt == null) a.lastAmt = amt;
+    else if (a.lastAmt !== amt) { a.lastAmt = amt; a.updated = today; }
+  }
+}
+
 export async function syncSet(appData, onFail) {
+  try { stampAccountDates(appData); } catch (err) { console.warn("Account dates:", err); }
   try { recordChange(appData); } catch (err) { console.warn("History:", err); }
   pendingEchoes++;
   showSync();

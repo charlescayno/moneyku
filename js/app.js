@@ -66,6 +66,9 @@ import {
   openTransferModal,
   setAccountsView,
   setOutlookWho,
+  toggleOutlookOpt,
+  openOutlook,
+  openOutlookMonth,
   openInvestmentModal,
   closeModal,
   saveModal,
@@ -159,6 +162,9 @@ window.openAccountModal = openAccountModal;
 window.openTransferModal = openTransferModal;
 window.setAccountsView = setAccountsView;
 window.setOutlookWho = setOutlookWho;
+window.toggleOutlookOpt = toggleOutlookOpt;
+window.openOutlook = openOutlook;
+window.openOutlookMonth = openOutlookMonth;
 window.openInvestmentModal = openInvestmentModal;
 window.closeModal = closeModal;
 window.saveModal = saveModal;

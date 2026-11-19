@@ -286,21 +286,129 @@ export function runningFundsAt(k, who = "charlie") {
  * Money still to come in and go out in month m for "charlie", "partner" or "all" (debt trackers included).
  * It is the same pending amount runningFundsAt adds each month, so net equals the change in balance.
  */
-export function monthFlow(m, who = "all") {
+const OWNERS_OF = { charlie: ["charlie", "debt"], partner: ["partner", "pdebt"] };
+
+// Pending (not yet received / paid) parts of a month's items, optionally filtered:
+//   opts.cons    = count only recurring income (one-time income and debts owed to you are not certain)
+//   opts.noInst  = leave out installments (recurring expenses with an end month)
+// Includes the BPI Platinum bill that falls due in the month as one expense line.
+export function flowItems(m, who, opts = {}) {
+  const income = [], expense = [];
+  for (const w of OWNERS_OF[who]) {
+    const isDebt = w === "debt" || w === "pdebt";
+    for (const it of getItems(w, "income")) {
+      if (!itemActiveIn(it, m)) continue;
+      if (opts.cons && (isDebt || !it.recurring)) continue;
+      const r = itemAmts(it, m);
+      const amt = r.total - r.paid;
+      if (Math.abs(amt) > 0.005) income.push({ name: it.name, who: w, amt });
+    }
+    for (const it of getItems(w, "expenses")) {
+      if (!itemActiveIn(it, m) || isCardItem(it)) continue; // card purchases are paid via the card bill below
+      if (opts.noInst && it.recurring && it.end) continue;
+      const r = itemAmts(it, m);
+      const amt = r.total - r.paid;
+      if (Math.abs(amt) > 0.005) expense.push({ name: it.name, who: w, amt, inst: !!(it.recurring && it.end) });
+    }
+  }
+  if (who === "charlie") {
+    const card = cardDueIn(m);
+    const left = card.total - card.paid;
+    if (Math.abs(left) > 0.005) expense.push({ name: "BPI Platinum card bill", who: "charlie", amt: left });
+  }
+  return { income, expense };
+}
+
+/** Pending flows of one month for both people: { charlie, partner } each { inc, out, net }. */
+function flowsFor(m, opts = {}) {
   const t = monthTotals(m);
-  const c = { inc: t.toReceive + t.debtToReceive, out: t.toPay + t.debtToPay };
-  const p = { inc: t.pToReceive + t.pDebtToReceive, out: t.pToPay + t.pDebtToPay };
-  const f = who === "partner" ? p : who === "charlie" ? c : { inc: c.inc + p.inc, out: c.out + p.out };
-  return { inc: f.inc, out: f.out, net: f.inc - f.out };
+  const mk = (inc, out) => ({ inc, out, net: inc - out });
+  let c = { inc: t.toReceive + t.debtToReceive, out: t.toPay + t.debtToPay };
+  let p = { inc: t.pToReceive + t.pDebtToReceive, out: t.pToPay + t.pDebtToPay };
+  if (opts.cons || opts.noInst) {
+    // Recompute from items so the filters apply (the plain totals above equal the unfiltered sums)
+    for (const [who, f] of [["charlie", c], ["partner", p]]) {
+      const it = flowItems(m, who, opts);
+      f.inc = it.income.reduce((s, x) => s + x.amt, 0);
+      f.out = it.expense.reduce((s, x) => s + x.amt, 0);
+    }
+  }
+  return { charlie: mk(c.inc, c.out), partner: mk(p.inc, p.out) };
+}
+
+export function monthFlow(m, who = "all", opts = {}) {
+  const f = flowsFor(m, opts);
+  if (who === "charlie" || who === "partner") return f[who];
+  const inc = f.charlie.inc + f.partner.inc, out = f.charlie.out + f.partner.out;
+  return { inc, out, net: inc - out };
+}
+
+/** The 13 timeline months starting this month (what the outlook shows). */
+export function outlookKeys() {
+  const start = currentKey(), tl = timeline();
+  const keys = [];
+  for (let i = 0; i < 13; i++) { const m = addMonths(start, i); if (tl.includes(m)) keys.push(m); }
+  return keys;
 }
 
 /** Per-month outlook rows for each view: { m, charlie, partner, all }, each { inc, out, net, bal }. */
-export function outlookRows(keys) {
+export function outlookRows(keys, opts = {}) {
+  const now = currentKey(), tl = timeline();
+  const cache = new Map();
+  const fl = (m) => { if (!cache.has(m)) cache.set(m, flowsFor(m, opts)); return cache.get(m); };
+  const cash = { charlie: accountsTotal("charlie"), partner: accountsTotal("partner") };
+  // Same walk as runningFundsAt: from this month forward, add each month's pending net
+  const bal = (who, m) => {
+    let b = cash[who];
+    if (cmpKey(m, now) < 0) return b + fl(m)[who].net;
+    for (const mk of tl) {
+      if (cmpKey(mk, now) < 0) continue;
+      b += fl(mk)[who].net;
+      if (mk === m) break;
+    }
+    return b;
+  };
   return keys.map((m) => {
-    const c = { ...monthFlow(m, "charlie"), bal: runningFundsAt(m, "charlie") };
-    const p = { ...monthFlow(m, "partner"), bal: runningFundsAt(m, "partner") };
+    const f = fl(m);
+    const c = { ...f.charlie, bal: bal("charlie", m) };
+    const p = { ...f.partner, bal: bal("partner", m) };
     return { m, charlie: c, partner: p, all: { inc: c.inc + p.inc, out: c.out + p.out, net: c.net + p.net, bal: c.bal + p.bal } };
   });
+}
+
+/** What the projected number is made of, for the month k: cash now + pending in - pending out (this month up to k). */
+export function projectionBreakdown(k) {
+  const now = currentKey();
+  const cash = accountsTotal("charlie") + accountsTotal("partner");
+  let inc = 0, out = 0;
+  if (cmpKey(k, now) < 0) { const f = monthFlow(k, "all"); inc = f.inc; out = f.out; }
+  else for (const mk of timeline()) {
+    if (cmpKey(mk, now) < 0) continue;
+    const f = monthFlow(mk, "all"); inc += f.inc; out += f.out;
+    if (mk === k) break;
+  }
+  const delta = cmpKey(k, now) > 0 ? monthFlow(k, "all").net : null; // change versus the previous month
+  return { cash, inc, out, delta };
+}
+
+/** First month (of the next 12) a view's projected balance goes below zero, or null. */
+export function firstNegative(rows) {
+  const find = (w) => rows.find((r) => r[w].bal < -0.005)?.m || null;
+  return { all: find("all"), charlie: find("charlie"), partner: find("partner") };
+}
+
+/** Days since the oldest known balance update (cash & bank accounts), per person; null when none are dated. */
+export function staleBalanceDays(who) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let worst = null;
+  for (const a of accountsOf(who)) {
+    if (acctType(a) === "credit" || !a.updated) continue;
+    const d = new Date(a.updated + "T00:00:00");
+    if (isNaN(d)) continue;
+    const days = Math.max(0, Math.round((today - d) / 86400000));
+    if (worst == null || days > worst) worst = days;
+  }
+  return worst;
 }
 
 /** Overall projection: Charles' projected funds plus his partner's. */

@@ -1,5 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
-import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, projectionBreakdown, outlookKeys, outlookRows, firstNegative, staleBalanceDays, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { dueSoonCardHtml, householdRealMoney, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
@@ -17,6 +17,21 @@ export function renderBudget() {
   const t = monthTotals(k);
   const projected = householdProjectedAt(k);
   const projC = runningFundsAt(k, "charlie"), projP = runningFundsAt(k, "partner");
+  // What the projected number is made of, early warnings, a worst case, and stale-balance nudge
+  const pj = projectionBreakdown(k);
+  const okeys = outlookKeys();
+  const neg = firstNegative(okeys.length ? outlookRows(okeys) : []);
+  const worstCase = outlookRows([k], { cons: true })[0].all.bal;
+  const staleDays = Math.max(staleBalanceDays("charlie") ?? -1, staleBalanceDays("partner") ?? -1);
+  const projChip = (cls, txt) => `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${cls}">${txt}</span>`;
+  const projChips = [];
+  if (pj.delta != null && !hideProjected) projChips.push(projChip(pj.delta >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300", `${pj.delta >= 0 ? "+" : "-"}${peso(Math.abs(pj.delta))} vs prev. month`));
+  if (neg.all) projChips.push(projChip("bg-rose-500/20 text-rose-300", `Goes below zero in ${monthShort(neg.all)}`));
+  else if (neg.charlie || neg.partner) {
+    if (neg.charlie) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.charlie.label} below zero in ${monthShort(neg.charlie)}`));
+    if (neg.partner) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.partner.label} below zero in ${monthShort(neg.partner)}`));
+  } else if (okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
+  if (staleDays > 7) projChips.push(projChip("bg-amber-500/20 text-amber-200", `Oldest balance updated ${staleDays}d ago`));
   const hideProjected = getHideProjected();
   const current = currentMoneyAt();
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
@@ -60,13 +75,15 @@ export function renderBudget() {
               <span class="material-icons" style="font-size: 11px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
             </button>
           </div>
-          <p id="sum-projected" class="text-sm sm:text-base font-black text-white leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
+          <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer text-sm sm:text-base font-black text-white leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-1.5">
-        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span><span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></div>
-        <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span><span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></div>
+        <div data-action="openOutlook" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span><span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></div>
+        <div data-action="openOutlook" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span><span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></div>
       </div>
+      <p class="text-[9px] text-slate-400 leading-snug px-0.5">${hideProjected ? "Cash &amp; pending hidden" : `Cash <b class="text-slate-200">${peso(pj.cash)}</b> + to receive <b class="text-emerald-300">${peso(pj.inc)}</b> &minus; to pay <b class="text-rose-300">${peso(pj.out)}</b>`}${hideProjected ? "" : ` &middot; worst case (recurring income only) <b class="${worstCase >= 0 ? "text-slate-200" : "text-rose-300"}">${sp(worstCase)}</b>`}</p>
+      ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips.join("")}</div>` : ""}
       ${cardNote}
 
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
