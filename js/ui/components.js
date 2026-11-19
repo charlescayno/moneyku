@@ -433,6 +433,14 @@ export function expenseSortBtnHtml() {
 }
 
 const spSigned = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+// Real money value plus a one-line explanation for one person
+function realFields(who) {
+  const r = realMoney(who);
+  const realNote = who === "partner"
+    ? "cash & bank only (no card owed)"
+    : r.owed.total > 0 ? `cash ${peso(r.cash)} − BPI Platinum owed ${peso(r.owed.total)}` : "cash & bank (no card owed)";
+  return { realMoney: r.real, realNote };
+}
 // A label/value row; `sub` rows are indented "of which" lines
 const subRow = (label, val, cls, sub = false) => `<div class="flex items-center justify-between ${sub ? "pl-4 text-[10px]" : "text-[11px]"}"><span class="${sub ? "text-slate-500" : "font-bold text-slate-300"}">${label}</span><span class="font-black ${cls}">${val}</span></div>`;
 const subHead = (label, cls) => `<p class="text-[9px] font-black uppercase tracking-[0.15em] ${cls} pt-1.5 pb-0.5">${label}</p>`;
@@ -454,6 +462,7 @@ function subtotalBlockHtml(title, v, titleCls, strong = false) {
           ${subRow("Net (inflow &minus; outflow)", spSigned(v.net), netCls)}
           ${subRow("Cash &amp; bank", peso(v.cash), "text-slate-100")}
           ${v.realMoney != null ? subRow("Real money", spSigned(v.realMoney), v.realMoney >= 0 ? "text-white" : "text-rose-400") : ""}
+          ${v.realNote ? subRow(v.realNote, "", "", true) : ""}
           ${Math.abs(v.debtNet) > 0.005 ? subRow("Debt net", spSigned(v.debtNet), v.debtNet >= 0 ? "text-indigo-300" : "text-orange-300") : ""}
           ${subRow(`Projected (${monthShort(getSelectedKey())})`, hide ? "••••••" : spSigned(v.projected), v.projected >= 0 ? "text-white" : "text-rose-400")}
         </div>
@@ -478,8 +487,8 @@ export function householdCardHtml() {
       <p class="text-xs font-black ${h.net >= 0 ? "text-emerald-400" : "text-rose-400"}">${sp(h.net)}</p>
     </summary>
     <div class="p-2.5 pt-0 space-y-2">
-      ${block(`Subtotal · ${OWNERS.charlie.label}`, { ...h.charlie, realMoney: realMoney("charlie").real }, OWNERS.charlie.text)}
-      ${block(`Subtotal · ${OWNERS.partner.label}`, { ...h.partner, realMoney: realMoney("partner").real }, OWNERS.partner.text)}
+      ${block(`Subtotal · ${OWNERS.charlie.label}`, { ...h.charlie, ...realFields("charlie") }, OWNERS.charlie.text)}
+      ${block(`Subtotal · ${OWNERS.partner.label}`, { ...h.partner, ...realFields("partner") }, OWNERS.partner.text)}
       ${block("Total (all)", { ...h, realMoney: householdRealMoney().real }, "text-indigo-300", true)}
     </div>
   </details>`;
@@ -555,7 +564,7 @@ export function personSectionHtml(who, includeDebt = true) {
       </div>
       ${who === "charlie" ? cardSectionHtml(k) : ""}
       ${debtSectionHtml}
-      ${who === "charlie" || who === "partner" ? `<div class="border-t border-white/[0.08] pt-2">${subtotalBlockHtml(`Subtotal · ${o.label}`, { ...householdTotals(k)[who], realMoney: realMoney(who).real }, o.text)}</div>` : ""}
+      ${who === "charlie" || who === "partner" ? `<div class="border-t border-white/[0.08] pt-2">${subtotalBlockHtml(`Subtotal · ${o.label}`, { ...householdTotals(k)[who], ...realFields(who) }, o.text)}</div>` : ""}
     </div>
   </div>`;
 }
