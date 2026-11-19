@@ -433,19 +433,29 @@ export function expenseSortBtnHtml() {
 }
 
 const spSigned = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
-const subtotalCell = (label, val, cls, extra = "") => `<div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between ${extra}"><span class="text-[8px] font-bold uppercase text-slate-400">${label}</span><span class="text-xs font-black ${cls}">${val}</span></div>`;
-// One person's (or the overall) subtotal block; v comes from householdTotals(k)
+// A label/value row; `sub` rows are indented "of which" lines
+const subRow = (label, val, cls, sub = false) => `<div class="flex items-center justify-between ${sub ? "pl-4 text-[10px]" : "text-[11px]"}"><span class="${sub ? "text-slate-500" : "font-bold text-slate-300"}">${label}</span><span class="font-black ${cls}">${val}</span></div>`;
+const subHead = (label, cls) => `<p class="text-[9px] font-black uppercase tracking-[0.15em] ${cls} pt-1.5 pb-0.5">${label}</p>`;
+// One person's (or the overall) subtotal as a list: INFLOW, then OUTFLOW, then net and money position.
+// v comes from householdTotals(k)
 function subtotalBlockHtml(title, v, titleCls, strong = false) {
+  const hide = getHideProjected();
+  const netCls = v.net >= 0 ? "text-emerald-400" : "text-rose-400";
   return `<div class="${strong ? "border-t border-white/10 pt-2" : ""}">
-      <div class="flex items-center justify-between px-0.5 mb-1"><p class="text-[10px] font-black uppercase tracking-wider ${titleCls}">${title}</p><p class="text-xs font-black ${v.net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${spSigned(v.net)}</p></div>
-      <div class="grid grid-cols-2 gap-1.5">
-        ${subtotalCell(`Projected (${monthShort(getSelectedKey())})`, getHideProjected() ? "••••••" : spSigned(v.projected), v.projected >= 0 ? "text-white" : "text-rose-400", "col-span-2")}
-        ${subtotalCell("Cash &amp; bank", peso(v.cash), "text-slate-100")}
-        ${Math.abs(v.debtNet) > 0.005 ? subtotalCell("Debt net", spSigned(v.debtNet), v.debtNet >= 0 ? "text-indigo-300" : "text-orange-300") : ""}
-        ${subtotalCell("Income", peso(v.income), "text-emerald-400")}
-        ${subtotalCell("Expenses", peso(v.expenses), "text-rose-400")}
-        ${subtotalCell("To receive", peso(v.toReceive), "text-emerald-400")}
-        ${subtotalCell("To pay", peso(v.toPay), "text-rose-400")}
+      <p class="text-[10px] font-black uppercase tracking-wider ${titleCls} px-0.5 mb-0.5">${title}</p>
+      <div class="rounded-lg bg-black/20 px-2.5 py-1.5 space-y-0.5">
+        ${subHead("Inflow", "text-emerald-400")}
+        ${subRow("Income", peso(v.income), "text-emerald-400")}
+        ${subRow("still to receive", peso(v.toReceive), "text-slate-400", true)}
+        ${subHead("Outflow", "text-rose-400")}
+        ${subRow("Expenses", peso(v.expenses), "text-rose-400")}
+        ${subRow("still to pay", peso(v.toPay), "text-slate-400", true)}
+        <div class="border-t border-white/10 mt-1.5 pt-1.5 space-y-0.5">
+          ${subRow("Net (inflow &minus; outflow)", spSigned(v.net), netCls)}
+          ${subRow("Cash &amp; bank", peso(v.cash), "text-slate-100")}
+          ${Math.abs(v.debtNet) > 0.005 ? subRow("Debt net", spSigned(v.debtNet), v.debtNet >= 0 ? "text-indigo-300" : "text-orange-300") : ""}
+          ${subRow(`Projected (${monthShort(getSelectedKey())})`, hide ? "••••••" : spSigned(v.projected), v.projected >= 0 ? "text-white" : "text-rose-400")}
+        </div>
       </div>
     </div>`;
 }
