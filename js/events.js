@@ -170,6 +170,12 @@ export function initEventListeners() {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const action = btn.getAttribute('data-action');
+
+    // Tapping anywhere on a date field pops out the calendar (not just the small icon)
+    if (action === 'openDatePicker') {
+      try { btn.showPicker(); } catch { /* already open or unsupported: native behaviour remains */ }
+      return;
+    }
     
     if (action === 'openItemModal' || action === 'openBudgetModal' || action === 'toggleExpenseSort' || action === 'cardSettingsOpen') e.preventDefault();
     
