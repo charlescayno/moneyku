@@ -175,3 +175,20 @@ test("switching a person off removes them from combined numbers only", () => {
   assert.equal(setWhoIncluded("partner", true), true);
   assert.deepEqual(includedWho(), ["charlie", "partner"]);
 });
+
+import { includedTotals } from "../js/state.js";
+test("headline tiles follow the ticked people", () => {
+  const d = makeData({ accounts: [{ id: "a", name: "A", amount: 1000 }, { id: "b", name: "B", amount: 400, owner: "partner" }] });
+  d.items.charlie.income = [{ id: "i1", name: "S", amount: 100, recurring: true, start: "2026-08" }];
+  d.items.charlie.expenses = [{ id: "e1", name: "R", amount: 30, recurring: true, start: "2026-08" }];
+  d.items.partner = { income: [{ id: "p1", name: "P", amount: 50, recurring: true, start: "2026-08" }], expenses: [{ id: "pe", name: "Q", amount: 10, recurring: true, start: "2026-08" }] };
+  d.items.pdebt = { income: [], expenses: [] };
+  setAppData(d);
+  const k = currentKey();
+  let t = includedTotals(k);
+  assert.deepEqual([t.current, t.toReceive, t.toPay, t.savings], [1400, 150, 40, 110]);
+  setWhoIncluded("partner", false);
+  t = includedTotals(k);
+  assert.deepEqual([t.current, t.toReceive, t.toPay, t.savings], [1000, 100, 30, 70]);
+  setWhoIncluded("partner", true);
+});

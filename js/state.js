@@ -417,6 +417,17 @@ export function staleBalanceDays(who) {
 }
 
 /** Overall projection: Charles' projected funds plus his partner's. */
+/** This month's headline numbers for whoever is ticked in the top bar: cash, savings, still to receive, still to pay. */
+export function includedTotals(k) {
+  const t = monthTotals(k), ws = includedWho();
+  const per = {
+    charlie: { cash: accountsTotal("charlie"), toReceive: t.toReceive, toPay: t.toPay, savings: t.cI - t.toPay },
+    partner: { cash: accountsTotal("partner"), toReceive: t.pToReceive, toPay: t.pToPay, savings: t.pI - t.pToPay },
+  };
+  const sum = (f) => ws.reduce((s, w) => s + per[w][f], 0);
+  return { current: sum("cash"), toReceive: sum("toReceive"), toPay: sum("toPay"), savings: sum("savings") };
+}
+
 export function householdProjectedAt(k) {
   return includedWho().reduce((s, w) => s + runningFundsAt(k, w), 0);
 }
