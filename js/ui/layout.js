@@ -73,7 +73,7 @@ export function renderBudget() {
   const rmAll = householdRealMoney();
   // Future months: the projection already deducts every BPI Platinum bill due up to that month, i.e. it assumes they are paid in full. Say so.
   let cardNote = "";
-  if (!hideProjected && cmpKey(k, currentKey()) > 0) {
+  if (showC && !hideProjected && cmpKey(k, currentKey()) > 0) {
     const parts = [];
     let cardTotal = 0;
     for (const m of timeline()) {
@@ -141,24 +141,24 @@ export function renderBudget() {
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
       <details data-persist="kpi" class="group">
       <summary class="flex flex-wrap items-center justify-between gap-y-1 cursor-pointer list-none select-none px-1">
-        <span class="text-[10px] font-bold text-slate-400">Real money · all <span class="text-xl font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></span>
+        <span class="text-[10px] font-bold text-slate-400">Real money · ${showC && showP ? "all" : OWNERS[showC ? "charlie" : "partner"].label} <span class="text-xl font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></span>
         <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
-        <div class="grid grid-cols-2 gap-2 mt-1.5" style="flex:0 0 100%;width:100%">
+        ${showC && showP ? `<div class="grid grid-cols-2 gap-2 mt-1.5" style="flex:0 0 100%;width:100%">
           <div class="bg-black/20 rounded-lg px-2.5 py-1.5 flex flex-col gap-0.5"><span class="text-[9px] font-bold uppercase text-blue-300 whitespace-nowrap">${OWNERS.charlie.label} real money</span><span class="text-sm font-black ${rm.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rm.real)}</span></div>
           <div class="bg-black/20 rounded-lg px-2.5 py-1.5 flex flex-col gap-0.5"><span class="text-[9px] font-bold uppercase text-ynah whitespace-nowrap">${OWNERS.partner.label} real money</span><span class="text-sm font-black ${rmP.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmP.real)}</span></div>
-        </div>
+        </div>` : ""}
       </summary>
       <div class="mt-1.5 rounded-lg bg-black/20 px-2.5 py-1.5 space-y-1 text-[11px]">
-        <p class="text-[9px] font-black uppercase tracking-wider text-blue-300">${OWNERS.charlie.label} real money <span class="text-white normal-case text-[11px]">${sp(rm.real)}</span></p>
+        ${showC ? `<p class="text-[9px] font-black uppercase tracking-wider text-blue-300">${OWNERS.charlie.label} real money <span class="text-white normal-case text-[11px]">${sp(rm.real)}</span></p>
         <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rm.cash)}</span></div>
         ${rm.owed.total > 0 ? `<div class="flex justify-between"><span class="text-slate-400">BPI Platinum owed</span><span class="font-black text-rose-300">-${peso(rm.owed.total)}</span></div>
         ${owedBreak ? `<p class="text-[9px] text-slate-500 text-right">${owedBreak}</p>` : ""}` : ""}
-        <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rm.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rm.afterAll)}</span></div>
-        <p class="text-[9px] font-black uppercase tracking-wider text-ynah border-t border-white/10 pt-1.5">${OWNERS.partner.label} real money <span class="text-white normal-case text-[11px]">${sp(rmP.real)}</span></p>
+        <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rm.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rm.afterAll)}</span></div>` : ""}
+        ${showP ? `<p class="text-[9px] font-black uppercase tracking-wider text-ynah ${showC ? "border-t border-white/10 pt-1.5" : ""}">${OWNERS.partner.label} real money <span class="text-white normal-case text-[11px]">${sp(rmP.real)}</span></p>
         <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rmP.cash)}</span></div>
-        <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rmP.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rmP.afterAll)}</span></div>
-        <div class="flex justify-between border-t border-white/10 pt-1.5"><span class="font-bold text-slate-200">All: real money</span><span class="font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></div>
-        <div class="flex justify-between"><span class="font-bold text-slate-200">All: after remaining</span><span class="font-black ${rmAll.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rmAll.afterAll)}</span></div>
+        <div class="flex justify-between border-t border-white/10 pt-1"><span class="text-slate-400">After remaining income &amp; bills</span><span class="font-black ${rmP.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rmP.afterAll)}</span></div>` : ""}
+        ${showC && showP ? `<div class="flex justify-between border-t border-white/10 pt-1.5"><span class="font-bold text-slate-200">All: real money</span><span class="font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></div>
+        <div class="flex justify-between"><span class="font-bold text-slate-200">All: after remaining</span><span class="font-black ${rmAll.afterAll >= 0 ? "text-emerald-300" : "text-rose-400"}">${sp(rmAll.afterAll)}</span></div>` : ""}
       </div>
       </details>
     </div>
