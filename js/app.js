@@ -405,7 +405,7 @@ function boot() {
   initGestures();
   initEventListeners();
   initArrangeDrag();  window.__moneykuBooted = true;
-  { const hdr = document.querySelector("header.app-header"); const setH = () => document.documentElement.style.setProperty("--hdr-h", (hdr ? hdr.offsetHeight : 0) + "px"); if (hdr) { setH(); if (window.ResizeObserver) new ResizeObserver(setH).observe(hdr); window.addEventListener("resize", setH); } }
+  { const hdr = document.querySelector("header.app-header"); const setH = () => document.documentElement.style.setProperty("--hdr-h", (hdr ? Math.floor(hdr.getBoundingClientRect().height) - 1 : 0) + "px"); if (hdr) { setH(); if (window.ResizeObserver) new ResizeObserver(setH).observe(hdr); window.addEventListener("resize", setH); } }
 
   // Background live ticker: updates rates periodically (only while signed in)
   setInterval(() => {
