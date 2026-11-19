@@ -138,12 +138,6 @@ export function renderBudget() {
             <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">+ Still to receive</span><span class="font-black text-emerald-300">${peso(pj.inc)}</span></div>
             <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">&minus; Still to pay</span><span class="font-black text-rose-300">${peso(pj.out)}</span></div>
             <div class="flex items-center justify-between text-[11px] border-t border-white/10 pt-1"><span class="font-bold text-slate-200">= Projected</span><span class="font-black ${projected >= 0 ? "text-white" : "text-rose-300"}">${sp(projected)}</span></div>`}</div>
-          <ul class="text-[10px] text-slate-500 leading-snug space-y-0.5 pl-1">
-            <li><b class="text-slate-400">Current money</b>: cash and bank balances today.</li>
-            <li><b class="text-slate-400">Month surplus</b>: this month&apos;s income minus the bills still to pay.</li>
-            <li><b class="text-slate-400">To receive / to pay</b>: still to come in or go out this month, debts included.</li>
-            <li><b class="text-slate-400">Projected</b>: what you would have after all of that, plus later months if you pick one ahead.</li>
-          </ul>
           ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
         </div>
       </details>
