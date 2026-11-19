@@ -134,7 +134,7 @@ export function acctType(a) {
 // Money on hand: credit accounts are not counted (their balance is available credit, not cash)
 // Whose account it is: "partner" or (default, incl. old data) "charlie"
 export function acctOwner(a) { return a && a.owner === "partner" ? "partner" : "charlie"; }
-export function accountsOf(who) { return (appData?.accounts || []).filter((a) => acctOwner(a) === who); }
+export function accountsOf(who) { return (appData?.accounts || []).filter((a) => acctOwner(a) === who).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true })); }
 
 // Defaults to Charles' accounts so his projection never includes his partner's money
 export function accountsTotal(who = "charlie") { 

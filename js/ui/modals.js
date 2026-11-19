@@ -368,7 +368,7 @@ export function openAccountModal(id, who) {
 }
 
 export function openTransferModal(who) {
-  const accts = (getAppData()?.accounts || []).filter((a) => acctOwner(a) === (who === "partner" ? "partner" : "charlie"));
+  const accts = (getAppData()?.accounts || []).filter((a) => acctOwner(a) === (who === "partner" ? "partner" : "charlie")).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true }));
   if (accts.length < 2) return toast("Add at least 2 accounts to transfer", "error");
   setActiveEdit({ kind: "transfer" });
   $("modal-title").textContent = "Transfer";

@@ -15,7 +15,7 @@ const LAST_KEY = "moneyku_pay_acct";
 
 /** Accounts that hold real money (credit cards are not paid from here). */
 export function payableAccounts(who = "charlie") {
-  return (getAppData()?.accounts || []).filter((a) => acctType(a) !== "credit" && acctOwner(a) === who);
+  return (getAppData()?.accounts || []).filter((a) => acctType(a) !== "credit" && acctOwner(a) === who).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true }));
 }
 
 /** Find an expense leaf (an item without sub-items, or a sub-item) by id. */
