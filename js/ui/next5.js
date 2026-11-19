@@ -67,6 +67,11 @@ export function next5CardHtml() {
   const X = (i) => ((i + 0.5) / keys.length) * W;
   const Y = (v) => PADY + ((hi - v) / span) * (H - 2 * PADY);
   const path = vals.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(" ");
+  // Horizontal guide lines at round values that rescale with the data (about 3 lines: 1, 2, 5 x 10^n steps)
+  const niceStep = (raw) => { const p = Math.pow(10, Math.floor(Math.log10(raw || 1))), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; };
+  const step = niceStep(span / 3), ticks = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) ticks.push(Math.round(v / step) * step);
+  const grid = ticks.filter((v) => Math.abs(v) > 1e-9).map((v) => `<line x1="0" x2="${W}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#475569" stroke-width="1" opacity=".35" vector-effect="non-scaling-stroke"/><text x="2" y="${(Y(v) - 3).toFixed(1)}" font-size="13" fill="#64748b" font-weight="700">${cmp(v)}</text>`).join("") + (lo <= 0 && hi >= 0 ? `<text x="2" y="${(Y(0) - 3).toFixed(1)}" font-size="13" fill="#64748b" font-weight="700">₱0</text>` : "");
   const dots = vals.map((v, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i === 0 ? 6 : 4.5}" fill="${v < 0 ? "#fb7185" : "#a5b4fc"}"/>`).join("");
   const zero = `<line x1="${(X(0) - 8).toFixed(1)}" x2="${(X(keys.length - 1) + 8).toFixed(1)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 4" opacity=".8"/>`;
   const cols = (cell) => `<div class="grid" style="grid-template-columns:repeat(${keys.length},minmax(0,1fr))">${keys.map(cell).join("")}</div>`;
@@ -78,6 +83,7 @@ export function next5CardHtml() {
     ${header(keys)}
     ${figures}
     <svg viewBox="0 0 ${W} ${H}" class="w-full block my-1" role="img" aria-label="Projected balance, next ${keys.length} months">
+      ${grid}
       ${zero}
       <path d="${path}" fill="none" stroke="#a5b4fc" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
       ${dots}
