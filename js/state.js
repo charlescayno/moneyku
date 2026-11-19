@@ -240,6 +240,8 @@ export function householdTotals(k) {
   return {
     income, expenses, net: income - expenses, toReceive, toPay,
     charlieNet: t.cI - t.cE, partnerNet: t.pI - t.pE,
+    charlie: { income: t.cI, expenses: t.cE, net: t.cI - t.cE, toReceive: t.toReceive, toPay: t.toPay },
+    partner: { income: t.pI, expenses: t.pE, net: t.pI - t.pE, toReceive: t.pToReceive, toPay: t.pToPay },
   };
 }
 

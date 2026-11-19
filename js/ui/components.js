@@ -436,6 +436,15 @@ export function householdCardHtml() {
   const h = householdTotals(k);
   const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
   const cell = (label, val, cls) => `<div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-slate-400">${label}</span><span class="text-xs font-black ${cls}">${val}</span></div>`;
+  const block = (title, v, titleCls, strong = false) => `<div class="${strong ? "border-t border-white/10 pt-2" : ""}">
+      <div class="flex items-center justify-between px-0.5 mb-1"><p class="text-[10px] font-black uppercase tracking-wider ${titleCls}">${title}</p><p class="text-xs font-black ${v.net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${sp(v.net)}</p></div>
+      <div class="grid grid-cols-2 gap-1.5">
+        ${cell("Income", peso(v.income), "text-emerald-400")}
+        ${cell("Expenses", peso(v.expenses), "text-rose-400")}
+        ${cell("To receive", peso(v.toReceive), "text-emerald-400")}
+        ${cell("To pay", peso(v.toPay), "text-rose-400")}
+      </div>
+    </div>`;
   return `<details open data-persist="household" class="glass-card rounded-xl border border-indigo-500/20 overflow-hidden w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
@@ -447,13 +456,10 @@ export function householdCardHtml() {
       </div>
       <p class="text-xs font-black ${h.net >= 0 ? "text-emerald-400" : "text-rose-400"}">${sp(h.net)}</p>
     </summary>
-    <div class="p-2.5 pt-0 grid grid-cols-2 gap-1.5">
-      ${cell("Income", peso(h.income), "text-emerald-400")}
-      ${cell("Expenses", peso(h.expenses), "text-rose-400")}
-      ${cell("To receive", peso(h.toReceive), "text-emerald-400")}
-      ${cell("To pay", peso(h.toPay), "text-rose-400")}
-      ${cell(OWNERS.charlie.label, sp(h.charlieNet), h.charlieNet >= 0 ? "text-blue-300" : "text-rose-400")}
-      ${cell(OWNERS.partner.label, sp(h.partnerNet), h.partnerNet >= 0 ? "text-teal-300" : "text-rose-400")}
+    <div class="p-2.5 pt-0 space-y-2">
+      ${block(`Subtotal · ${OWNERS.charlie.label}`, h.charlie, OWNERS.charlie.text)}
+      ${block(`Subtotal · ${OWNERS.partner.label}`, h.partner, OWNERS.partner.text)}
+      ${block("Total (all)", h, "text-indigo-300", true)}
     </div>
   </details>`;
 }

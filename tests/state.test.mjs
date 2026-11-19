@@ -88,6 +88,8 @@ test("partner items stay out of Charles' totals; household combines both", () =>
   assert.equal(h.expenses, 17000);
   assert.equal(h.net, 63000);
   assert.equal(h.partnerNet, 25000);
+  assert.equal(h.charlie.net + h.partner.net, h.net);
+  assert.equal(h.charlie.income + h.partner.income, h.income);
 });
 
 import { stepKey, yearStepKey } from "../js/utils.js";
