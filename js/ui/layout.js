@@ -23,15 +23,18 @@ export function renderBudget() {
   const neg = firstNegative(okeys.length ? outlookRows(okeys) : []);
   const worstCase = outlookRows([k], { cons: true })[0].all.bal;
   const staleDays = Math.max(staleBalanceDays("charlie") ?? -1, staleBalanceDays("partner") ?? -1);
-  const projChip = (cls, txt) => `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${cls}">${txt}</span>`;
+  const projChip = (cls, txt) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${txt}</span>`;
+  // Chips in priority order: below zero, then stale balances, then the monthly change, then "all good".
+  // Only the first shows on the card; the rest live in the details below.
   const projChips = [];
-  if (pj.delta != null && !hideProjected) projChips.push(projChip(pj.delta >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300", `${pj.delta >= 0 ? "+" : "-"}${peso(Math.abs(pj.delta))} vs prev. month`));
   if (neg.all) projChips.push(projChip("bg-rose-500/20 text-rose-300", `Goes below zero in ${monthShort(neg.all)}`));
   else if (neg.charlie || neg.partner) {
     if (neg.charlie) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.charlie.label} below zero in ${monthShort(neg.charlie)}`));
     if (neg.partner) projChips.push(projChip("bg-rose-500/20 text-rose-300", `${OWNERS.partner.label} below zero in ${monthShort(neg.partner)}`));
-  } else if (okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
+  }
   if (staleDays > 7) projChips.push(projChip("bg-amber-500/20 text-amber-200", `Oldest balance updated ${staleDays}d ago`));
+  if (pj.delta != null && !hideProjected) projChips.push(projChip(pj.delta >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300", `${pj.delta >= 0 ? "+" : "-"}${peso(Math.abs(pj.delta))} vs prev. month`));
+  if (!neg.all && !neg.charlie && !neg.partner && okeys.length) projChips.push(projChip("bg-emerald-500/15 text-emerald-300", "Stays above zero · next 12 months"));
   const hideProjected = getHideProjected();
   const current = currentMoneyAt();
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
@@ -74,6 +77,7 @@ export function renderBudget() {
             <button data-action="toggleProjected" class="text-white/40 hover:text-white transition-colors focus:outline-none flex items-center">
               <span class="material-icons" style="font-size: 11px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
             </button>
+            <button data-action="openOutlook" data-arg0="all" class="ml-1 flex items-center text-[10px] font-bold text-indigo-300 hover:text-white focus:outline-none">12-mo outlook<span class="material-icons" style="font-size:13px">chevron_right</span></button>
           </div>
           <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer text-sm sm:text-base font-black text-white leading-tight">${hideProjected ? '••••••' : peso(projected)}</p>
         </div>
@@ -82,8 +86,17 @@ export function renderBudget() {
         <div data-action="openOutlook" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span><span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></div>
         <div data-action="openOutlook" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span><span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></div>
       </div>
-      <p class="text-[9px] text-slate-400 leading-snug px-0.5">${hideProjected ? "Cash &amp; pending hidden" : `Cash <b class="text-slate-200">${peso(pj.cash)}</b> + to receive <b class="text-emerald-300">${peso(pj.inc)}</b> &minus; to pay <b class="text-rose-300">${peso(pj.out)}</b>`}${hideProjected ? "" : ` &middot; worst case (recurring income only) <b class="${worstCase >= 0 ? "text-slate-200" : "text-rose-300"}">${sp(worstCase)}</b>`}</p>
-      ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips.join("")}</div>` : ""}
+      ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
+      <details data-persist="proj-details" class="group/pd">
+        <summary class="flex items-center gap-1 cursor-pointer list-none select-none text-[11px] font-bold text-slate-400 py-0.5">
+          <span class="material-icons transition-transform" style="font-size:15px">chevron_right</span>How is this made up?
+        </summary>
+        <div class="space-y-1.5 pt-1 pl-1">
+          <p class="text-[11px] text-slate-300 leading-snug">${hideProjected ? "Cash &amp; pending hidden" : `Cash <b class="text-white">${peso(pj.cash)}</b> + to receive <b class="text-emerald-300">${peso(pj.inc)}</b> &minus; to pay <b class="text-rose-300">${peso(pj.out)}</b>`}</p>
+          ${hideProjected ? "" : `<p class="text-[11px] text-slate-300 leading-snug">Worst case (recurring income only): <b class="${worstCase >= 0 ? "text-white" : "text-rose-300"}">${sp(worstCase)}</b></p>`}
+          ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
+        </div>
+      </details>
       ${cardNote}
 
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
