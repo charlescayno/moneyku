@@ -597,6 +597,7 @@ export function acctRowHtml(a) {
         ${acctIconHtml(a)}
       </div>
       <p class="text-sm font-bold text-slate-100 truncate">${escapeHtml(a.name)}</p>
+      <img src="assets/avatar-${a.owner === "partner" ? "ynah" : "charles"}.jpg" alt="${a.owner === "partner" ? "Ynah" : "Charles"}" class="w-5 h-5 rounded-full object-cover flex-shrink-0">
     </div>
     <div class="flex items-center gap-1.5 flex-shrink-0">
       <p class="text-xs font-black text-white">${peso(a.amount)}</p>
