@@ -72,7 +72,10 @@ export function next5CardHtml() {
   const niceStep = (raw) => { const p = Math.pow(10, Math.floor(Math.log10(raw || 1))), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; };
   const step = niceStep(span / 3), ticks = [];
   for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) ticks.push(Math.round(v / step) * step);
-  const grid = ticks.filter((v) => Math.abs(v) > 1e-9).map((v) => `<line x1="0" x2="${W}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#475569" stroke-width="1" opacity=".35" vector-effect="non-scaling-stroke"/><text x="2" y="${(Y(v) - 3).toFixed(1)}" font-size="13" fill="#64748b" font-weight="700">${cmp(v)}</text>`).join("") + (lo <= 0 && hi >= 0 ? `<text x="2" y="${(Y(0) - 3).toFixed(1)}" font-size="13" fill="#64748b" font-weight="700">₱0</text>` : "");
+  const tx = (v, txt) => `<text x="3" y="${(Y(v) - 3).toFixed(1)}" font-size="10" fill="#cbd5e1" font-weight="800" stroke="#0f172a" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${txt}</text>`;
+  const gv = ticks.filter((v) => Math.abs(v) > 1e-9);
+  const grid = gv.map((v) => `<line x1="0" x2="${W}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#475569" stroke-width="1" opacity=".35" vector-effect="non-scaling-stroke"/>`).join("");
+  const glabels = gv.map((v) => tx(v, cmp(v))).join("") + (lo <= 0 && hi >= 0 ? tx(0, "₱0") : "");
   const bw = (W / keys.length) * 0.5;
   const dots = vals.map((v, i) => { const y0 = Y(0), y1 = Y(v), top = Math.min(y0, y1), h = Math.max(2, Math.abs(y1 - y0)); return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${v < 0 ? "#fb7185" : ac}" opacity="${keys[i] === sel || i === 0 ? 1 : 0.8}"/>`; }).join("");
   const zero = `<line x1="${(X(0) - 8).toFixed(1)}" x2="${(X(keys.length - 1) + 8).toFixed(1)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 4" opacity=".8"/>`;
@@ -88,6 +91,7 @@ export function next5CardHtml() {
       ${grid}
       ${dots}
       ${zero}
+      ${glabels}
     </svg>
     ${labels}
   </div>`;
