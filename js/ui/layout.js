@@ -130,12 +130,12 @@ export function renderBudget() {
 
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->
       <details data-persist="kpi" class="group">
-      <summary class="flex flex-wrap items-center justify-between cursor-pointer list-none select-none px-1">
+      <summary class="flex flex-wrap items-center justify-between gap-y-1 cursor-pointer list-none select-none px-1">
         <span class="text-[10px] font-bold text-slate-400">Real money · all <span class="text-xl font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></span>
         <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
-        <div class="basis-full grid grid-cols-2 gap-1.5 mt-1">
-          <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span><span class="text-xs font-black ${rm.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rm.real)}</span></div>
-          <div class="bg-black/20 rounded-lg px-2 py-1 flex items-center justify-between"><span class="text-[8px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span><span class="text-xs font-black ${rmP.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmP.real)}</span></div>
+        <div class="grid grid-cols-2 gap-2 mt-1.5" style="flex:0 0 100%;width:100%">
+          <div class="bg-black/20 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2"><span class="text-[9px] font-bold uppercase text-blue-300">${OWNERS.charlie.label}</span><span class="text-xs font-black ${rm.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rm.real)}</span></div>
+          <div class="bg-black/20 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2"><span class="text-[9px] font-bold uppercase text-ynah">${OWNERS.partner.label}</span><span class="text-xs font-black ${rmP.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmP.real)}</span></div>
         </div>
       </summary>
       <div class="mt-1.5 rounded-lg bg-black/20 px-2.5 py-1.5 space-y-1 text-[11px]">
