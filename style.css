@@ -1110,7 +1110,8 @@ body { font-variant-numeric: tabular-nums; }
 
 /* 5. Colour only for meaning: one accent for card header tiles, neutral card borders */
 .glass-card > summary .w-7.h-7.bg-gradient-to-br {
-  background-image: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  background-image: none !important;
+  background-color: #6366f1 !important;
 }
 .glass-card { border-color: rgba(148, 163, 184, 0.14) !important; }
 details[data-persist="due"].glass-card.border-rose-500\/30 { border-color: rgba(244, 63, 94, 0.4) !important; }

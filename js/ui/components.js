@@ -619,16 +619,16 @@ export function acctGroupHtml(group) {
 
 // ---- Wallet-style account cards ----
 const CARD_THEMES = {
-  bpi:          { bg: "linear-gradient(160deg,#c8283f 0%,#7a1226 100%)", label: "BPI" },
-  maribank:     { bg: "linear-gradient(160deg,#ff8f45 0%,#e4470a 100%)", label: "MariBank" },
-  gcash:        { bg: "linear-gradient(160deg,#3a82ff 0%,#1140b5 100%)", label: "GCash" },
-  metrobank:    { bg: "linear-gradient(160deg,#2f5fb3 0%,#12306b 100%)", label: "Metrobank" },
-  bdo:          { bg: "linear-gradient(160deg,#2a5db0 0%,#0b2a63 100%)", label: "BDO" },
-  unionbank:    { bg: "linear-gradient(160deg,#f59a3c 0%,#c25a0b 100%)", label: "UnionBank" },
-  securitybank: { bg: "linear-gradient(160deg,#35a066 0%,#14532d 100%)", label: "Security Bank" },
-  cash:         { bg: "linear-gradient(160deg,#34343a 0%,#0a0a0c 100%)", label: "Cash" },
-  other:        { bg: "linear-gradient(160deg,#4f5d75 0%,#1e293b 100%)", label: "" },
-  credit:       { bg: "linear-gradient(135deg,#eceff3 0%,#a3abb8 52%,#dfe3e9 100%)", label: "" },
+  bpi:          { bg: "#c8283f", label: "BPI" },
+  maribank:     { bg: "#ff8f45", label: "MariBank" },
+  gcash:        { bg: "#3a82ff", label: "GCash" },
+  metrobank:    { bg: "#2f5fb3", label: "Metrobank" },
+  bdo:          { bg: "#2a5db0", label: "BDO" },
+  unionbank:    { bg: "#f59a3c", label: "UnionBank" },
+  securitybank: { bg: "#35a066", label: "Security Bank" },
+  cash:         { bg: "#34343a", label: "Cash" },
+  other:        { bg: "#4f5d75", label: "" },
+  credit:       { bg: "#eceff3", label: "" },
 };
 
 export function acctCardHtml(a) {
@@ -645,11 +645,10 @@ export function acctCardHtml(a) {
     : `<span class="material-icons" style="font-size:15px;color:${fg}">${isCash ? "payments" : "account_balance"}</span>`;
   const network = /debit|credit|mastercard|platinum|rewards/i.test(a.name || "") || isCredit;
   const chip = (key && !isCash) || isCredit
-    ? `<div class="mt-3 w-7 h-[22px] rounded-[5px] border" style="background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(190,195,205,.55));border-color:rgba(255,255,255,.4)"></div>
+    ? `<div class="mt-3 w-7 h-[22px] rounded-[5px] border" style="background:rgba(255,255,255,.7);border-color:rgba(255,255,255,.4)"></div>
        <span class="material-icons mt-2 block" style="font-size:18px;color:${sub};transform:rotate(90deg);width:18px">contactless</span>`
     : "";
-  return `<button type="button" data-action="openAccountModal" data-arg0="${a.id}" aria-label="Edit ${escapeHtml(a.name)}" class="acct-card relative flex-shrink-0 snap-start text-left rounded-xl overflow-hidden shadow-lg shadow-black/40 active:scale-[0.98] transition-transform" style="width:124px;height:172px;background:${theme.bg};color:${fg};border:1px solid rgba(255,255,255,.12)">
-    <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 45%)"></div>
+  return `<button type="button" data-action="openAccountModal" data-arg0="${a.id}" aria-label="Edit ${escapeHtml(a.name)}" class="acct-card relative flex-shrink-0 snap-start text-left rounded-xl overflow-hidden active:scale-[0.98] transition-transform" style="width:124px;height:172px;background:${theme.bg};color:${fg};border:1px solid rgba(255,255,255,.12)">
     <div class="relative h-full p-2.5 flex flex-col">
       <div class="flex items-center gap-1.5 min-h-[18px]">${logo}${theme.label ? `<span class="text-[11px] font-black tracking-tight truncate">${escapeHtml(theme.label)}</span>` : ""}</div>
       ${chip}
