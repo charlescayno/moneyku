@@ -1431,3 +1431,7 @@ details[data-persist="outlook-more"][open] > summary .material-icons { transform
   #month-nav button { height: 2.5rem; }
 }
 
+
+/* No bottom bar or floating button any more: just a little room under the last card */
+.budget-pad { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
+
