@@ -29,7 +29,9 @@ export function renderBudget() {
   const neg = firstNegative(orows);
   // Headline color by risk: red if the balance dips below zero in the next 12 months, amber if it gets under a quarter of today's cash, else green
   const lowestBal = orows.length ? Math.min(...orows.map((r) => r.all.bal)) : 0;
-  const riskText = hideProjected ? "text-white" : lowestBal < 0 ? "text-rose-400" : lowestBal < 0.25 * pj.cash ? "text-amber-300" : "text-emerald-300";
+  // With only one person ticked the money is shown in that person's color (blue = Charles', purple = Ynah's)
+  const onlyCls = inclW.length === 1 ? OWNERS[inclW[0]].text : null;
+  const riskText = hideProjected ? "text-white" : onlyCls ? onlyCls : lowestBal < 0 ? "text-rose-400" : lowestBal < 0.25 * pj.cash ? "text-amber-300" : "text-emerald-300";
   // Per-person change vs previous month (▲ / ▼), only for future months
   const pDelta = (w) => {
     if (hideProjected || cmpKey(k, currentKey()) <= 0) return "";
@@ -107,7 +109,7 @@ export function renderBudget() {
       </div>
       <!-- Four tiles: icon + label above, value below -->
       <div class="grid grid-cols-2 gap-2">
-        <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">account_balance_wallet</span>current money</span><span class="text-lg font-black tabular-nums truncate text-white">${peso(current)}</span></div>
+        <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">account_balance_wallet</span>current money</span><span class="text-lg font-black tabular-nums truncate ${onlyCls || "text-white"}">${peso(current)}</span></div>
         <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">savings</span>savings</span><span class="text-lg font-black tabular-nums truncate ${savColor}">${signedPeso(ht.savings)}</span></div>
         <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">south_west</span>to receive</span><span class="text-lg font-black tabular-nums truncate text-emerald-400">${signedPeso(ht.toReceive)}</span></div>
         <div class="bg-black/20 rounded-2xl px-4 py-3 flex flex-col gap-2 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="text-lg font-black tabular-nums truncate text-rose-400">${signedPeso(-ht.toPay)}</span></div>
