@@ -129,9 +129,7 @@ export function renderBudget() {
       </div>
       ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
       <details data-persist="proj-details" class="group/pd">
-        <summary class="flex items-center gap-1 cursor-pointer list-none select-none text-[11px] font-bold text-slate-400 py-0.5">
-          <span class="material-icons transition-transform" style="font-size:15px">chevron_right</span>Explain the numbers
-        </summary>
+        <summary class="inline-flex items-center cursor-pointer list-none select-none text-slate-400" title="Explain the numbers" aria-label="Explain the numbers" style="padding:6px;margin:-6px"><span class="material-icons" style="font-size:18px">info_outline</span></summary>
         <div class="space-y-1.5 pt-1 pl-1">
           <div class="rounded-lg bg-black/20 px-2.5 py-2 space-y-1">${hideProjected ? `<p class="text-[11px] text-slate-400">Cash &amp; pending hidden</p>` : `
             <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">Cash now</span><span class="font-black text-white">${peso(pj.cash)}</span></div>
