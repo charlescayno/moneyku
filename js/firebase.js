@@ -155,17 +155,22 @@ export async function syncSet(appData, onFail) {
     console.warn("Could not save to localStorage:", err);
   }
 
-  try { 
-    await set(dbRef, appData); 
-    try { localStorage.removeItem('moneyku_dirty'); } catch (err) { /* ignore */ }
-  } catch (e) { 
-    try { localStorage.setItem('moneyku_dirty', '1'); } catch (err) { /* ignore */ }
-    pendingEchoes = Math.max(0, pendingEchoes - 1); 
-    console.error("Firebase sync error:", e); 
-    if (typeof onFail === "function") onFail(e);
-  } finally { 
-    setTimeout(hideSync, 400); 
-  }
+  // Offline, Firebase's set() never resolves until the server acks. Don't make the UI wait for it:
+  // the local copy is already saved and the SDK keeps the write queued and sends it on reconnect.
+  const write = (async () => {
+    try {
+      await set(dbRef, appData);
+      try { localStorage.removeItem('moneyku_dirty'); } catch (err) { /* ignore */ }
+    } catch (e) {
+      try { localStorage.setItem('moneyku_dirty', '1'); } catch (err) { /* ignore */ }
+      pendingEchoes = Math.max(0, pendingEchoes - 1);
+      console.error("Firebase sync error:", e);
+      if (typeof onFail === "function") onFail(e);
+    } finally {
+      setTimeout(hideSync, 400);
+    }
+  })();
+  await Promise.race([write, new Promise((r) => setTimeout(r, 1000))]);
 }
 
 export function normalize(d) {
