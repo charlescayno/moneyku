@@ -162,6 +162,7 @@ export function renderBudget() {
           ${tile("north_east", "text-rose-300", "to pay", `<span class="text-base font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-simT.sToPay)}</span>`)}
         </div>
       </div>
+      ${next5CardHtml()}
       <div class="min-w-0" id="sec-simulated" style="scroll-margin-top:5.5rem">${personSectionHtml("simulated", false)}</div>
     </div>`;
     applyPersistedDetails();

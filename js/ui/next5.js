@@ -1,6 +1,6 @@
 // "Projected in next 6 months": projected balance at the end of each of the next six months, as figures plus a line.
 import { MONTHS_SHORT, addMonths, cmpKey, currentKey, keyParts, peso } from "../utils.js";
-import { getHideProjected, getSelectedKey, includedWho, outlookRows, timeline } from "../state.js";
+import { getHideProjected, getSelectedKey, getSimView, includedWho, outlookRows, projectedByMonth, timeline } from "../state.js";
 
 const COUNT = 6;
 let offset = 0; // months from the current month where the window starts (scrolled with the arrows or a swipe)
@@ -14,7 +14,7 @@ export function next5Keys() {
 }
 
 const MAX_OFFSET = () => Math.max(0, timeline().filter((m) => cmpKey(m, currentKey()) >= 0).length - COUNT);
-const title = (keys) => (offset === 0 ? `Projected in next ${keys.length} months` : `Projected ${MONTHS_SHORT[keyParts(keys[0]).m]} ${keyParts(keys[0]).y} \u2013 ${MONTHS_SHORT[keyParts(keys[keys.length - 1]).m]} ${keyParts(keys[keys.length - 1]).y}`);
+const title = (keys) => (getSimView() ? "Simulated " : "") + (offset === 0 ? `Projected in next ${keys.length} months` : `Projected ${MONTHS_SHORT[keyParts(keys[0]).m]} ${keyParts(keys[0]).y} \u2013 ${MONTHS_SHORT[keyParts(keys[keys.length - 1]).m]} ${keyParts(keys[keys.length - 1]).y}`);
 const header = (keys) => `<div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-black text-white">${title(keys)}</h3>
       <div class="flex items-center gap-1">
@@ -58,8 +58,9 @@ export function next5CardHtml() {
       <button type="button" data-action="toggleProjected" class="flex-shrink-0 flex items-center gap-1 text-[11px] font-bold text-indigo-300 px-3 py-1.5 rounded-lg bg-white/5"><span class="material-icons" style="font-size:14px">visibility</span>Show</button>
     </div>`;
   }
-  const w = includedWho(); const ac = w.length === 1 ? (w[0] === "partner" ? "#DFC5FE" : "#93c5fd") : "#a5b4fc"; // same person colors as the big card: blue = Charles, purple = Ynah
-  const vals = outlookRows(keys).map((r) => r.all.bal);
+  const simOn = getSimView(); const w = includedWho(); const ac = simOn ? "#fbbf24" : w.length === 1 ? (w[0] === "partner" ? "#DFC5FE" : "#93c5fd") : "#a5b4fc"; // same person colors as the big card: blue = Charles, purple = Ynah
+  const simBy = simOn ? projectedByMonth(["simulated"]) : null; // the sandbox: its own starting cash plus its own income / expenses
+  const vals = simOn ? keys.map((m) => simBy[m]) : outlookRows(keys).map((r) => r.all.bal);
   const sel = getSelectedKey();
 
   // chart: one column per month, points centred in their column so they line up with the figures above
