@@ -167,11 +167,15 @@ export function renderBudget() {
     applyPersistedDetails();
     return;
   }
+  const next5Html = next5CardHtml();
   $("budget-body").innerHTML = `
     <div class="w-full flex flex-col gap-2 budget-pad">
-      ${kpiBar}
+      <!-- Projected card with the 6-month outlook to its right (stacked on phones) -->
+      <div id="projected-row" class="w-full grid grid-cols-1 ${next5Html ? "md:grid-cols-2" : ""} gap-2 items-stretch min-w-0">
+        ${kpiBar}
+        ${next5Html}
+      </div>
       <div id="reminders-slot" class="contents">${upcomingBillsWidgetHtml()}</div>
-      ${next5CardHtml()}
       <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->
