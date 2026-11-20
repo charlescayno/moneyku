@@ -1449,3 +1449,4 @@ details > summary > div > .dt-chev { transition: transform .15s; }
 * { text-transform: lowercase !important; }
 .keep-case, .keep-case *, .item-name, input, textarea, select, option { text-transform: none !important; }
 input::placeholder, textarea::placeholder { text-transform: lowercase !important; }
+.child-list [data-child] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }

@@ -64,23 +64,62 @@ export function initArrangeDrag() {
     }
   }
 
-  document.addEventListener("pointerdown", (e) => {
-    const handle = e.target.closest?.("[data-drag-handle]");
-    if (!handle || drag || (e.pointerType === "mouse" && e.button !== 0)) return;
+  function startDrag(handle, pointerId, clientY) {
     const row = handle.closest(ROW);
     const container = row && row.parentElement;
-    if (!container) return;
-    e.preventDefault();
-    handle.setPointerCapture(e.pointerId);
+    if (!container || drag) return false;
+    try { handle.setPointerCapture(pointerId); } catch { /* pointer already gone */ }
     row.classList.add("arr-dragging");
     drag = {
-      row, handle, container, pointerId: e.pointerId, y: e.clientY,
-      grab: e.clientY - row.getBoundingClientRect().top,
+      row, handle, container, pointerId, y: clientY,
+      grab: clientY - row.getBoundingClientRect().top,
       startOrder: rowsOf(container).map((el) => el.dataset.child),
       raf: 0,
     };
     drag.raf = requestAnimationFrame(tick);
+    return true;
+  }
+
+  document.addEventListener("pointerdown", (e) => {
+    const handle = e.target.closest?.("[data-drag-handle]");
+    if (!handle || drag || (e.pointerType === "mouse" && e.button !== 0)) return;
+    e.preventDefault();
+    startDrag(handle, e.pointerId, e.clientY);
   });
+
+  // Hold a sub-expense row (no need to open Arrange first) and drag it: the list switches to
+  // arrange mode and the held row follows the finger/mouse.
+  let hold = null;
+  const cancelHold = () => { if (hold) { clearTimeout(hold.timer); hold = null; } };
+  document.addEventListener("pointerdown", (e) => {
+    if (drag || (e.pointerType === "mouse" && e.button !== 0)) return;
+    const row = e.target.closest?.(".child-list [data-child]:not(.arr-row)");
+    if (!row || e.target.closest("button")) return;
+    const list = row.parentElement;
+    if (list.querySelectorAll("[data-child]").length < 2) return;
+    const h = { id: row.dataset.child, who: list.dataset.who, parentId: list.dataset.parent, pointerId: e.pointerId, x: e.clientX, y: e.clientY };
+    h.timer = setTimeout(() => {
+      hold = null;
+      if (typeof window.toggleArrange !== "function") return;
+      if (navigator.vibrate) { try { navigator.vibrate(15); } catch { /* ignore */ } }
+      window.toggleArrange(h.parentId);
+      const next = document.querySelector(`.child-list[data-parent="${h.parentId}"] .arr-row[data-child="${h.id}"] [data-drag-handle]`);
+      if (next) startDrag(next, h.pointerId, h.y);
+      // The release that ends this hold must not also count as a tap on the row.
+      const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      document.addEventListener("click", swallow, { capture: true, once: true });
+      setTimeout(() => document.removeEventListener("click", swallow, { capture: true }), 600);
+    }, 450);
+    hold = h;
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (hold && e.pointerId === hold.pointerId && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 8) cancelHold();
+    else if (hold && e.pointerId === hold.pointerId) hold.y = e.clientY;
+  });
+  document.addEventListener("pointerup", cancelHold);
+  document.addEventListener("pointercancel", cancelHold);
+  document.addEventListener("scroll", cancelHold, { passive: true });
+  document.addEventListener("contextmenu", (e) => { if (e.target.closest?.(".child-list [data-child]")) e.preventDefault(); });
 
   document.addEventListener("pointermove", (e) => {
     if (drag && e.pointerId === drag.pointerId) { drag.y = e.clientY; e.preventDefault(); }
