@@ -33,7 +33,12 @@ export function renderMonthNav() {
   $("mn-prev").disabled = !tl.length || k <= tl[0];
   $("mn-next").disabled = !tl.length || k >= tl[tl.length - 1];
   const nowK = currentKey();
-  $("mn-today").classList.toggle("hidden", k === nowK || !tl.includes(nowK));
+  // Keep the button's space when it is not needed (invisible, not removed) so the next arrow never moves under the finger
+  const hideToday = k === nowK || !tl.includes(nowK), tb = $("mn-today");
+  tb.style.visibility = hideToday ? "hidden" : "visible";
+  tb.style.pointerEvents = hideToday ? "none" : "auto";
+  tb.tabIndex = hideToday ? -1 : 0;
+  tb.setAttribute("aria-hidden", hideToday ? "true" : "false");
 }
 
 export function scrollChipIntoView() {
