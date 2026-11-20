@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneyku-cache-v219';
+const CACHE_NAME = 'moneyku-cache-v220';
 const urlsToCache = [
   './',
   './index.html',

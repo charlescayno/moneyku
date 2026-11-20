@@ -99,6 +99,7 @@ import {
   next5Reset,
   toggleInvestments,
   toggleExpenseSort,
+  toggleSimPerson,
   toggleArrange,
   reorderChildren,
   prevOverviewPage,
@@ -202,6 +203,7 @@ window.next5Shift = next5Shift;
 window.next5Reset = next5Reset;
 window.toggleInvestments = toggleInvestments;
 window.toggleExpenseSort = toggleExpenseSort;
+window.toggleSimPerson = toggleSimPerson;
 window.toggleArrange = toggleArrange;
 window.reorderChildren = reorderChildren;
 window.prevOverviewPage = prevOverviewPage;

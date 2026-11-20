@@ -51,6 +51,10 @@ export function setHideInvestments(val) {
 
 let expenseSort = localStorage.getItem("expenseSort") === "name" ? "name" : "default";
 export function getExpenseSort() { return expenseSort; }
+let simPersonSort = localStorage.getItem("simPersonSort") === "1";
+export function getSimPersonSort() { return simPersonSort; }
+export function setSimPersonSort(on) { simPersonSort = !!on; localStorage.setItem("simPersonSort", simPersonSort ? "1" : "0"); }
+
 export function setExpenseSort(val) {
   expenseSort = val === "name" ? "name" : "default";
   localStorage.setItem("expenseSort", expenseSort);

@@ -92,6 +92,7 @@ export {
   toggleExplain,
   toggleInvestments,
   toggleExpenseSort,
+  toggleSimPerson,
   toggleArrange,
   reorderChildren,
   prevOverviewPage,

@@ -6,7 +6,7 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, displayKids, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getSimPersonSort, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, displayKids, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
@@ -373,6 +373,19 @@ const dueHeader = (label, cls, icon, n) => `<p class="due-group flex items-cente
 
 /** Expenses of the current/past months: Overdue and This week come first, everything else is Later. */
 export function groupedRowsHtml(items, k, kind, who) {
+  // Simulated expenses can be grouped by whose budget they were copied from
+  if (who === "simulated" && kind === "expenses" && items.length && getSimPersonSort()) {
+    const parts = [["charlie", "Charles"], ["partner", "Ynah"], ["", "Simulated only"]].map(([key, label]) => ({ key, label, list: items.filter((it) => (it.copiedFromWho === "charlie" || it.copiedFromWho === "partner" ? it.copiedFromWho : "") === key) })).filter((p) => p.list.length);
+    return parts.map((p) => {
+      const sub = p.list.reduce((s, it) => s + amountIn(it, k), 0);
+      const av = p.key ? `<img src="assets/avatar-${p.label.toLowerCase()}.jpg" alt="" class="w-4 h-4 rounded-full object-cover border border-white/20">` : "";
+      return `<div class="sim-person-group mb-1"><div class="flex justify-between items-center px-2 pt-2 pb-0.5"><p class="flex items-center gap-1.5 text-[11px] font-black text-slate-400 ${p.key ? "keep-case" : ""}">${av}${p.label}</p><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(sub)}</p></div>${groupedRowsByDue(p.list, k, kind, who)}</div>`;
+    }).join("");
+  }
+  return groupedRowsByDue(items, k, kind, who);
+}
+
+function groupedRowsByDue(items, k, kind, who) {
   if (kind !== "expenses" || who === "debt" || who === "pdebt" || !items.length) return groupedRowsInner(items, k, kind, who);
   const over = [], week = [], later = [];
   for (const it of items) {
@@ -494,7 +507,7 @@ export function debtTrackerCardHtml(who = "debt") {
                   <span class="font-bold text-rose-400" style="font-size:14px">${peso(debtExpTot)}</span>
                 </div>
               </div>
-              <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button></div>
+              <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button></div>
             </summary>
             <div class="space-y-0.5 mt-1">${debtExpHtml}</div>
           </details>
@@ -503,9 +516,11 @@ export function debtTrackerCardHtml(who = "debt") {
     </details>`;
 }
 
-export function expenseSortBtnHtml() {
+export function expenseSortBtnHtml(who) {
   const on = getExpenseSort() === "name";
-  return `<button data-action="toggleExpenseSort" title="${on ? "Sorted A-Z (tap for default order)" : "Sort A-Z"}" aria-label="Sort expenses by name" aria-pressed="${on}" class="text-[10px] font-bold ${on ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">sort_by_alpha</span>A-Z</button>`;
+  const pOn = getSimPersonSort();
+  const personBtn = who === "simulated" ? `<button data-action="toggleSimPerson" title="Group by person" aria-label="Group expenses by person" aria-pressed="${pOn}" class="text-[10px] font-bold ${pOn ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">people</span>person</button>` : "";
+  return `${personBtn}<button data-action="toggleExpenseSort" title="${on ? "Sorted A-Z (tap for default order)" : "Sort A-Z"}" aria-label="Sort expenses by name" aria-pressed="${on}" class="text-[10px] font-bold ${on ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">sort_by_alpha</span>A-Z</button>`;
 }
 
 const spSigned = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
@@ -624,7 +639,7 @@ export function personSectionHtml(who, includeDebt = true) {
                 <span class="font-bold text-rose-400" style="font-size:14px">${peso(expTot)}</span>
               </div>
             </div>
-            <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button></div>
+            <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button></div>
           </summary>
           <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>${simCopyBar("expenses")}
           ${copyBtn}

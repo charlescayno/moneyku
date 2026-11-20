@@ -2,7 +2,7 @@ import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, 
 import { applyChildOrder } from '../itemOps.js';
 import { choosePayment, applyPayment, refundPayment, recordPayment, paidMessage, nameOf } from '../payfrom.js';
 import { refreshReminders } from '../calendar.js';
-import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, includedWho, setWhoIncluded, getSimView, setSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { toggleArranging, getSimPersonSort, setSimPersonSort, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, includedWho, setWhoIncluded, getSimView, setSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { openMore, parentSummaryText, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
@@ -314,6 +314,11 @@ export async function reorderChildren(who, parentId, orderIds) {
   const changed = applyChildOrder(parent, shown, orderIds);
   renderBudget();
   if (changed) await syncSet(appData);
+}
+
+export function toggleSimPerson() {
+  setSimPersonSort(!getSimPersonSort());
+  renderBudget();
 }
 
 export function toggleExpenseSort() {
