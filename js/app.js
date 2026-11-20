@@ -22,8 +22,7 @@ import {
   normalize,
   emptyData,
   getLocalCachedData,
-  getPendingEchoes,
-  decrementPendingEchoes,
+  getLastSaved,
   watchAuth,
   signInWithGoogle,
   finishRedirectSignIn,
@@ -317,12 +316,14 @@ function startDataSync(user) {
     dbRef,
     (snap) => {
       if (session !== syncSession) return;
-      if (!firstLoad && getPendingEchoes() > 0) {
-        decrementPendingEchoes();
-        return;
-      }
       const val = snap.val();
       let nextData = val ? normalize(val) : emptyData();
+      // Our own save coming back is ignored; anything different is another device's edit and must be applied.
+      // (A counter of pending saves used to do this, but it drifted and swallowed other devices' edits.)
+      if (!firstLoad) {
+        const mine = getLastSaved();
+        if (mine && sameData(nextData, normalize(JSON.parse(JSON.stringify(mine))))) return;
+      }
 
       let uploadLocal = false;
       if (firstLoad) {

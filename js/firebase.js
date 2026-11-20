@@ -128,6 +128,10 @@ export function getPendingEchoes() {
   return pendingEchoes;
 }
 
+// What this device last saved. A live update equal to it is our own echo (ignored); anything else is another device's edit.
+let lastSaved = null;
+export function getLastSaved() { return lastSaved; }
+
 // Remember when each account balance last changed (any edit, transfer or payment) so the app can say
 // when a balance may be out of date. Accounts without a date yet are "unknown" until they change.
 function stampAccountDates(appData) {
@@ -145,6 +149,7 @@ export async function syncSet(appData, onFail) {
   try { stampAccountDates(appData); } catch (err) { console.warn("Account dates:", err); }
   try { recordChange(appData); } catch (err) { console.warn("History:", err); }
   pendingEchoes++;
+  try { lastSaved = JSON.parse(JSON.stringify(appData)); } catch (err) { lastSaved = null; }
   showSync();
   // Save local copy immediately for instant offline durability
   try {
