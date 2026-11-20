@@ -212,7 +212,7 @@ export async function clearSimulation() {
 export function openSimCash() {
   const cur = Number(getAppData()?.simCash) || 0;
   showSheet("Simulated starting cash",
-    `<p class="text-[11px] text-slate-400 pb-1">The cash the simulation starts from. It feeds Current money on hand, Real money and Projected, and is independent of real accounts.</p>
+    `<p class="text-[11px] text-slate-400 pb-1">The cash the simulation starts from. It feeds Current money on hand and Projected, and is independent of real accounts.</p>
      <input id="sim-cash-input" type="text" inputmode="decimal" autocomplete="off" value="${cur || ""}" placeholder="0" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" />`,
     `${CANCEL_BTN}<button type="button" data-action="simCashSave" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-indigo-600">Save</button>`);
   setTimeout(() => $("sim-cash-input")?.focus(), 60);

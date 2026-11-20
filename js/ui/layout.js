@@ -8,7 +8,6 @@ import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 import { cardSummaryHtml } from './cardui.js';
 import { cardDueIn } from '../card.js';
 import { next5CardHtml } from './next5.js';
-import { realInfoBtnHtml } from './realinfo.js';
 import { upcomingBillsWidgetHtml } from '../calendar.js';
 
 // =============================
@@ -67,8 +66,6 @@ export function renderBudget() {
   const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
   const rm = realMoney("charlie");
   const rmP = realMoney("partner");
-  const rmAll = householdRealMoney();
-  const realDiffers = Math.abs(rmAll.real - current) > 0.005; // show "real money" only when it differs from current money
   // Future months: the projection already deducts every BPI Platinum bill due up to that month, i.e. it assumes they are paid in full. Say so.
   let cardNote = "";
   if (showC && !hideProjected && cmpKey(k, currentKey()) > 0) {
@@ -123,8 +120,7 @@ export function renderBudget() {
       </div>
       <!-- Four tiles: icon + label above, value below -->
       <div class="grid grid-cols-2 gap-2">
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400 min-w-0" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">account_balance_wallet</span><span class="truncate min-w-0">current money on hand</span></span><span class="text-base font-extrabold tabular-nums truncate ${onlyCls || "text-white"}">${peso(current)}</span></div>
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400 min-w-0" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">payments</span><span class="truncate min-w-0">real money</span>${realInfoBtnHtml("hero")}</span><span class="text-base font-extrabold tabular-nums truncate ${rmAll.real < 0 ? "text-rose-400" : onlyCls || "text-white"}">${sp(rmAll.real)}</span></div>
+        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0" style="grid-column:1/-1"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400 min-w-0" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">account_balance_wallet</span><span class="truncate min-w-0">current money on hand</span></span><span class="text-base font-extrabold tabular-nums truncate ${onlyCls || "text-white"}">${peso(current)}</span></div>
         <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">south_west</span>to receive</span><span class="text-base font-extrabold tabular-nums truncate text-emerald-400">${signedPeso(toRecvAll)}</span></div>
         <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="text-base font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-toPayAll)}</span></div>
       </div>
@@ -138,28 +134,6 @@ export function renderBudget() {
             <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">&minus; Still to pay</span><span class="font-black text-rose-300">${peso(pj.out)}</span></div>
             <div class="flex items-center justify-between text-[11px] border-t border-white/10 pt-1"><span class="font-bold text-slate-200">= Projected</span><span class="font-black ${projected >= 0 ? "text-white" : "text-rose-300"}">${sp(projected)}</span></div>`}</div>
           ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
-          ${realDiffers ? `<details data-persist="kpi" class="group">
-      <summary class="flex flex-wrap items-center justify-between gap-y-1 cursor-pointer list-none select-none px-1 pt-2 border-t border-white/5 mt-1">
-        <span class="text-[11px] font-bold text-slate-400 flex items-baseline gap-2">Real money · ${showC && showP ? "all" : OWNERS[showC ? "charlie" : "partner"].label} <span class="text-base font-extrabold tabular-nums ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></span>
-        <span class="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">Details<span class="material-icons transition-transform group-open:rotate-180" style="font-size:14px">expand_more</span></span>
-        ${showC && showP ? `<div class="grid grid-cols-2 gap-2 mt-1.5" style="flex:0 0 100%;width:100%">
-          <div class="bg-black/20 rounded-lg px-2.5 py-1.5 flex flex-col gap-0.5"><span class="text-[9px] font-bold uppercase text-blue-300 whitespace-nowrap">${OWNERS.charlie.label} real money</span><span class="text-sm font-black ${rm.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rm.real)}</span></div>
-          <div class="bg-black/20 rounded-lg px-2.5 py-1.5 flex flex-col gap-0.5"><span class="text-[9px] font-bold uppercase text-ynah whitespace-nowrap">${OWNERS.partner.label} real money</span><span class="text-sm font-black ${rmP.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmP.real)}</span></div>
-        </div>` : ""}
-      </summary>
-      <div class="mt-1.5 rounded-lg bg-black/20 px-2.5 py-1.5 space-y-1 text-[11px]">
-        ${showC ? `<p class="text-[9px] font-black uppercase tracking-wider text-blue-300">${OWNERS.charlie.label} real money <span class="text-white normal-case text-[11px]">${sp(rm.real)}</span></p>
-        <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rm.cash)}</span></div>
-        ${rm.owed.total > 0 ? `<div class="flex justify-between"><span class="text-slate-400">BPI Platinum owed</span><span class="font-black text-rose-300">-${peso(rm.owed.total)}</span></div>
-        ${owedBreak ? `<p class="text-[9px] text-slate-500 text-right">${owedBreak}</p>` : ""}` : ""}
-        ` : ""}
-        ${showP ? `<p class="text-[9px] font-black uppercase tracking-wider text-ynah ${showC ? "border-t border-white/10 pt-1.5" : ""}">${OWNERS.partner.label} real money <span class="text-white normal-case text-[11px]">${sp(rmP.real)}</span></p>
-        <div class="flex justify-between"><span class="text-slate-400">Cash &amp; bank</span><span class="font-black text-white">${peso(rmP.cash)}</span></div>
-        ` : ""}
-        ${showC && showP ? `<div class="flex justify-between border-t border-white/10 pt-1.5"><span class="font-bold text-slate-200">All: real money</span><span class="font-black ${rmAll.real >= 0 ? "text-white" : "text-rose-400"}">${sp(rmAll.real)}</span></div>
-        ` : ""}
-      </div>
-      </details>` : ""}
         </div>
       </details>
       ${cardNote}
@@ -194,8 +168,7 @@ export function renderBudget() {
           <p id="sim-projected" class="font-black tracking-tight tabular-nums ${hideProjected ? "text-white" : simProj >= 0 ? "text-amber-200" : "text-rose-400"}" style="font-size:34px;line-height:1.1">${hid(sp(simProj))}</p>
         </div>
         <div class="grid grid-cols-2 gap-2">
-          ${tile("account_balance_wallet", "text-amber-300", `<span class="truncate min-w-0">current money on hand</span>`, `<span id="sim-cash" class="text-base font-extrabold tabular-nums truncate text-white">${peso(rmS.cash)}</span>`)}
-          ${tile("payments", "text-indigo-300", `<span class="truncate min-w-0">real money</span>${realInfoBtnHtml("sim")}`, `<span id="sim-real" class="text-base font-extrabold tabular-nums truncate ${rmS.real < 0 ? "text-rose-400" : "text-white"}">${sp(rmS.real)}</span>`)}
+          ${tile("account_balance_wallet", "text-amber-300", `<span class="truncate min-w-0">current money on hand</span>`, `<span id="sim-cash" class="text-base font-extrabold tabular-nums truncate text-white">${peso(rmS.cash)}</span>`, "", true)}
           ${tile("south_west", "text-emerald-300", "to receive", `<span class="text-base font-extrabold tabular-nums truncate text-emerald-400">${signedPeso(simT.sToReceive)}</span>`)}
           ${tile("north_east", "text-rose-300", "to pay", `<span class="text-base font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-simT.sToPay)}</span>`)}
         </div>
