@@ -468,7 +468,7 @@ export function debtTrackerCardHtml(who = "debt") {
   const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", who);
   const dO = OWNERS[who];
 
-  const hdrStyle = (rgb) => `background:rgba(${rgb},.10);border-radius:8px;padding:7px 8px`;
+  const hdrStyle = (rgb) => `padding:7px 8px`;
   const lbl = (txt) => `<p class="font-bold text-slate-400 truncate" style="font-size:11px;text-transform:lowercase">${txt}</p>`;
   const chev = `<span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>`;
 
@@ -650,7 +650,7 @@ export function personSectionHtml(who, includeDebt = true) {
       </details>
       <div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
         <details open data-persist="sec-expenses${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
-          <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(244,63,94,.10);border-radius:8px;padding:7px 8px">
+          <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
             <div class="flex items-center gap-1 min-w-0">
               <span class="material-icons text-slate-500 transition-transform group-open:rotate-90 flex-shrink-0" style="font-size:12px">chevron_right</span>
               <div class="flex items-baseline gap-1.5 min-w-0">

@@ -112,7 +112,7 @@ export function cardSectionHtml(k) {
       <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p></div>`;
   return `<div id="sec-card" style="scroll-margin-top:5.5rem;border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
     <details data-persist="sec-card-v2" class="group">
-      <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(99,102,241,.12);border-radius:8px;padding:7px 8px">
+      <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
         <div class="flex items-center gap-1">
           <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
           <div class="flex items-baseline gap-1.5">
