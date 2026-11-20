@@ -256,7 +256,6 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     else if (ds && ds.state === "week") badge.push(`<span class="due-chip due-soon text-amber-300 font-black whitespace-nowrap">${dd != null ? `${ordinal(dd)} · ` : ""}${ds.days === 0 ? "due today" : `in ${ds.days}d`}</span>`);
     else if (installment) badge.push(`<span class="text-amber-400/80 font-bold whitespace-nowrap">→ ${monthShort(it.end)}</span>`);
     else if (it.recurring && dd != null) badge.push(`<span class="text-sky-300 font-bold whitespace-nowrap">${ordinal(dd)}</span>`);
-    else if (it.recurring) badge.push(`<span class="text-indigo-300/90 font-bold whitespace-nowrap">recurring</span>`);
     return `<div data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
     class="item-row flex items-center gap-2 pl-1.5 pr-2 rounded-xl transition-colors cursor-pointer ${settled ? "opacity-60" : ""}" style="min-height:48px;border-top:0">
     <button data-action="togglePaidQuick" data-arg0="${it.id}" data-arg1="${kind}" title="${kind === "income" ? "Mark received" : "Mark paid"}" aria-label="Mark ${escapeHtml(it.name)} ${kind === "income" ? "received" : "paid"}" class="paid-check ${settled ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border">
