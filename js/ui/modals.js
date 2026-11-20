@@ -299,7 +299,7 @@ export function openChildModal(who, parentId, childId) {
     <p class="text-[11px] font-bold text-slate-400">Mondays in ${monthShort(selectedKey)}: <span id="grocery-mondays" class="text-white font-black text-sm">${mons}</span></p>
     <div class="grid grid-cols-2 gap-3">
       ${inputBlock("Number of people", "f-people", c && c.people ? c.people : "", "number", 'min="1" inputmode="numeric" placeholder="e.g. 9"')}
-      ${inputBlock("Budget per person (₱)", "f-perperson", c && c.perPerson ? c.perPerson : 1000, "number", 'min="0" inputmode="numeric" placeholder="1000"')}
+      ${inputBlock("Budget per person per Monday (₱)", "f-perperson", c && c.perPerson ? c.perPerson : 1000, "number", 'min="0" inputmode="numeric" placeholder="1000"')}
     </div>
     <p id="grocery-calc" class="text-[11px] text-slate-500"></p>
   </div>`;
@@ -533,7 +533,7 @@ export async function doDelete(scope = "all") {
 }
 
 // Grocery-style sub-expense: the people / per-person box shows when the name contains "grocer";
-// people x per person fills the estimate. Also shows the Mondays in the selected month.
+// budget per person x Mondays x people fills the estimate. Also shows the Mondays in the selected month.
 function groceryRefresh(fill) {
   const box = $("grocery-box");
   if (!box) return;
@@ -545,10 +545,10 @@ function groceryRefresh(fill) {
   const mons = countWeekday(getSelectedKey(), 1);
   const calc = $("grocery-calc");
   if (people >= 1 && per > 0) {
-    const total = people * per;
+    const total = per * (mons || 1) * people;
     if (fill && $("f-amount")) $("f-amount").value = String(total);
-    if (calc) calc.textContent = `${people} people × ${peso(per)} = ${peso(total)}${mons ? ` · about ${peso(Math.round(total / mons))} per Monday (${mons})` : ""}`;
-  } else if (calc) calc.textContent = "Enter the number of people to set the estimate (people × budget per person).";
+    if (calc) calc.textContent = `${peso(per)} per person × ${mons} Mondays × ${people} people = ${peso(total)}`;
+  } else if (calc) calc.textContent = "Enter the number of people to set the estimate (budget per person × Mondays × people).";
 }
 document.addEventListener("input", (e) => {
   const id = e.target && e.target.id;

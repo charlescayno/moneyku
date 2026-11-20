@@ -1630,7 +1630,7 @@ export async function saveChildAndAddAnother() {
   const parent = getItems(who, "expenses").find((x) => x.id === parentId);
   if (parent) {
     if (!Array.isArray(parent.children)) parent.children = [];
-    parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}), ...(childPeopleInput() || {}) });
+    parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}), ...(childPeopleInput() || {}), ...(childPeopleInput() ? { perMonday: childPeopleInput().people * childPeopleInput().perPerson } : {}) });
     const gn = ($("f-parent")?.value || "").trim();
     if (gn) parent.name = gn;
   }
@@ -1765,11 +1765,17 @@ async function saveModalInner() {
           if (cdd != null) c.dueDay = cdd; else delete c.dueDay;
           if ($("f-people")) { const pe = childPeopleInput(); if (pe) Object.assign(c, pe); else { delete c.people; delete c.perPerson; } }
           if (changed) applyItemAmount(appData, parent.children, c, amount, scope, selectedKey, { recurring: parent.recurring });
+          // Budget per person x people is a weekly (per-Monday) rate, so every month recomputes with its own Mondays
+          const pe2 = $("f-people") ? childPeopleInput() : null;
+          if (pe2 && scope !== "month") {
+            const tgt = scope === "future" && changed ? parent.children[parent.children.indexOf(c) + 1] : c;
+            if (tgt) tgt.perMonday = pe2.people * pe2.perPerson;
+          }
         }
         const pf = $("f-paid");
         if (pf) deducted = setPaidFlag(appData, selectedKey, id, pf.dataset.on === "true");
       } else {
-        parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}), ...(childPeopleInput() || {}) });
+        parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}), ...(childPeopleInput() || {}), ...(childPeopleInput() ? { perMonday: childPeopleInput().people * childPeopleInput().perPerson } : {}) });
       }
     }
     await syncSet(appData);
