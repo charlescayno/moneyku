@@ -1444,12 +1444,21 @@ details[data-persist=proj-details]:not([open]) { margin-top: -0.75rem; }
 details[open] > summary > div > .dt-chev { transform: rotate(90deg); }
 details > summary > div > .dt-chev { transition: transform .15s; }
 
-/* Lowercase UI: every app label, heading and button shows in lowercase. Your own names (items, accounts, people)
-   keep the case you typed, and form fields are never changed. */
-* { text-transform: lowercase !important; }
-.keep-case, .keep-case *, .item-name, input, textarea, select, option { text-transform: none !important; }
-input::placeholder, textarea::placeholder { text-transform: lowercase !important; }
-.child-list [data-child] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+/* Type rule: headings and small labels are in CAPITALS (.sec-title, Tailwind .uppercase); everything else keeps normal case. */
+input::placeholder, textarea::placeholder { text-transform: none; }
+
+/* Fewer boxes and borders: cards separate by surface and spacing, not outlines */
+.glass-card { border-color: transparent !important; }
+details[data-persist="due"].glass-card.border-rose-500\/30 { border-color: rgba(244, 63, 94, 0.4) !important; }
+details[data-persist="due"].glass-card.border-amber-500\/25 { border-color: rgba(245, 158, 11, 0.4) !important; }
+.item-row + .item-row { border-top: 0; }
+.item-row span.border, .item-row span[class*="border-"] { border-color: transparent !important; background: transparent !important; padding-left: 0 !important; padding-right: 0 !important; }
+.item-row .due-chip { background: transparent !important; border-color: transparent !important; padding-left: 0 !important; padding-right: 0 !important; }
+.paid-check:not(.is-paid) { border-color: rgba(148, 163, 184, 0.35); }
+details > summary.bg-indigo-900\/10, details > summary[class*="bg-indigo-900"] { background: transparent !important; }
+#month-nav button:not(#mn-today) { background: transparent !important; }
+.app-header-tools button:not(#fab-add) { background: transparent !important; box-shadow: none !important; }
+.sec-divider { border-top: 1px solid rgba(148, 163, 184, 0.12) !important; }.child-list [data-child] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
 /* Section titles (Income, Expenses, Debt, Accounts, card headings) show in CAPITALS */
 .sec-title, summary h3, details > summary > div > h3, header h3 { text-transform: uppercase !important; letter-spacing: .06em; }

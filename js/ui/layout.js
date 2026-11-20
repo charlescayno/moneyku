@@ -107,7 +107,7 @@ export function renderBudget() {
       <!-- Projected hero: small label, one big number -->
       <div class="flex flex-col gap-1 px-1">
         <div class="flex items-center gap-1.5">
-          <span class="text-[11px] font-bold text-slate-400 min-w-0 truncate" style="text-transform:lowercase">projected · ${inclW.length === 2 ? "all" : OWNERS[inclW[0]].label} · ${monthShort(k)}</span>
+          <span class="sec-title text-[11px] font-bold text-slate-400 min-w-0 truncate">projected · ${inclW.length === 2 ? "all" : OWNERS[inclW[0]].label} · ${monthShort(k)}</span>
           <button data-action="toggleProjected" aria-label="${hideProjected ? "Show amounts" : "Hide amounts"}" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center flex-shrink-0" style="padding:7px;margin:-7px">
             <span class="material-icons" style="font-size:14px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
           </button>
@@ -151,7 +151,7 @@ export function renderBudget() {
       <div class="w-full bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex flex-col items-stretch gap-3 flex-shrink-0">
         <div class="flex flex-col gap-1 px-1">
           <div class="flex items-center gap-1.5">
-            <span class="text-[11px] font-bold text-slate-400 min-w-0 truncate" style="text-transform:lowercase">projected · simulated · ${monthShort(k)}</span>
+            <span class="sec-title text-[11px] font-bold text-slate-400 min-w-0 truncate">projected · simulated · ${monthShort(k)}</span>
             <button data-action="toggleProjected" aria-label="${hideProjected ? "Show amounts" : "Hide amounts"}" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center flex-shrink-0" style="padding:7px;margin:-7px"><span class="material-icons" style="font-size:14px">${hideProjected ? "visibility_off" : "visibility"}</span></button>
           </div>
           <p id="sim-projected" class="font-black tracking-tight tabular-nums ${hideProjected ? "text-white" : simProj >= 0 ? "text-amber-200" : "text-rose-400"}" style="font-size:34px;line-height:1.1">${hid(sp(simProj))}</p>

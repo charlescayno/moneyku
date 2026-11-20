@@ -309,7 +309,7 @@ export function categoryGroupedHtml(items, k, kind, who) {
     
     if (showHeaders && (kind === "expenses" || kind === "income")) {
       // Clean style: small muted lowercase subheading with a muted subtotal (empty groups never get here)
-      html += `<div class="cat-group mb-1"><div class="flex justify-between items-baseline px-2 pt-2 pb-0.5"><p class="text-[11px] font-bold text-slate-500" style="text-transform:lowercase">${CATEGORY_LABELS[c]}</p><p class="text-[11px] font-bold text-slate-500 tabular-nums">${peso(subtotal)}</p></div><div class="space-y-0.5">${rowsHtml}</div></div>`;
+      html += `<div class="cat-group mb-1"><div class="flex justify-between items-baseline px-2 pt-2 pb-0.5"><p class="text-[11px] font-bold text-slate-500">${CATEGORY_LABELS[c]}</p><p class="text-[11px] font-bold text-slate-500 tabular-nums">${peso(subtotal)}</p></div><div class="space-y-0.5">${rowsHtml}</div></div>`;
     } else if (showHeaders) {
       html += `<details open class="group mb-1">
         <summary class="flex justify-between items-center px-3 pt-2 pb-1 cursor-pointer list-none select-none hover:bg-slate-800/30 rounded-lg outline-none -ml-2 -mr-2 mb-0.5">
@@ -403,7 +403,7 @@ function groupedRowsByDue(items, k, kind, who) {
 
 function groupedRowsInner(items, k, kind, who) {
   if (!items.length) {
-    return `<div class="empty-state flex items-center justify-center gap-2 px-3 py-4 text-center"><p class="text-[11px] font-bold text-slate-500">${kind === "income" ? "No income yet" : "No expenses yet"}</p><button type="button" data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" class="text-[11px] font-bold ${(OWNERS[who] || OWNERS.charlie).text} flex items-center" style="min-height:32px"><span class="material-icons" style="font-size:14px">add</span>add</button></div>`;
+    return `<div class="empty-state flex items-center justify-center gap-2 px-3 py-4 text-center"><p class="text-[11px] font-bold text-slate-500">${kind === "income" ? "No income yet" : "No expenses yet"}</p><button type="button" data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" class="text-[11px] font-bold ${(OWNERS[who] || OWNERS.charlie).text} flex items-center" style="min-height:32px"><span class="material-icons" style="font-size:14px">add</span>Add</button></div>`;
   }
   if (!items.length) {
     const isInc = kind === "income";
@@ -493,11 +493,11 @@ export function debtTrackerCardHtml(who = "debt") {
                 <span class="font-bold text-emerald-400" style="font-size:14px">${peso(debtIncTot)}</span>
               </div>
             </div>
-            <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button>
+            <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button>
           </summary>
           <div class="space-y-0.5 mt-1">${debtIncHtml}</div>
         </details>
-        <div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
+        <div style="border-top:1px solid rgba(148,163,184,.12);margin-top:12px;padding-top:14px">
           <details open class="group">
             <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("244,63,94")}">
               <div class="flex items-center gap-1">
@@ -507,7 +507,7 @@ export function debtTrackerCardHtml(who = "debt") {
                   <span class="font-bold text-rose-400" style="font-size:14px">${peso(debtExpTot)}</span>
                 </div>
               </div>
-              <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button></div>
+              <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
             </summary>
             <div class="space-y-0.5 mt-1">${debtExpHtml}</div>
           </details>
@@ -614,7 +614,7 @@ export function personSectionHtml(who, includeDebt = true) {
 
   let debtSectionHtml = "";
   if ((who === "charlie" || who === "partner") && includeDebt) {
-    debtSectionHtml = `<div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
+    debtSectionHtml = `<div style="border-top:1px solid rgba(148,163,184,.12);margin-top:12px;padding-top:14px">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
   }
 
   return `<div class="glass-card rounded-xl overflow-hidden border ${o.ring} w-full flex flex-col">
@@ -644,11 +644,11 @@ export function personSectionHtml(who, includeDebt = true) {
               <span class="font-bold text-emerald-400" style="font-size:14px">${peso(incTot)}</span>
             </div>
           </div>
-          <span class="flex items-center gap-2">${simPersonBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button></span>
+          <span class="flex items-center gap-2">${simPersonBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></span>
         </summary>
         <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simIncomeSliderHtml(who)}${simCopyBar("income")}
       </details>
-      <div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
+      <div style="border-top:1px solid rgba(148,163,184,.12);margin-top:12px;padding-top:14px">
         <details open data-persist="sec-expenses${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
           <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
             <div class="flex items-center gap-1 min-w-0">
@@ -658,7 +658,7 @@ export function personSectionHtml(who, includeDebt = true) {
                 <span class="font-bold text-rose-400" style="font-size:14px">${peso(expTot)}</span>
               </div>
             </div>
-            <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button></div>
+            <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
           </summary>
           <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>${simCopyBar("expenses")}
           ${copyBtn}
