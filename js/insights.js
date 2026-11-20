@@ -248,6 +248,12 @@ export function cardOwed() {
 export function realMoney(who = "charlie") {
   const k = getSelectedKey();
   const t = monthTotals(k);
+  if (who === "simulated") {
+    // Sandbox: its own starting cash and its own month, same formula as Ynah's (no card owed)
+    const cash = accountsTotal("simulated");
+    const owed = { total: 0, byMonth: {}, any: false };
+    return { cash, owed, real: cash, afterAll: cash + t.sToReceive - t.sToPay, toReceive: t.sToReceive, toPay: t.sToPay };
+  }
   if (who === "partner") {
     const cash = accountsTotal("partner");
     const owed = { total: 0, byMonth: {}, any: false };

@@ -60,7 +60,7 @@ export function addItemData(appData, { who = "charlie", kind, name, amount, star
 
 /** Find an item by id across both people and both kinds. */
 export function findItemAnywhere(appData, id) {
-  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const kind of ["income", "expenses"]) {
       const list = appData.items?.[who]?.[kind] || [];
       const item = list.find((x) => x.id === id);

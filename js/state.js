@@ -138,6 +138,7 @@ export function accountsOf(who) { return (appData?.accounts || []).filter((a) =>
 
 // Defaults to Charles' accounts so his projection never includes his partner's money
 export function accountsTotal(who = "charlie") { 
+  if (who === "simulated") return Number(appData?.simCash) || 0; // the sandbox has its own starting cash, never real accounts
   return accountsOf(who).filter((a) => acctType(a) !== "credit").reduce((s, a) => s + (Number(a.amount) || 0), 0); 
 }
 
@@ -234,12 +235,22 @@ export function monthTotals(k) {
     if (itemActiveIn(it, k)) { const r = itemAmts(it, k); pdE += r.total; pdPaid += r.paid; }
   }
 
+  // Simulated sandbox: its own lists only, same arithmetic as a person's budget (no card special-casing)
+  let sI = 0, sE = 0, sRecv = 0, sPaid = 0;
+  for (const it of getItems("simulated", "income")) {
+    if (itemActiveIn(it, k)) { const r = itemAmts(it, k); sI += r.total; sRecv += r.paid; }
+  }
+  for (const it of getItems("simulated", "expenses")) {
+    if (itemActiveIn(it, k)) { const r = itemAmts(it, k); sE += r.total; sPaid += r.paid; }
+  }
+
   const income = cI, expenses = cE, toPay = expenses - expPaid;
   const toReceive = income - incRecv;
   const debtToReceive = dI - debtRecv;
   const debtToPay = dE - debtPaid;
   
   return {
+    sI, sE, sToReceive: sI - sRecv, sToPay: sE - sPaid, sNetPending: (sI - sRecv) - (sE - sPaid),
     pI, pE, pToReceive: pI - pRecv, pToPay: pE - pPaid,
     pdI, pdE, pDebtToReceive: pdI - pdRecv, pDebtToPay: pdE - pdPaid,
     pNetPending: (pI - pRecv) - (pE - pPaid) + (pdI - pdRecv) - (pdE - pdPaid),
@@ -277,7 +288,7 @@ export function householdTotals(k) {
 export function runningFundsAt(k, who = "charlie") {
   let bal = accountsTotal(who);
   const now = currentKey();
-  const pend = (m) => (who === "partner" ? monthTotals(m).pNetPending : monthTotals(m).netPending);
+  const pend = (m) => (who === "partner" ? monthTotals(m).pNetPending : who === "simulated" ? monthTotals(m).sNetPending : monthTotals(m).netPending);
   if (cmpKey(k, now) < 0) return bal + pend(k);
   for (const mk of timeline()) {
     if (cmpKey(mk, now) < 0) continue;
@@ -435,6 +446,34 @@ export function householdProjectedAt(k) {
   return includedWho().reduce((s, w) => s + runningFundsAt(k, w), 0);
 }
 
+/**
+ * Projected funds for every month of the timeline in one pass: { [monthKey]: amount }.
+ * Same rule as runningFundsAt (past months show cash + their own pending; from this month on the pending carries forward),
+ * summed over `whos` like householdProjectedAt. `whos` defaults to the people ticked in the top bar.
+ */
+export function projectedByMonth(whos = includedWho()) {
+  const now = currentKey(), out = {};
+  const pend = (t, w) => (w === "partner" ? t.pNetPending : w === "simulated" ? t.sNetPending : t.netPending);
+  const bal = {};
+  for (const w of whos) bal[w] = accountsTotal(w);
+  for (const mk of timeline()) {
+    const t = monthTotals(mk);
+    const past = cmpKey(mk, now) < 0;
+    let sum = 0;
+    for (const w of whos) {
+      if (past) sum += accountsTotal(w) + pend(t, w);
+      else { bal[w] += pend(t, w); sum += bal[w]; }
+    }
+    out[mk] = sum;
+  }
+  return out;
+}
+
+// Simulated sandbox view: on = the budget area shows the simulation instead of Charles / Ynah (this device only)
+const SIM_VIEW_KEY = "moneyku_sim_view";
+export function getSimView() { try { return localStorage.getItem(SIM_VIEW_KEY) === "1"; } catch (e) { return false; } }
+export function setSimView(on) { try { localStorage.setItem(SIM_VIEW_KEY, on ? "1" : "0"); } catch (e) { /* ignore */ } }
+
 const INCL_KEY = "moneyku_incl";
 /** Which people count in the combined (all) numbers; per-person numbers are never affected. */
 export function includedWho() {
@@ -543,7 +582,7 @@ export function sortItems(items, kind) {
 }
 
 export function findItemById(id) {
-  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const kind of ["income", "expenses"]) {
       const it = getItems(who, kind).find((x) => x.id === id);
       if (it) return it;
@@ -553,7 +592,7 @@ export function findItemById(id) {
 }
 
 export function findItemOrChildById(id) {
-  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const kind of ["expenses", "income"]) {
       for (const it of getItems(who, kind)) {
         if (it.id === id) return it;

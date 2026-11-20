@@ -21,7 +21,7 @@ export function payableAccounts(who = "charlie") {
 /** Find an expense leaf (an item without sub-items, or a sub-item) by id. */
 function findExpenseLeaf(id) {
   const d = getAppData();
-  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const kind of ["expenses", "income"]) {
       for (const it of d?.items?.[who]?.[kind] || []) {
         if (it.id === id) return { who, item: it, child: null, income: kind === "income" };
@@ -38,6 +38,8 @@ function findExpenseLeaf(id) {
 export function amountDue(id, k) {
   const f = findExpenseLeaf(id);
   if (!f) return null;
+  // The simulation never moves real money: nothing to charge, ask or refund
+  if (f.who === "simulated") return null;
   // Card purchases are paid when the card bill is paid, not from an account here
   if (!f.income && isCardItem(f.item)) return null;
   const amt = f.child ? childFinal(f.child, k) : itemFinal(f.item, k);
@@ -64,7 +66,7 @@ function paymentMethodOf(id) {
  */
 export function autoAccountFor(id) {
   const f = findExpenseLeaf(id);
-  if (!f || f.income) return null;
+  if (!f || f.income || f.who === "simulated") return null;
   return accountForMethod(f.item.paymentMethod, ownerOfId(id));
 }
 

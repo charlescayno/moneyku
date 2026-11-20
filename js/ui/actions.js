@@ -1,7 +1,7 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { applyChildOrder } from '../itemOps.js';
 import { choosePayment, applyPayment, refundPayment, recordPayment, paidMessage, nameOf } from '../payfrom.js';
-import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, includedWho, setWhoIncluded, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, includedWho, setWhoIncluded, getSimView, setSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { openMore, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
@@ -175,7 +175,7 @@ export async function togglePaidGroup(event, idsStr, k, kind) {
 
 export function updateParentBadge(childId) {
   let parent = null;
-  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const it of getItems(who, "expenses")) {
       if (getKids(it).some((c) => c.id === childId)) { parent = it; break; }
     }
@@ -246,6 +246,7 @@ export function applyPaidVisual(btn, settled) {
 }
 
 export function refreshRealized() {
+  if (getSimView()) { renderBudget(); return; } // the simulated hero has its own numbers: redraw it
   const selectedKey = getSelectedKey();
   const t = monthTotals(selectedKey);
   const proj = $("sum-projected");
@@ -267,12 +268,14 @@ export function refreshRealized() {
 // Window Action Helpers
 // =============================
 export function togglePersonIncluded(who) {
+  setSimView(false); // picking a person leaves the simulation
   setWhoIncluded(who, !includedWho().includes(who)); // untick the last one and the other is ticked for you
   renderBudget();
 }
 
 /** Tapping a person's tile shows only that person; tapping them again (when alone) shows everyone. */
 export function focusPerson(who) {
+  setSimView(false); // picking a person (or Together) leaves the simulation
   if (who === "all") { setWhoIncluded("charlie", true); setWhoIncluded("partner", true); renderBudget(); return; }
   const inc = includedWho();
   const alone = inc.length === 1 && inc[0] === who;

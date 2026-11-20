@@ -17,6 +17,7 @@ export const OWNERS = {
   charlie: { label: "Charles'", who: "charlie", accent: "blue", text: "text-blue-400", ring: "border-blue-500/20", grad: "from-blue-500 to-indigo-600" },
   partner: { label: "Ynah's", who: "partner", accent: "teal", text: "text-ynah", ring: "border-ynah", grad: "ynah-grad" },
   pdebt: { label: "Ynah's Debt Tracker", who: "pdebt", accent: "ynah", text: "text-ynah", ring: "border-ynah", grad: "ynah-grad" },
+  simulated: { label: "Simulated", who: "simulated", accent: "amber", text: "text-amber-300", ring: "border-amber-400/30", grad: "from-amber-500 to-orange-600" },
   debt: { label: "Debt Tracker", who: "debt", accent: "rose", text: "text-rose-400", ring: "border-rose-500/20", grad: "from-rose-500 to-pink-600" },
 };
 

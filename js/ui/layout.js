@@ -1,5 +1,5 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
-import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, projectionBreakdown, includedWho, includedTotals, monthFlow, outlookKeys, outlookRows, firstNegative, staleBalanceDays, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, projectionBreakdown, includedWho, includedTotals, getSimView, monthFlow, outlookKeys, outlookRows, firstNegative, staleBalanceDays, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { householdRealMoney, realMoney } from '../insights.js';
 import { tipCardHtml } from '../extras.js';
@@ -90,10 +90,17 @@ export function renderBudget() {
   }  const owedBreak = Object.entries(rm.owed.byMonth).sort(([a], [b]) => (a < b ? -1 : 1)).map(([m, v]) => `${monthShort(m)} ${peso(v)}`).join(" · ");
   // Person tiles live above the month navigation (outside #budget-body)
   const both = inclW.length === 2;
+  // Simulated sandbox: its own numbers, its own view; while it is open the two real tiles are plain (not dimmed, no outline)
+  const simOn = getSimView();
+  const simT = t;
+  const simProj = runningFundsAt(k, "simulated");
+  const rmS = realMoney("simulated");
+  const simSavings = simT.sI - simT.sToPay; // same formula as the people's month surplus
   const personTiles = `<div class="grid grid-cols-3 gap-1.5">
-        <div data-action="focusPerson" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${inclW.includes("charlie") ? "" : "opacity-60"}"><span class="flex items-center gap-1.5">${inclBtn("charlie")}<img src="assets/avatar-charles.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0"><span class="text-[9px] font-bold uppercase text-blue-300 leading-tight">${OWNERS.charlie.label}</span></span><span class="flex items-center gap-1 pl-0.5">${pDelta("charlie")}<span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></span></div>
-        <div data-action="focusPerson" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${inclW.includes("partner") ? "" : "opacity-60"}"><span class="flex items-center gap-1.5">${inclBtn("partner")}<img src="assets/avatar-ynah.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0"><span class="text-[9px] font-bold uppercase text-ynah leading-tight">${OWNERS.partner.label}</span></span><span class="flex items-center gap-1 pl-0.5">${pDelta("partner")}<span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></span></div>
-        <div data-action="focusPerson" data-arg0="all" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${both ? "border border-indigo-400/60" : ""}"><span class="flex items-center gap-1.5 min-h-[20px]"><span class="material-icons text-indigo-300" style="font-size:18px">groups</span><span class="text-[9px] font-bold uppercase text-indigo-300 leading-tight">Together</span></span><span class="flex items-center gap-1 pl-0.5"><span id="sum-projected-all" class="text-xs font-black ${projC + projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC + projP)}</span></span></div>
+        <div data-action="focusPerson" data-arg0="charlie" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${inclW.includes("charlie") || simOn ? "" : "opacity-60"}"><span class="flex items-center gap-1.5">${inclBtn("charlie")}<img src="assets/avatar-charles.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0"><span class="text-[9px] font-bold uppercase text-blue-300 leading-tight">${OWNERS.charlie.label}</span></span><span class="flex items-center gap-1 pl-0.5">${pDelta("charlie")}<span id="sum-projected-c" class="text-xs font-black ${projC >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projC)}</span></span></div>
+        <div data-action="focusPerson" data-arg0="partner" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${inclW.includes("partner") || simOn ? "" : "opacity-60"}"><span class="flex items-center gap-1.5">${inclBtn("partner")}<img src="assets/avatar-ynah.jpg" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0"><span class="text-[9px] font-bold uppercase text-ynah leading-tight">${OWNERS.partner.label}</span></span><span class="flex items-center gap-1 pl-0.5">${pDelta("partner")}<span id="sum-projected-p" class="text-xs font-black ${projP >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(projP)}</span></span></div>
+        <div data-action="focusPerson" data-arg0="all" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex flex-col items-stretch gap-0.5 ${both && !simOn ? "border border-indigo-400/60" : ""}"><span class="flex items-center gap-1.5 min-h-[20px]"><span class="material-icons text-indigo-300" style="font-size:18px">groups</span><span class="text-[9px] font-bold uppercase text-indigo-300 leading-tight">Together</span></span><span class="flex items-center gap-1 pl-0.5"><span id="sum-projected-all" class="text-xs font-black ${projC + projP >= 0 ? "text-white" : "text-rose-400"}"> ${hideProjected ? "••••" : sp(projC + projP)}</span></span></div>
+        <div id="sim-tile" data-action="openSimulated" role="button" aria-pressed="${simOn}" class="cursor-pointer bg-black/20 rounded-lg px-2 py-1.5 flex items-center gap-1.5 ${simOn ? "border border-amber-400/70" : ""}" style="grid-column:1/-1"><span class="material-icons text-amber-300" style="font-size:18px">science</span><span class="text-[9px] font-bold uppercase text-amber-300 leading-tight min-w-0 truncate">Simulated together money</span><span class="ml-auto text-xs font-black flex-shrink-0 ${simProj >= 0 ? "text-white" : "text-rose-400"}">${hideProjected ? "••••" : sp(simProj)}</span></div>
       </div>`;
   const tilesSlot = document.getElementById("person-tiles");
   if (tilesSlot) tilesSlot.innerHTML = personTiles;
@@ -162,6 +169,44 @@ export function renderBudget() {
     </div>
   `;
 
+  if (simOn) {
+    // The simulation: a labelled sandbox with its own hero numbers and its own income / expense lists
+    const tile = (icon, iconCls, label, valueHtml, extra = "", full = false) => `<div ${extra} class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0" ${full ? 'style="grid-column:1/-1"' : ""}><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons ${iconCls}" style="font-size:15px">${icon}</span>${label}</span>${valueHtml}</div>`;
+    const hid = (s) => (hideProjected ? "••••" : s);
+    const simSavColor = simSavings > 0.005 ? "text-emerald-400" : simSavings < -0.005 ? "text-rose-400" : "text-amber-300";
+    $("budget-body").innerHTML = `
+    <div id="sim-view" class="w-full flex flex-col gap-2 budget-pad">
+      <div class="w-full rounded-2xl border border-amber-400/40 bg-amber-500/10 px-3.5 py-3 flex flex-col gap-2 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="material-icons text-amber-300" style="font-size:20px">science</span>
+          <div class="min-w-0 flex-1"><p class="text-[11px] font-black uppercase tracking-wider text-amber-200">Simulated</p><p class="text-[11px] text-amber-100/80 leading-snug">A what-if sandbox. Nothing here changes Charles' or Ynah's budget, totals or calendar.</p></div>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" data-action="openSimCash" class="flex-1 py-2 text-[11px] font-bold rounded-lg bg-white/5 text-amber-100 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">edit</span>Starting cash</button>
+          <button type="button" data-action="askClearSimulation" class="flex-1 py-2 text-[11px] font-bold rounded-lg bg-rose-500/15 text-rose-200 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">delete_sweep</span>Clear simulation</button>
+        </div>
+      </div>
+      <div class="w-full bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex flex-col items-stretch gap-3 flex-shrink-0">
+        <div class="flex flex-col gap-1 px-1">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold text-slate-400 min-w-0 truncate" style="text-transform:lowercase">projected · simulated · ${monthShort(k)}</span>
+            <button data-action="toggleProjected" aria-label="${hideProjected ? "Show amounts" : "Hide amounts"}" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center flex-shrink-0" style="padding:7px;margin:-7px"><span class="material-icons" style="font-size:14px">${hideProjected ? "visibility_off" : "visibility"}</span></button>
+          </div>
+          <p id="sim-projected" class="font-black tracking-tight tabular-nums ${hideProjected ? "text-white" : simProj >= 0 ? "text-amber-200" : "text-rose-400"}" style="font-size:34px;line-height:1.1">${hid(sp(simProj))}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          ${tile("account_balance_wallet", "text-amber-300", "current money", `<span id="sim-cash" class="text-base font-extrabold tabular-nums truncate text-white">${peso(rmS.cash)}</span>`)}
+          ${tile("payments", "text-indigo-300", "real money", `<span id="sim-real" class="text-base font-extrabold tabular-nums truncate ${rmS.real < 0 ? "text-rose-400" : "text-white"}">${sp(rmS.real)}</span>`)}
+          ${tile("south_west", "text-emerald-300", "to receive", `<span class="text-base font-extrabold tabular-nums truncate text-emerald-400">${signedPeso(simT.sToReceive)}</span>`)}
+          ${tile("north_east", "text-rose-300", "to pay", `<span class="text-base font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-simT.sToPay)}</span>`)}
+          ${tile("savings", "text-emerald-300", "month surplus", `<span id="sim-surplus" class="text-base font-extrabold tabular-nums truncate ${simSavColor}">${signedPeso(simSavings)}</span>`, "", true)}
+        </div>
+      </div>
+      <div class="min-w-0" id="sec-simulated" style="scroll-margin-top:5.5rem">${personSectionHtml("simulated", false)}</div>
+    </div>`;
+    applyPersistedDetails();
+    return;
+  }
   $("budget-body").innerHTML = `
     <div class="w-full flex flex-col gap-2 budget-pad">
       ${kpiBar}

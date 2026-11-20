@@ -128,7 +128,7 @@ export function openItemModal(who, kind, id, presetDay) {
   const kids = it ? getKids(it, selectedKey) : [];
   let body = "";
   let more = "";
-  if (isNew) {
+  if (isNew && who !== "simulated") { // the simulation is its own account: nothing to pick
     // Which person's account the new item belongs to
     const debtSide = who === "debt" || who === "pdebt";
     const opts = debtSide
@@ -154,7 +154,7 @@ export function openItemModal(who, kind, id, presetDay) {
   }
 
   // Spending log sits up front (not under "More options") so adding spending is one tap away
-  if (!isNew && !kids.length && kind === "expenses") body += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
+  if (!isNew && !kids.length && kind === "expenses" && who !== "simulated") body += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
 
   body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
     <div><p class="text-sm font-bold text-white">Recurring</p><p class="text-[10px] text-slate-500">Repeats every month</p></div>

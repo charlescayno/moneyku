@@ -4,7 +4,7 @@
 // =============================
 import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso } from "./utils.js";
 import { exportData } from "./ui/actions.js";
-import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, outlookRows, runningFundsAt, setAppData, timeline, includedWho } from "./state.js";
+import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, outlookRows, runningFundsAt, getSimView, setAppData, timeline, includedWho } from "./state.js";
 import { normalize, syncSet } from "./firebase.js";
 import { addItemData } from "./itemOps.js";
 import { CARD_METHOD, charges, statement } from "./card.js";
@@ -87,7 +87,7 @@ export function qlSpendPick() {
   const list = getItems("charlie", "expenses").filter((it) => itemActiveIn(it, k) && !(it.paymentMethod === CARD_METHOD));
   const rows = list.map((it) => `<button type="button" data-action="srOpen" data-arg0="charlie" data-arg1="expenses" data-arg2="${it.id}" data-arg3="" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/50 text-left"><span class="text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span><span class="text-xs font-black text-slate-400 flex-shrink-0">${peso(itemTotal(it, k))}</span></button>`).join("");
   showSheet(`Spend in ${monthShort(k)}`, `<p class="text-[11px] text-slate-400 mb-1">Pick where the money goes, then add the amount under "Spending".</p>${rows || `<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`}`, CLOSE_BTN);
-}export function addNew(kind) { const w = includedWho(); const who = w.length === 1 ? w[0] : "charlie"; qlClose(); setTimeout(() => openItemModal(who, kind), 120); }
+}export function addNew(kind) { const w = includedWho(); const who = getSimView() ? "simulated" : w.length === 1 ? w[0] : "charlie"; qlClose(); setTimeout(() => openItemModal(who, kind), 120); }
 
 // ---------- 3. Duplicate / copy last month ----------
 const cloneItem = (it, patch = {}) => {

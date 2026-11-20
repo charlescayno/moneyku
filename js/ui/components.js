@@ -6,7 +6,7 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
@@ -505,14 +505,19 @@ export function personSectionHtml(who, includeDebt = true) {
   // Card purchases live in their own BPI Platinum section, not in the normal groups
   const expenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k) && !(who === "charlie" && isCardItem(it)));
   const t = monthTotals(k);
-  const incTot = who === "charlie" ? t.cI : who === "partner" ? t.pI : t.dI;
-  const expTot = who === "charlie" ? t.cE : who === "partner" ? t.pE : t.dE;
+  const incTot = who === "charlie" ? t.cI : who === "partner" ? t.pI : who === "simulated" ? t.sI : t.dI;
+  const expTot = who === "charlie" ? t.cE : who === "partner" ? t.pE : who === "simulated" ? t.sE : t.dE;
   const net = incTot - expTot;
   const incHtml = groupedRowsHtml(income, k, "income", who);
   const emptyRow = (w, kind) => `<button type="button" data-action="openItemModal" data-arg0="${w}" data-arg1="${kind}" class="w-full py-3 text-[11px] font-bold text-slate-500 border border-dashed border-slate-700 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>No ${kind === "income" ? "income" : "expenses"} this month · add one</button>`;
   const copyN = who === "charlie" ? lastMonthOneTimes().length : 0;
   const copyBtn = copyN ? `<button type="button" data-action="openCopyPicker" class="w-full mt-1 py-2 text-[11px] font-bold text-indigo-300 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from last month (${copyN})</button>` : "";
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
+  // Simulated only: snapshot copies of Charles' or Ynah's items (new ids, nothing shared with the source)
+  const simCopyBar = (kind) => who !== "simulated" ? "" : `<div class="grid grid-cols-2 gap-1.5 mt-1.5">
+    <button type="button" data-action="openSimCopy" data-arg0="charlie" data-arg1="${kind}" class="py-2 text-[11px] font-bold text-blue-300 bg-blue-500/10 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from Charles</button>
+    <button type="button" data-action="openSimCopy" data-arg0="partner" data-arg1="${kind}" class="py-2 text-[11px] font-bold text-ynah bg-white/5 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from Ynah</button>
+  </div>`;
 
   let debtSectionHtml = "";
   if ((who === "charlie" || who === "partner") && includeDebt) {
@@ -537,7 +542,7 @@ export function personSectionHtml(who, includeDebt = true) {
       </div>`}
     </div>
     <div class="p-2.5 space-y-2 no-scrollbar">
-      <details open data-persist="sec-income${who === "partner" ? "-p" : ""}" class="group">
+      <details open data-persist="sec-income${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
         <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(16,185,129,.10);border-radius:8px;padding:7px 8px">
           <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
@@ -548,10 +553,10 @@ export function personSectionHtml(who, includeDebt = true) {
           </div>
           <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
         </summary>
-        <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>
+        <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simCopyBar("income")}
       </details>
       <div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
-        <details open data-persist="sec-expenses${who === "partner" ? "-p" : ""}" class="group">
+        <details open data-persist="sec-expenses${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
           <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="background:rgba(244,63,94,.10);border-radius:8px;padding:7px 8px">
             <div class="flex items-center gap-1">
               <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
@@ -562,7 +567,7 @@ export function personSectionHtml(who, includeDebt = true) {
             </div>
             <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
           </summary>
-          <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>
+          <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>${simCopyBar("expenses")}
           ${copyBtn}
         </details>
       </div>
@@ -1379,6 +1384,16 @@ export function jumpYear(y) {
   document.getElementById(`mp-year-${y}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/** Compact money for tight spaces: ₱820, ₱7.3k, ₱1.2M, -₱820 */
+export function compactPeso(n) {
+  n = Math.round(Number(n) || 0);
+  const a = Math.abs(n), sign = n < 0 ? "-" : "";
+  const fmt = (x, u) => x.toFixed(1).replace(/\.0$/, "") + u;
+  if (a >= 999950) return `${sign}₱${fmt(a / 1e6, "M")}`;
+  if (a >= 1000) return `${sign}₱${fmt(a / 1e3, "k")}`;
+  return `${sign}₱${a}`;
+}
+
 export function toggleMonthPicker() {
   const mp = $("month-picker");
   const open = mp.classList.toggle("open");
@@ -1389,6 +1404,15 @@ export function toggleMonthPicker() {
     const selectedKey = getSelectedKey();
     timeline().forEach((k) => { const y = keyParts(k).y; (years[y] = years[y] || []).push(k); });
     const nowK = currentKey();
+    // Projected per month for the view on screen (Simulated, or the ticked people), computed once for all buttons
+    const hideProj = getHideProjected();
+    const proj = hideProj ? null : projectedByMonth(getSimView() ? ["simulated"] : includedWho());
+    const projLine = (k, sel) => {
+      if (!hideProj && !Number.isFinite(proj[k])) return "";
+      const v = hideProj ? null : proj[k];
+      const cls = hideProj || v >= 0 ? (sel ? "text-indigo-100" : "text-slate-400") : (sel ? "text-rose-200" : "text-rose-400");
+      return `<span class="block max-w-full truncate text-[10px] font-bold leading-tight tabular-nums ${cls}">Proj. ${hideProj ? "••••" : compactPeso(v)}</span>`;
+    };
     const pills = `<div class="sticky top-0 z-10 -mx-8 px-8 py-3 bg-slate-950/95 flex gap-2 overflow-x-auto no-scrollbar">
       <button data-action="goToday" class="flex-shrink-0 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase">Today</button>
       ${Object.keys(years).map((y) => `<button data-action="jumpYear" data-arg0="${y}" class="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-black ${Number(y) === keyParts(selectedKey).y ? "bg-slate-700 text-white" : "bg-slate-800 text-slate-300"}">${y}</button>`).join("")}
@@ -1397,7 +1421,7 @@ export function toggleMonthPicker() {
       <div id="mp-year-${y}" style="scroll-margin-top:64px">
         <p class="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-3">${y}</p>
         <div class="grid grid-cols-3 gap-3">
-          ${keys.map((k) => `<button data-action="selectMonth" data-arg0="${k}" class="py-4 rounded-2xl font-black text-sm ${k === selectedKey ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"} transition-transform">${MONTHS_SHORT[keyParts(k).m]}</button>`).join("")}
+          ${keys.map((k) => `<button data-action="selectMonth" data-arg0="${k}" class="py-2.5 rounded-2xl font-black text-sm ${k === selectedKey ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"} transition-transform flex flex-col items-center justify-center gap-0.5 min-w-0" style="min-height:52px">${MONTHS_SHORT[keyParts(k).m]}${projLine(k, k === selectedKey)}</button>`).join("")}
         </div>
       </div>`).join("");
   }
@@ -1467,6 +1491,7 @@ export async function addSpend() {
   if (!activeEdit || !activeEdit.id) return;
   const amount = parseFloat($("f-spend-amount")?.value) || 0;
   if (!amount) return toast("Amount required", "error");
+  if (activeEdit.who === "simulated") return; // the simulation has no accounts to take spending from
   const { id } = activeEdit, k = getSelectedKey();
   const appData = getAppData();
   const cur = getSpendList(id, k);
