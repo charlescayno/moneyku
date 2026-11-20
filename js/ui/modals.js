@@ -292,6 +292,7 @@ export function openChildModal(who, parentId, childId) {
   let body = inputBlock("Group name (header)", "f-parent", parent.name, "text", 'placeholder="Group name"');
   body += inputBlock("Name", "f-name", c ? c.name : "", "text", 'placeholder="e.g. Electricity"');
   body += inputBlock("Estimate (₱)", "f-amount", c ? childAmt(c, selectedKey) : "", "text", 'inputmode="text" placeholder="0"');
+  body += inputBlock("Due day of the month (1-31, optional)", "f-child-dueday", c ? (dueDayFor(c) ?? "") : "", "number", 'min="1" max="31" inputmode="numeric" placeholder="e.g. 15"');
   if (!isNew) {
     body += `<div id="spend-section">${spendSectionHtml(c)}</div>`;
     body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">

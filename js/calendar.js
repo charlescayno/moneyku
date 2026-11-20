@@ -21,6 +21,8 @@ import {
   itemTotal,
   isPaid,
   getKids,
+  dueKids,
+  childAmt,
   getSelectedKey,
   timeline,
 } from "./state.js";
@@ -52,9 +54,12 @@ export function getMonthBillSchedule(k) {
         const parts = it.txDate.split("-");
         if (parts.length === 3) day = parseInt(parts[2], 10);
       }
-      if (day && day >= 1 && day <= daysInMonth) {
-        const amt = itemTotal(it, k);
-        const settled = isPaid(it.id, k);
+      // Sub-expenses with their own due day are scheduled on their own day; the group covers only the rest
+      const own = dueKids(it, k);
+      const rest = getKids(it, k).filter((c) => dueDayFor(c) == null);
+      if (day && day >= 1 && day <= daysInMonth && (!own.length || rest.length)) {
+        const amt = itemTotal(it, k) - own.reduce((s, c) => s + childAmt(c, k), 0);
+        const settled = own.length ? rest.every((c) => isPaid(c.id, k)) : isPaid(it.id, k);
         scheduleByDay[day].bills.push({
           id: it.id,
           name: it.name,
@@ -65,6 +70,22 @@ export function getMonthBillSchedule(k) {
           isParent: getKids(it).length > 0
         });
         scheduleByDay[day].totalExpenses += amt;
+      }
+      for (const c of own) {
+        const cd = dueDayFor(c);
+        if (!(cd >= 1 && cd <= daysInMonth)) continue;
+        const amt = childAmt(c, k);
+        scheduleByDay[cd].bills.push({
+          id: c.id,
+          name: c.name,
+          parentName: it.name,
+          amount: amt,
+          paid: isPaid(c.id, k),
+          who,
+          paymentMethod: it.paymentMethod,
+          isParent: false
+        });
+        scheduleByDay[cd].totalExpenses += amt;
       }
     }
   }
@@ -169,7 +190,7 @@ export function upcomingBillsWidgetHtml() {
       <div class="flex items-center justify-between gap-3 p-3 bg-slate-900/60 rounded-xl border border-white/5 hover:border-indigo-500/30 transition-all">
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-slate-200 truncate">${escapeHtml(b.name)}</span>
+            <span class="text-xs font-bold text-slate-200 truncate">${escapeHtml(b.name)}${b.parentName ? ` <span class="font-semibold text-slate-500">· ${escapeHtml(b.parentName)}</span>` : ""}</span>
             <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${badgeClass} uppercase tracking-wider">${badgeText}</span>
           </div>
           <p class="text-[10px] text-slate-400 font-medium mt-0.5">${b.paymentMethod === 'bpi_platinum' ? '💳 BPI Platinum' : (PM_LABELS[b.paymentMethod] && isAccountMethod(b.paymentMethod) ? PM_LABELS[b.paymentMethod] : (b.who === 'debt' ? 'Debt / Owed' : 'Expense'))}</p>
@@ -278,7 +299,7 @@ export function renderCalendarModal(k) {
       <div class="flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-900/40">
         <div class="flex items-center gap-2 min-w-0">
           <span class="w-1.5 h-1.5 rounded-full ${b.paid ? 'bg-slate-600' : 'bg-rose-400'}"></span>
-          <span class="text-xs font-bold ${b.paid ? 'text-slate-500 line-through' : 'text-slate-200'} truncate">${escapeHtml(b.name)}</span>
+          <span class="text-xs font-bold ${b.paid ? 'text-slate-500 line-through' : 'text-slate-200'} truncate">${escapeHtml(b.name)}${b.parentName ? ` <span class="font-semibold text-slate-500">· ${escapeHtml(b.parentName)}</span>` : ""}</span>
         </div>
         <span class="text-xs font-black ${b.paid ? 'text-slate-500 line-through' : 'text-rose-400'}">${peso(b.amount)}</span>
       </div>

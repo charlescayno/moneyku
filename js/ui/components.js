@@ -47,6 +47,14 @@ export function rowIconHtml(name, sz, kind = "expenses", noBg = false) {
   return `<div class="rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-500" style="font-size:${Math.round(sz * 0.62)}px">${iconName}</span></div>`;
 }
 
+/** The due day typed in the sub-expense form (1-31), or null when empty or invalid. */
+function childDueDayInput() {
+  const el = $("f-child-dueday");
+  if (!el || el.value === "") return null;
+  const d = parseInt(el.value, 10);
+  return d >= 1 && d <= 31 ? d : null;
+}
+
 export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null) {
   const paid = isPaid(c.id, k);
   const est = childAmt(c, k);
@@ -56,6 +64,12 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null)
   const pct = est > 0 ? Math.min(100, Math.round((spent / est) * 100)) : (spent > 0 ? 100 : 0);
   const remaining = est - spent;
   const rightMain = paid ? childFinal(c, k) : est;
+  // Optional due day of this sub-expense, coloured like the parent rows (overdue / due this week)
+  const cdd = dueDayFor(c);
+  const cds = cdd != null && kind === "expenses" ? dueStatus(c, k) : null;
+  const dueTag = cdd != null
+    ? `<span class="child-due text-[11px] font-bold ${cds?.state === "overdue" ? "text-rose-300" : cds?.state === "week" ? "text-amber-300" : "text-sky-300"} flex items-center gap-0.5 mt-0.5"><span class="material-icons" style="font-size:11px">${cds?.state === "overdue" ? "error_outline" : "event_available"}</span>Due ${ordinal(cdd)}${cds?.state === "overdue" ? (cds.days ? ` · ${cds.days}d overdue` : " · overdue") : cds?.state === "week" ? (cds.days === 0 ? " · today" : ` · in ${cds.days}d`) : ""}</span>`
+    : "";
   
   const spendLine = (hasSpend && !paid)
     ? `<div class="child-spendline flex items-center gap-2 mt-1">
@@ -80,6 +94,7 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null)
     ${rowIconHtml(c.name, 20, kind, true)}
     <div class="flex-1 min-w-0">
       <span class="item-name block text-sm font-bold ${paid ? "text-slate-500 line-through" : "text-slate-200"} truncate">${escapeHtml(c.name)}</span>
+      ${paid ? "" : dueTag}
       ${spendLine}
     </div>
     <span class="child-amt text-sm font-black ${paid ? "text-slate-600 line-through" : "text-slate-300"} flex-shrink-0">${peso(rightMain)}</span>
@@ -1517,7 +1532,7 @@ export async function saveChildAndAddAnother() {
   const parent = getItems(who, "expenses").find((x) => x.id === parentId);
   if (parent) {
     if (!Array.isArray(parent.children)) parent.children = [];
-    parent.children.push({ id: generateId(), name, amount });
+    parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}) });
     const gn = ($("f-parent")?.value || "").trim();
     if (gn) parent.name = gn;
   }
@@ -1648,12 +1663,14 @@ async function saveModalInner() {
             if (scope === null) return;
           }
           c.name = name;
+          const cdd = childDueDayInput();
+          if (cdd != null) c.dueDay = cdd; else delete c.dueDay;
           if (changed) applyItemAmount(appData, parent.children, c, amount, scope, selectedKey, { recurring: parent.recurring });
         }
         const pf = $("f-paid");
         if (pf) deducted = setPaidFlag(appData, selectedKey, id, pf.dataset.on === "true");
       } else {
-        parent.children.push({ id: generateId(), name, amount });
+        parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}) });
       }
     }
     await syncSet(appData);

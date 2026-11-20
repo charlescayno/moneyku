@@ -4,7 +4,7 @@
 import { $, OWNERS, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
 import { accountsTotal, amountIn, getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline, includedWho } from "./state.js";
 import { syncSet } from "./firebase.js";
-import { childAmt } from "./state.js";
+import { childAmt, dueKids } from "./state.js";
 import { SPEND_CATS, catInfo, categoryOf } from "./categories.js";
 import { closeModal, openModalShell } from "./ui/modals.js";
 import { toast } from "./ui/core.js";
@@ -49,15 +49,32 @@ export function dueSoonCardHtml(owner = "charlie") {
   const unpaid = (it, key) => { const kids = getKids(it, key); return kids.length ? !kids.every((c) => isPaid(c.id, key)) : !isPaid(it.id, key); };
   for (const who of isP ? ["partner", "pdebt"] : ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
+      if (it.excluded) continue;
       const dd = dueDayFor(it);
-      if (dd == null || it.excluded) continue;
-      if (itemActiveIn(it, k) && unpaid(it, k)) {
-        const diff = Math.min(dd, dim) - today;
-        if (diff <= 7) rows.push({ who, it, diff, amt: itemTotal(it, k) });
+      // Sub-expenses with their own due day are listed on their own; the group row then covers only the rest
+      const own = (key) => dueKids(it, key);
+      const rest = (key) => getKids(it, key).filter((c) => dueDayFor(c) == null);
+      const groupAmt = (key) => itemTotal(it, key) - own(key).reduce((s, c) => s + childAmt(c, key), 0);
+      const groupUnpaid = (key) => (own(key).length ? rest(key).some((c) => !isPaid(c.id, key)) : unpaid(it, key));
+      const groupHas = (key) => !own(key).length || rest(key).length > 0;
+      if (dd != null) {
+        if (itemActiveIn(it, k) && groupUnpaid(k) && groupHas(k)) {
+          const diff = Math.min(dd, dim) - today;
+          if (diff <= 7) rows.push({ who, it, diff, amt: groupAmt(k) });
+        }
+        if (itemActiveIn(it, nextK) && groupUnpaid(nextK) && groupHas(nextK)) {
+          const diff = dim - today + dd;
+          if (diff <= 7 && diff > 0) rows.push({ who, it, diff, amt: groupAmt(nextK), next: true });
+        }
       }
-      if (itemActiveIn(it, nextK) && unpaid(it, nextK)) {
-        const diff = dim - today + dd;
-        if (diff <= 7 && diff > 0) rows.push({ who, it, diff, amt: itemTotal(it, nextK), next: true });
+      for (const [key, isNext] of [[k, false], [nextK, true]]) {
+        if (!itemActiveIn(it, key)) continue;
+        for (const c of own(key)) {
+          if (isPaid(c.id, key)) continue;
+          const cd = dueDayFor(c);
+          const diff = isNext ? dim - today + cd : Math.min(cd, dim) - today;
+          if (isNext ? (diff <= 7 && diff > 0) : diff <= 7) rows.push({ who, it, child: c, diff, amt: childAmt(c, key), ...(isNext ? { next: true } : {}) });
+        }
       }
     }
   }
@@ -67,11 +84,19 @@ export function dueSoonCardHtml(owner = "charlie") {
   const overdue = rows.filter((r) => r.diff < 0).length;
   const label = (r) => r.diff < 0 ? `${-r.diff}d overdue` : r.diff === 0 ? "Today" : r.diff === 1 ? "Tomorrow" : `in ${r.diff}d`;
   const chip = (r) => r.diff < 0 ? "bg-rose-500/20 text-rose-300" : r.diff <= 1 ? "bg-amber-500/20 text-amber-300" : "bg-slate-700/60 text-slate-300";
-  const body = rows.slice(0, 6).map((r) => `<div data-action="openItemModal" data-arg0="${r.who}" data-arg1="expenses" data-arg2="${r.it.id}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40 cursor-pointer">
+  const body = rows.slice(0, 6).map((r) => {
+    // A sub-expense row opens the sub-expense and is marked paid on its own; it is named with its group
+    const c = r.child;
+    const open = c ? `data-action="openChildModal" data-arg0="${r.who}" data-arg1="${r.it.id}" data-arg2="${c.id}"` : `data-action="openItemModal" data-arg0="${r.who}" data-arg1="expenses" data-arg2="${r.it.id}"`;
+    const nm = c ? `${escapeHtml(c.name)} <span class="font-semibold text-slate-500">· ${escapeHtml(r.it.name)}</span>` : escapeHtml(r.it.name);
+    const nmPlain = escapeHtml(c ? c.name : r.it.name);
+    const mark = c ? `data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses"` : `data-action="dueMarkPaid" data-arg0="${r.it.id}"`;
+    return `<div ${open} class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40 cursor-pointer">
       <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${chip(r)} flex-shrink-0">${label(r)}</span>
-      <p class="text-xs font-bold text-slate-100 truncate flex-1">${escapeHtml(r.it.name)}</p>
+      <p class="text-xs font-bold text-slate-100 truncate flex-1">${nm}</p>
       <p class="text-xs font-black text-white flex-shrink-0">${peso(r.amt)}</p>
-      ${r.next ? "" : `<button type="button" data-action="dueMarkPaid" data-arg0="${r.it.id}" title="Mark paid" aria-label="Mark ${escapeHtml(r.it.name)} paid" class="w-7 h-7 rounded-lg border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-400"><span class="material-icons" style="font-size:16px">check</span></button>`}</div>`).join("") + (rows.length > 6 ? `<p class="text-[10px] text-slate-500 text-center">+${rows.length - 6} more</p>` : "");
+      ${r.next ? "" : `<button type="button" ${mark} title="Mark paid" aria-label="Mark ${nmPlain} paid" class="w-7 h-7 rounded-lg border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-400"><span class="material-icons" style="font-size:16px">check</span></button>`}</div>`;
+  }).join("") + (rows.length > 6 ? `<p class="text-[10px] text-slate-500 text-center">+${rows.length - 6} more</p>` : "");
   return cardShell(isP ? "due-p" : "due", overdue ? "border-rose-500/30" : "border-amber-500/25", "notifications_active", overdue ? "from-rose-500 to-red-600" : "from-amber-500 to-orange-600",
     isP ? `Today · ${OWNERS.partner.label}` : "Today", `${overdue ? `${overdue} overdue · ` : ""}${rows.length - overdue} due in the next 7 days`, `<p class="text-sm font-black text-white">${peso(total)}</p>`, body);
 }

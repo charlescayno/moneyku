@@ -152,6 +152,9 @@ export function getKids(it, k) {
     (!c.end || cmpKey(k, c.end) <= 0));
 }
 
+/** Sub-expenses of it (active in month k) that have their own due day. */
+export function dueKids(it, k) { return getKids(it, k).filter((c) => dueDayFor(c) != null); }
+
 export function getSpendList(childId, k) {
   const v = appData?.spend?.[k]?.[childId];
   if (!v) return [];
