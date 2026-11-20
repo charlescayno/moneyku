@@ -1450,3 +1450,6 @@ details > summary > div > .dt-chev { transition: transform .15s; }
 .keep-case, .keep-case *, .item-name, input, textarea, select, option { text-transform: none !important; }
 input::placeholder, textarea::placeholder { text-transform: lowercase !important; }
 .child-list [data-child] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* Section titles (Income, Expenses, Debt, Accounts, card headings) show in CAPITALS */
+.sec-title, summary h3, details > summary > div > h3, header h3 { text-transform: uppercase !important; letter-spacing: .06em; }

@@ -469,7 +469,7 @@ export function debtTrackerCardHtml(who = "debt") {
   const dO = OWNERS[who];
 
   const hdrStyle = (rgb) => `padding:7px 8px`;
-  const lbl = (txt) => `<p class="font-bold text-slate-400 truncate" style="font-size:11px;text-transform:lowercase">${txt}</p>`;
+  const lbl = (txt) => `<p class="sec-title font-bold text-slate-400 truncate" style="font-size:11px">${txt}</p>`;
   const chev = `<span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>`;
 
   return `
@@ -640,7 +640,7 @@ export function personSectionHtml(who, includeDebt = true) {
           <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
             <div class="flex items-baseline gap-1.5">
-              <p class="font-bold text-slate-400 truncate" style="font-size:11px;text-transform:lowercase">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
+              <p class="sec-title font-bold text-slate-400 truncate" style="font-size:11px">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
               <span class="font-bold text-emerald-400" style="font-size:14px">${peso(incTot)}</span>
             </div>
           </div>
@@ -654,7 +654,7 @@ export function personSectionHtml(who, includeDebt = true) {
             <div class="flex items-center gap-1 min-w-0">
               <span class="material-icons text-slate-500 transition-transform group-open:rotate-90 flex-shrink-0" style="font-size:12px">chevron_right</span>
               <div class="flex items-baseline gap-1.5 min-w-0">
-                <p class="font-bold text-slate-400 truncate" style="font-size:11px;text-transform:lowercase">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
+                <p class="sec-title font-bold text-slate-400 truncate" style="font-size:11px">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
                 <span class="font-bold text-rose-400" style="font-size:14px">${peso(expTot)}</span>
               </div>
             </div>
