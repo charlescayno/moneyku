@@ -237,14 +237,14 @@ export function applyPaidVisual(btn, settled) {
     btn.classList.add("is-paid", "bg-emerald-500", "border-emerald-500");
     btn.classList.remove("border-slate-600");
     if (row) row.classList.add("opacity-60");
-    if (name) name.classList.add("line-through");
+    if (name) { name.classList.add("line-through"); if (name.classList.contains("text-slate-200")) name.classList.replace("text-slate-200", "text-slate-500"); }
     btn.classList.remove("paid-burst"); void btn.offsetWidth; btn.classList.add("paid-burst");
     if (row) { row.classList.remove("row-sweep"); void row.offsetWidth; row.classList.add("row-sweep"); setTimeout(() => row.classList.remove("row-sweep"), 750); }
   } else {
     btn.classList.remove("is-paid", "bg-emerald-500", "border-emerald-500");
     btn.classList.add("border-slate-600");
     if (row) row.classList.remove("opacity-60");
-    if (name) name.classList.remove("line-through");
+    if (name) { name.classList.remove("line-through"); if (name.classList.contains("text-slate-500")) name.classList.replace("text-slate-500", "text-slate-200"); }
   }
 }
 
