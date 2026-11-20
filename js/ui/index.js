@@ -93,6 +93,7 @@ export {
   toggleInvestments,
   toggleExpenseSort,
   toggleSimPerson,
+  resetSimIncome,
   toggleArrange,
   reorderChildren,
   prevOverviewPage,

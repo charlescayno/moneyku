@@ -6,7 +6,7 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getSimPersonSort, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, displayKids, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getSimIncomeScale, getSimPersonSort, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, displayKids, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
@@ -516,6 +516,19 @@ export function debtTrackerCardHtml(who = "debt") {
     </details>`;
 }
 
+export function simIncomeSliderHtml(who) {
+  if (who !== "simulated") return "";
+  const s = getSimIncomeScale();
+  return `<div class="mt-1.5 rounded-lg bg-black/20 px-3 py-2.5 flex flex-col gap-1.5">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-[11px] font-bold text-slate-400">what if income is <span id="sim-inc-pct" class="font-black ${s === 100 ? "text-white" : s > 100 ? "text-emerald-300" : "text-amber-300"}">${s}%</span> of entered</p>
+      ${s === 100 ? "" : `<button type="button" data-action="resetSimIncome" class="text-[10px] font-bold text-indigo-300 px-2 rounded-md bg-white/5" style="min-height:28px">reset</button>`}
+    </div>
+    <input id="sim-inc-slider" type="range" min="50" max="150" step="5" value="${s}" aria-label="Estimate income as a percent of the entered amounts" style="width:100%;height:28px;accent-color:#fbbf24">
+    <div class="flex justify-between text-[9px] font-bold text-slate-500"><span>50%</span><span>100%</span><span>150%</span></div>
+  </div>`;
+}
+
 export function simPersonBtnHtml(who) {
   if (who !== "simulated") return "";
   const pOn = getSimPersonSort();
@@ -633,7 +646,7 @@ export function personSectionHtml(who, includeDebt = true) {
           </div>
           <span class="flex items-center gap-2">${simPersonBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>add</button></span>
         </summary>
-        <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simCopyBar("income")}
+        <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simIncomeSliderHtml(who)}${simCopyBar("income")}
       </details>
       <div style="border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
         <details open data-persist="sec-expenses${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
