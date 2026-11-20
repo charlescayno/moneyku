@@ -1462,3 +1462,15 @@ details > summary.bg-indigo-900\/10, details > summary[class*="bg-indigo-900"] {
 
 /* Section titles (Income, Expenses, Debt, Accounts, card headings) show in CAPITALS */
 .sec-title, summary h3, details > summary > div > h3, header h3 { text-transform: uppercase !important; letter-spacing: .06em; }
+
+/* Touch targets: every tappable thing is at least ~44px tall. Small icons keep their look and get an invisible larger hit area. */
+button[data-action="setAccountsView"], button[data-action="openAccountModal"][title], button[data-action="cardSettingsOpen"],
+button[data-action="toggleField"], button#toast-action, button[data-action="openItemModal"][data-arg1] { position: relative; }
+button[data-action="setAccountsView"]::after, button[data-action="cardSettingsOpen"]::after, button[data-action="toggleField"]::after, button#toast-action::after,
+button[data-action="openAccountModal"]:not([class*="flex-1"])::after { content: ""; position: absolute; inset: -11px -6px; }
+summary { min-height: 44px; }
+summary button[data-action="openItemModal"], summary button[data-action="copyLastMonth"] { min-height: 44px !important; min-width: 44px; display: inline-flex; align-items: center; justify-content: flex-end; padding: 0 6px; margin: -8px -6px; }
+button[data-action="toggleProjected"], button[data-action="toggleExpenseSort"], button[data-action="openTransferModal"], button[data-action="cardPayOpen"],
+button[data-action="cardStatementOpen"], button[data-action="openCopyPicker"], button[data-action="openAccountModal"][class*="flex-1"] { min-height: 44px; }
+#sim-tile, #sum-projected { min-height: 44px; }
+button[data-action="openItemModal"] { min-height: 44px !important; }
