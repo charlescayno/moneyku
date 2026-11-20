@@ -3,6 +3,8 @@
 // =============================
 
 import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
+import { toggleRealInfo } from './ui/realinfo.js';
+import { openChildMenu, childMenuEdit, childMenuReorder, childMenuDelete } from './ui/childmenu.js';
 import { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, clearSimulation, openSimCash, simCashSave } from "./simulated.js";
 import { openSearch, srOpen, qlAddChooser, qlSpendPick, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
@@ -209,6 +211,11 @@ window.jumpOverviewYear = jumpOverviewYear;
 window.exportData = exportData;
 window.openCalendarModal = openCalendarModal;
 window.toggleReminders = toggleReminders;
+window.toggleRealInfo = toggleRealInfo;
+window.openChildMenu = openChildMenu;
+window.childMenuEdit = childMenuEdit;
+window.childMenuReorder = childMenuReorder;
+window.childMenuDelete = childMenuDelete;
 window.closeCalendarModal = closeCalendarModal;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;

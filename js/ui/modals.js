@@ -1,6 +1,7 @@
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, ACCOUNT_PAYMENT_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { cardSettings } from "../card.js";
 import { childAmt } from "../state.js";
+import { countWeekday } from "../utils.js";
 import { acctOwner, acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
@@ -293,6 +294,15 @@ export function openChildModal(who, parentId, childId) {
   body += inputBlock("Name", "f-name", c ? c.name : "", "text", 'placeholder="e.g. Electricity"');
   body += inputBlock("Estimate (₱)", "f-amount", c ? childAmt(c, selectedKey) : "", "text", 'inputmode="text" placeholder="0"');
   body += inputBlock("Due day of the month (1-31, optional)", "f-child-dueday", c ? (dueDayFor(c) ?? "") : "", "number", 'min="1" max="31" inputmode="numeric" placeholder="e.g. 15"');
+  const mons = countWeekday(selectedKey, 1);
+  body += `<div id="grocery-box" class="${/grocer/i.test(c ? c.name : "") ? "" : "hidden"} bg-slate-900 rounded-xl px-3.5 py-3 flex flex-col gap-2.5">
+    <p class="text-[11px] font-bold text-slate-400">Mondays in ${monthShort(selectedKey)}: <span id="grocery-mondays" class="text-white font-black text-sm">${mons}</span></p>
+    <div class="grid grid-cols-2 gap-3">
+      ${inputBlock("Number of people", "f-people", c && c.people ? c.people : "", "number", 'min="1" inputmode="numeric" placeholder="e.g. 9"')}
+      ${inputBlock("Budget per person (₱)", "f-perperson", c && c.perPerson ? c.perPerson : 1000, "number", 'min="0" inputmode="numeric" placeholder="1000"')}
+    </div>
+    <p id="grocery-calc" class="text-[11px] text-slate-500"></p>
+  </div>`;
   if (!isNew) {
     body += `<div id="spend-section">${spendSectionHtml(c)}</div>`;
     body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
@@ -307,6 +317,7 @@ export function openChildModal(who, parentId, childId) {
   if (isNew) delBtn.classList.add("hidden");
   else { delBtn.classList.remove("hidden"); delBtn.onclick = () => confirmDelete(); }
   openModalShell();
+  groceryRefresh(false);
 }
 
 export function openInvestmentModal() {
@@ -520,3 +531,26 @@ export async function doDelete(scope = "all") {
     },
   });
 }
+
+// Grocery-style sub-expense: the people / per-person box shows when the name contains "grocer";
+// people x per person fills the estimate. Also shows the Mondays in the selected month.
+function groceryRefresh(fill) {
+  const box = $("grocery-box");
+  if (!box) return;
+  const on = /grocer/i.test($("f-name")?.value || "");
+  box.classList.toggle("hidden", !on);
+  if (!on) return;
+  const people = parseInt($("f-people")?.value, 10);
+  const per = parseMathAmount($("f-perperson")?.value);
+  const mons = countWeekday(getSelectedKey(), 1);
+  const calc = $("grocery-calc");
+  if (people >= 1 && per > 0) {
+    const total = people * per;
+    if (fill && $("f-amount")) $("f-amount").value = String(total);
+    if (calc) calc.textContent = `${people} people × ${peso(per)} = ${peso(total)}${mons ? ` · about ${peso(Math.round(total / mons))} per Monday (${mons})` : ""}`;
+  } else if (calc) calc.textContent = "Enter the number of people to set the estimate (people × budget per person).";
+}
+document.addEventListener("input", (e) => {
+  const id = e.target && e.target.id;
+  if (id === "f-name" || id === "f-people" || id === "f-perperson") groceryRefresh(id !== "f-name");
+});

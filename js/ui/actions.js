@@ -4,7 +4,7 @@ import { choosePayment, applyPayment, refundPayment, recordPayment, paidMessage,
 import { refreshReminders } from '../calendar.js';
 import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, includedWho, setWhoIncluded, getSimView, setSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
-import { openMore, selectMonth, statsGridHtml } from './components.js';
+import { openMore, parentSummaryText, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
 import { cardSummaryHtml } from './cardui.js';
 import { toast } from './core.js';
@@ -189,6 +189,8 @@ export function updateParentBadge(childId) {
   const selectedKey = getSelectedKey();
   const paidCount = kids.filter((c) => isPaid(c.id, selectedKey)).length;
   const allPaid = kids.length > 0 && paidCount === kids.length;
+  const sumEl = details.querySelector(".parent-sumtext");
+  if (sumEl) sumEl.textContent = parentSummaryText(parent, selectedKey);
   const countEl = details.querySelector(".parent-paid-count");
   if (countEl) countEl.textContent = paidCount;
   const bar = details.querySelector(".parent-bar");

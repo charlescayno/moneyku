@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneyku-cache-v214';
+const CACHE_NAME = 'moneyku-cache-v215';
 const urlsToCache = [
   './',
   './index.html',
@@ -27,7 +27,7 @@ const urlsToCache = [
   './js/gemini.js',
   './js/itemOps.js', './js/migrations.js',
   './js/arrange.js', './js/payfrom.js', './js/scope.js', './js/card.js',
-  './js/ui/next5.js', './js/simulated.js', './js/history.js', './js/ui/historyui.js', './js/ui/cardui.js',
+  './js/ui/next5.js', './js/simulated.js', './js/ui/realinfo.js', './js/ui/childmenu.js', './js/history.js', './js/ui/historyui.js', './js/ui/cardui.js',
   './js/ui/quicklog.js',
   './js/ui/index.js',
   './js/ui/core.js',

@@ -6,7 +6,7 @@ import { childAmt } from "../state.js";
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, displayKids, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
@@ -55,6 +55,13 @@ function childDueDayInput() {
   return d >= 1 && d <= 31 ? d : null;
 }
 
+/** Grocery-style sub-expense: optional number of people and budget per person typed in the form (both saved together). */
+function childPeopleInput() {
+  const p = parseInt($("f-people")?.value, 10);
+  const pp = parseMathAmount($("f-perperson")?.value);
+  return p >= 1 && pp > 0 ? { people: p, perPerson: pp } : null;
+}
+
 export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null) {
   const paid = isPaid(c.id, k);
   const est = childAmt(c, k);
@@ -64,41 +71,50 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null)
   const pct = est > 0 ? Math.min(100, Math.round((spent / est) * 100)) : (spent > 0 ? 100 : 0);
   const remaining = est - spent;
   const rightMain = paid ? childFinal(c, k) : est;
-  // Optional due day of this sub-expense, coloured like the parent rows (overdue / due this week)
+  // Due badge: muted, and coloured only for urgency (overdue = rose, due today / this week = amber)
   const cdd = dueDayFor(c);
   const cds = cdd != null && kind === "expenses" ? dueStatus(c, k) : null;
-  const dueTag = cdd != null
-    ? `<span class="child-due text-[11px] font-bold ${cds?.state === "overdue" ? "text-rose-300" : cds?.state === "week" ? "text-amber-300" : "text-sky-300"} flex items-center gap-0.5 mt-0.5"><span class="material-icons" style="font-size:11px">${cds?.state === "overdue" ? "error_outline" : "event_available"}</span>Due ${ordinal(cdd)}${cds?.state === "overdue" ? (cds.days ? ` · ${cds.days}d overdue` : " · overdue") : cds?.state === "week" ? (cds.days === 0 ? " · today" : ` · in ${cds.days}d`) : ""}</span>`
+  const dueCls = cds?.state === "overdue" ? "text-rose-400" : cds?.state === "week" ? "text-amber-300" : "text-slate-500";
+  const dueTitle = cds?.state === "overdue" ? "Overdue" : cds?.state === "week" ? (cds.days === 0 ? "Due today" : `Due in ${cds.days}d`) : "Due day";
+  const dueTag = cdd != null && !paid
+    ? `<span class="child-due text-[11px] font-bold ${dueCls} flex-shrink-0 whitespace-nowrap" title="${dueTitle}">${ordinal(cdd)}</span>`
     : "";
-  
+
   const spendLine = (hasSpend && !paid)
-    ? `<div class="child-spendline flex items-center gap-2 mt-1">
+    ? `<div class="child-spendline flex items-center gap-2 mt-0.5">
         <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden max-w-[100px]"><div class="h-full ${over ? "bg-rose-500" : "bg-emerald-400"} rounded-full" style="width:${pct}%"></div></div>
-        <span class="text-[10px] font-bold ${over ? "text-rose-400" : "text-emerald-400"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
+        <span class="text-[10px] font-bold ${over ? "text-rose-400" : "text-slate-500"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
       </div>`
     : "";
-    
+
   if (arr) {
-    return `<div data-child="${c.id}" class="arr-row flex items-center gap-3 py-1.5 px-6 bg-[#1c2136]">
-    ${rowIconHtml(c.name, 20, kind, true)}
+    return `<div data-child="${c.id}" class="arr-row flex items-center gap-2 py-1 pl-3 pr-1 bg-[#1c2136]">
     <div class="flex-1 min-w-0"><span class="item-name block text-sm font-bold text-slate-200 truncate">${escapeHtml(c.name)}</span></div>
     <span class="text-xs font-bold text-slate-500 flex-shrink-0">${peso(rightMain)}</span>
-    <div data-drag-handle role="button" aria-label="Drag to reorder ${escapeHtml(c.name)}" title="Drag to reorder" class="arr-handle w-11 h-11 -mr-2 rounded-xl flex items-center justify-center flex-shrink-0 text-indigo-300 bg-indigo-500/15" style="touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none"><span class="material-icons" style="font-size:22px;pointer-events:none">drag_handle</span></div>
+    <div data-drag-handle role="button" aria-label="Drag to reorder ${escapeHtml(c.name)}" title="Drag to reorder" class="arr-handle w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-indigo-300 bg-indigo-500/15" style="touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none"><span class="material-icons" style="font-size:22px;pointer-events:none">drag_handle</span></div>
   </div>`;
   }
 
-  return `<div data-child="${c.id}" data-action="openChildModal" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" class="item-row flex items-center gap-4 py-2.5 px-6 cursor-pointer hover:bg-white/5 transition-colors">
-    <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark paid" class="paid-check ${paid ? "is-paid bg-emerald-500/20 border-emerald-500" : "bg-transparent border-slate-700"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-colors">
+  // One compact line: check, name, due badge, amount, ⋯ menu (edit / reorder / delete live in the menu)
+  return `<div data-child="${c.id}" data-action="openChildModal" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" class="item-row flex items-center gap-2 pl-3 pr-1 cursor-pointer hover:bg-white/5 transition-colors" style="min-height:40px">
+    <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="${kind === "income" ? "Mark received" : "Mark paid"}" class="paid-check ${paid ? "is-paid bg-emerald-500/20 border-emerald-500" : "bg-transparent border-slate-700"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-colors">
       <span class="material-icons check-icon ${paid ? "text-emerald-400 opacity-100" : "text-transparent opacity-0"} transition-opacity" style="font-size:14px">check</span>
     </button>
-    ${rowIconHtml(c.name, 20, kind, true)}
-    <div class="flex-1 min-w-0">
+    <div class="flex-1 min-w-0 py-1">
       <span class="item-name block text-sm font-bold ${paid ? "text-slate-500 line-through" : "text-slate-200"} truncate">${escapeHtml(c.name)}</span>
-      ${paid ? "" : dueTag}
       ${spendLine}
     </div>
+    ${dueTag}
     <span class="child-amt text-sm font-black ${paid ? "text-slate-600 line-through" : "text-slate-300"} flex-shrink-0">${peso(rightMain)}</span>
+    <button type="button" data-action="openChildMenu" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" aria-label="More actions for ${escapeHtml(c.name)}" class="child-menu-btn w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-slate-500"><span class="material-icons" style="font-size:18px">more_horiz</span></button>
   </div>`;
+}
+
+/** "5 items · ₱4,200 · next: PLDT 15th" (plain text; escape before putting it in HTML). */
+export function parentSummaryText(it, k) {
+  const kids = getKids(it, k);
+  const nxt = displayKids(kids, k).find((c) => !isPaid(c.id, k) && dueDayFor(c) != null);
+  return `${kids.length} item${kids.length === 1 ? "" : "s"} · ${peso(itemTotal(it, k))}${nxt ? ` · next: ${nxt.name} ${ordinal(dueDayFor(nxt))}` : ""}`;
 }
 
 export function parentRowHtml(it, k, kind, who, opts = {}) {
@@ -113,9 +129,13 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
     : `<span class="material-icons text-white" style="font-size:22px">home_work</span>`;
   const iconBg = icon ? "bg-slate-800" : "bg-gradient-to-br from-fuchsia-500 to-purple-600";
   const arrange = isArranging(it.id) && kids.length > 1;
-  const childRows = kids.map((c, i) => childRowHtml(it.id, c, k, who, kind, arrange ? { i, n: kids.length } : null)).join("");
+  // Display order: by due day, undated last, paid at the end. Arrange mode shows the stored order so dragging edits that order.
+  const shownKids = arrange ? kids : displayKids(kids, k);
+  const childRows = shownKids.map((c, i) => childRowHtml(it.id, c, k, who, kind, arrange ? { i, n: kids.length } : null)).join("");
   const kidsIds = kids.map(c => c.id).join(",");
-  
+  const long = kids.length > 12 && !arrange; // a long list scrolls inside the card instead of pushing the page down
+  const link = "py-2 px-1 text-[11px] font-bold flex items-center gap-0.5 transition-colors";
+
   return `<details data-persist="parent-${it.id}" class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden" style="margin:8px 0" data-parent="${it.id}" data-who="${who}">
     <summary class="parent-summary flex items-center cursor-pointer list-none ${allPaid || it.excluded ? "opacity-70" : ""}" style="gap:12px;padding:12px 14px">
       <div class="acct-icon rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0" style="width:44px;height:44px">${iconInner}</div>
@@ -123,11 +143,12 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
         <div class="flex items-center gap-1.5">
           <p class="item-name font-black text-white truncate ${allPaid ? "line-through" : ""}" style="font-size:15px">${escapeHtml(it.name)}</p>
           ${it.excluded ? `<span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 flex-shrink-0">Not counted</span>` : ""}
+          ${simSourceHtml(it, who)}
           <span class="parent-caret material-icons text-slate-500 transition-transform duration-300 group-open:-rotate-180" style="font-size:20px">expand_more</span>
         </div>
-        <div class="flex items-center gap-3 mt-1.5">
-          <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden max-w-[120px]"><div class="parent-bar h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded-full transition-all duration-300" style="width:${pct}%"></div></div>
-          <span class="text-[10px] font-black text-purple-300 uppercase tracking-widest"><span class="parent-paid-count">${paidCount}</span>/${kids.length} paid</span>
+        <div class="flex items-center gap-2 mt-1.5 min-w-0">
+          <div class="w-10 h-1.5 bg-slate-800 rounded-full overflow-hidden flex-shrink-0"><div class="parent-bar h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded-full transition-all duration-300" style="width:${pct}%"></div></div>
+          <span class="parent-sumtext text-[11px] font-bold text-slate-400 truncate">${escapeHtml(parentSummaryText(it, k))}</span>
         </div>
       </div>
       <div class="flex flex-col items-end gap-1 flex-shrink-0">
@@ -137,12 +158,13 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
         </button>
       </div>
     </summary>
-    <div class="pb-4 pt-1 space-y-0 relative">
-      <div class="child-list" data-who="${who}" data-parent="${it.id}">${childRows}</div>
-      <div class="px-6 mt-3 flex items-center gap-2">
-        ${arrange ? "" : `<button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>`}
-        ${arrange ? "" : `<button data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}" class="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">edit</span>Edit group</button>`}
-        ${kids.length > 1 ? `<button data-action="toggleArrange" data-arg0="${it.id}" aria-pressed="${arrange}" class="${arrange ? "flex-1 bg-indigo-600 text-white" : "text-slate-500 hover:text-white"} py-2.5 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">${arrange ? "check" : "swap_vert"}</span>${arrange ? "Done" : "Arrange"}</button>` : ""}
+    <div class="pb-2 pt-0 relative">
+      <div class="child-list ml-5 border-l border-slate-700/60 ${long ? "overflow-y-auto" : ""}" ${long ? 'style="max-height:60vh"' : ""} data-who="${who}" data-parent="${it.id}">${childRows}</div>
+      <div class="px-5 mt-1 flex items-center gap-2">
+        ${arrange ? "" : `<button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="${link} text-indigo-300"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>`}
+        <span class="flex-1"></span>
+        ${arrange ? "" : `<button data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}" class="${link} text-slate-500 hover:text-white">Edit group</button>`}
+        ${kids.length > 1 ? `<button data-action="toggleArrange" data-arg0="${it.id}" aria-pressed="${arrange}" class="${arrange ? "bg-indigo-600 text-white px-3 rounded-xl text-xs font-bold flex items-center gap-1" : link + " text-slate-500 hover:text-white"}" style="min-height:32px">${arrange ? `<span class="material-icons" style="font-size:16px">check</span>Done` : "Arrange"}</button>` : ""}
       </div>
     </div>
   </details>`;
@@ -161,6 +183,13 @@ export function dueStatus(it, k) {
   if (diff < 0) return { state: "overdue", days: -diff };
   if (diff <= 7) return { state: "week", days: diff };
   return { state: "later", days: diff };
+}
+
+/** Small avatar showing whose budget a simulated item was copied from (nothing for items made inside the simulation). */
+export function simSourceHtml(it, who) {
+  if (who !== "simulated" || (it.copiedFromWho !== "charlie" && it.copiedFromWho !== "partner")) return "";
+  const n = it.copiedFromWho === "partner" ? "Ynah" : "Charles";
+  return `<img src="assets/avatar-${n.toLowerCase()}.jpg" alt="${n}" title="Copied from ${n}" class="sim-src w-5 h-5 rounded-full object-cover flex-shrink-0 border border-white/20">`;
 }
 
 export function itemRowHtml(it, k, kind, who, opts = {}) {
@@ -232,6 +261,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
       ${tags.length ? `<div class="flex gap-2 mt-0.5">${tags.join("")}</div>` : ""}
       ${progress}
     </div>
+    ${simSourceHtml(it, who)}
     <p class="text-sm font-black ${kind === "income" ? "text-emerald-400" : "text-white"} flex-shrink-0">${peso(amt)}</p>
   </div>`;
 }
@@ -1011,8 +1041,7 @@ export function statsGridHtml() {
       <p class="text-xs font-black ${valColor} mt-0.5 truncate">${val}</p>
     </div>`;
   return (
-    cell("account_balance_wallet", "text-white/70", "Current Money", "text-white", peso(current)) +
-    cell("savings", savColor, "Month surplus", savColor, signedPeso(t.savings)) +
+    cell("account_balance_wallet", "text-white/70", "Current Money on Hand", "text-white", peso(current)) +
     cell("south_west", "text-emerald-400", "To receive", "text-emerald-400", signedPeso(t.toReceive)) +
     cell("north_east", "text-rose-400", "To pay", "text-rose-400", signedPeso(-t.toPay))
   );
@@ -1411,7 +1440,7 @@ export function toggleMonthPicker() {
       if (!hideProj && !Number.isFinite(proj[k])) return "";
       const v = hideProj ? null : proj[k];
       const cls = hideProj || v >= 0 ? (sel ? "text-indigo-100" : "text-slate-400") : (sel ? "text-rose-200" : "text-rose-400");
-      return `<span class="block max-w-full truncate text-[10px] font-bold leading-tight tabular-nums ${cls}">Proj. ${hideProj ? "••••" : compactPeso(v)}</span>`;
+      return `<span class="block max-w-full truncate text-[10px] font-bold leading-tight tabular-nums ${cls}">${hideProj ? "••••" : compactPeso(v)}</span>`;
     };
     const pills = `<div class="sticky top-0 z-10 -mx-8 px-8 py-3 bg-slate-950/95 flex gap-2 overflow-x-auto no-scrollbar">
       <button data-action="goToday" class="flex-shrink-0 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase">Today</button>
@@ -1557,7 +1586,7 @@ export async function saveChildAndAddAnother() {
   const parent = getItems(who, "expenses").find((x) => x.id === parentId);
   if (parent) {
     if (!Array.isArray(parent.children)) parent.children = [];
-    parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}) });
+    parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}), ...(childPeopleInput() || {}) });
     const gn = ($("f-parent")?.value || "").trim();
     if (gn) parent.name = gn;
   }
@@ -1690,12 +1719,13 @@ async function saveModalInner() {
           c.name = name;
           const cdd = childDueDayInput();
           if (cdd != null) c.dueDay = cdd; else delete c.dueDay;
+          if ($("f-people")) { const pe = childPeopleInput(); if (pe) Object.assign(c, pe); else { delete c.people; delete c.perPerson; } }
           if (changed) applyItemAmount(appData, parent.children, c, amount, scope, selectedKey, { recurring: parent.recurring });
         }
         const pf = $("f-paid");
         if (pf) deducted = setPaidFlag(appData, selectedKey, id, pf.dataset.on === "true");
       } else {
-        parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}) });
+        parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}), ...(childPeopleInput() || {}) });
       }
     }
     await syncSet(appData);

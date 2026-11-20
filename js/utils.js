@@ -297,3 +297,12 @@ export function categoryIcon(name) {
   if (/pet|dog|cat|kobe|dudu/.test(n)) return "pets";
   return null;
 }
+
+/** How many of a weekday (0=Sun, 1=Mon ...) fall in the month "YYYY-MM". */
+export function countWeekday(key, dow = 1) {
+  const { y, m } = keyParts(key);
+  const n = new Date(y, m + 1, 0).getDate();
+  let c = 0;
+  for (let d = 1; d <= n; d++) if (new Date(y, m, d).getDay() === dow) c++;
+  return c;
+}

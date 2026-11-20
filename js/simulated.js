@@ -7,7 +7,7 @@
 import { $, escapeHtml, generateId, monthShort, parseMathAmount, peso } from "./utils.js";
 import { getAppData, getItems, getSelectedKey, itemActiveIn, setAppData, setSimView } from "./state.js";
 import { syncSet } from "./firebase.js";
-import { isCardItem } from "./card.js";
+import { isCardItem, cardDueIn, CARD_NAME } from "./card.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
 import { qlClose, showSheet } from "./ui/quicklog.js";
@@ -38,7 +38,17 @@ let ctx = null; // { source, kind, ids, dupIds }
 
 /** Items of one person's list that can be copied (card purchases belong to the card bill, not to a list). */
 function copyable(source, kind) {
-  return getItems(source, kind).filter((it) => !isCardItem(it));
+  const list = getItems(source, kind).filter((it) => !isCardItem(it));
+  const card = source === "charlie" && kind === "expenses" ? bpiCardBill() : null;
+  return card ? [card, ...list] : list;
+}
+
+/** The BPI Platinum Rewards card bill falling due in the selected month, as one expense (its purchases are not copied one by one). */
+function bpiCardBill() {
+  const k = getSelectedKey();
+  const due = cardDueIn(k);
+  if (!(due.total > 0)) return null;
+  return { id: `bpicard-${k}`, name: `${CARD_NAME} card bill`, amount: due.total, start: k, recurring: false };
 }
 
 const norm = (s) => String(s || "").trim().toLowerCase();
@@ -163,7 +173,7 @@ async function doCopy(items) {
     d.items.simulated = d.items.simulated || { income: [], expenses: [] };
     d.items.simulated[kind] = d.items.simulated[kind] || [];
     for (const id of ids) {
-      const src = (d.items[source]?.[kind] || []).find((x) => x && x.id === id);
+      const src = String(id).startsWith("bpicard-") ? bpiCardBill() : (d.items[source]?.[kind] || []).find((x) => x && x.id === id);
       if (src) d.items.simulated[kind].push(cloneInto(d, src, source));
     }
   }, `Copied ${ids.length} ${kind === "income" ? (ids.length === 1 ? "income item" : "income items") : (ids.length === 1 ? "expense" : "expenses")} from ${SRC_LABEL[source]}`);
@@ -202,7 +212,7 @@ export async function clearSimulation() {
 export function openSimCash() {
   const cur = Number(getAppData()?.simCash) || 0;
   showSheet("Simulated starting cash",
-    `<p class="text-[11px] text-slate-400 pb-1">The cash the simulation starts from. It feeds Current money, Real money and Projected, and is independent of real accounts.</p>
+    `<p class="text-[11px] text-slate-400 pb-1">The cash the simulation starts from. It feeds Current money on hand, Real money and Projected, and is independent of real accounts.</p>
      <input id="sim-cash-input" type="text" inputmode="decimal" autocomplete="off" value="${cur || ""}" placeholder="0" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" />`,
     `${CANCEL_BTN}<button type="button" data-action="simCashSave" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-indigo-600">Save</button>`);
   setTimeout(() => $("sim-cash-input")?.focus(), 60);

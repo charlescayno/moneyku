@@ -581,6 +581,17 @@ export function sortItems(items, kind) {
     .map((x) => x.it);
 }
 
+/**
+ * Sub-expenses in display order (the stored `children` array is never changed): the parent sort rule
+ * (soonest due day first, undated last, ties keep their stored order), then paid ones at the very end.
+ */
+export function displayKids(kids, k) {
+  const byId = new Map(kids.map((c) => [c.id, c]));
+  // sortItems ranks by recurring/due day; sub-expenses follow the parent, so rank them as recurring and undated
+  const ranked = sortItems(kids.map((c) => ({ ...c, recurring: true, end: null })), "children").map((p) => byId.get(p.id));
+  return [...ranked.filter((c) => !isPaid(c.id, k)), ...ranked.filter((c) => isPaid(c.id, k))];
+}
+
 export function findItemById(id) {
   for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const kind of ["income", "expenses"]) {
