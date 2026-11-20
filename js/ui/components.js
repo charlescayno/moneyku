@@ -89,7 +89,7 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null)
 
   if (arr) {
     return `<div data-child="${c.id}" class="arr-row flex items-center gap-2 py-1 pl-3 pr-1 bg-[#1c2136]">
-    <div class="flex-1 min-w-0"><span class="item-name block text-sm font-bold text-slate-200 truncate">${escapeHtml(c.name)}</span></div>
+    <div class="flex-1 min-w-0"><span class="item-name block text-sm font-bold text-slate-200 truncate keep-case">${escapeHtml(c.name)}</span></div>
     <span class="text-xs font-bold text-slate-500 flex-shrink-0">${peso(rightMain)}</span>
     <div data-drag-handle role="button" aria-label="Drag to reorder ${escapeHtml(c.name)}" title="Drag to reorder" class="arr-handle w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-indigo-300 bg-indigo-500/15" style="touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none"><span class="material-icons" style="font-size:22px;pointer-events:none">drag_handle</span></div>
   </div>`;
@@ -547,7 +547,7 @@ export function householdCardHtml() {
       <p class="text-xs font-black ${sign(h.net)}">${sp(h.net)}</p>
     </summary>
     <div class="px-3 pb-3">
-      <div class="grid grid-cols-[3.4rem_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide"><span></span><span class="text-right ${OWNERS.charlie.text}">${OWNERS.charlie.label}</span><span class="text-right ${OWNERS.partner.text}">${OWNERS.partner.label}</span><span class="text-right text-indigo-300">All</span></div>
+      <div class="grid grid-cols-[3.4rem_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide"><span></span><span class="text-right ${OWNERS.charlie.text} keep-case">${OWNERS.charlie.label}</span><span class="text-right ${OWNERS.partner.text} keep-case">${OWNERS.partner.label}</span><span class="text-right text-indigo-300">All</span></div>
       ${row("Inflow", (v) => v.income, () => "text-emerald-400")}
       ${row("Outflow", (v) => v.expenses, () => "text-rose-400")}
       ${row("Net", (v) => v.net, sign, true)}
@@ -656,7 +656,7 @@ export function acctRowHtml(a) {
       <div class="w-9 h-9 rounded-xl bg-slate-800/80 border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
         ${acctIconHtml(a)}
       </div>
-      <p class="text-sm font-bold text-slate-100 truncate">${escapeHtml(a.name)}</p>
+      <p class="text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(a.name)}</p>
       <img src="assets/avatar-${a.owner === "partner" ? "ynah" : "charles"}.jpg" alt="${a.owner === "partner" ? "Ynah" : "Charles"}" class="w-5 h-5 rounded-full object-cover flex-shrink-0">
     </div>
     <div class="flex items-center gap-1.5 flex-shrink-0">
@@ -720,7 +720,7 @@ export function acctCardHtml(a) {
       <div class="flex items-center gap-1.5 min-h-[18px]">${logo}${theme.label ? `<span class="text-[11px] font-black tracking-tight truncate">${escapeHtml(theme.label)}</span>` : ""}</div>
       ${chip}
       <div class="mt-auto">
-        <p class="text-[9px] font-semibold leading-tight truncate" style="color:${sub}">${escapeHtml(a.name)}</p>
+        <p class="text-[9px] font-semibold leading-tight truncate keep-case" style="color:${sub}">${escapeHtml(a.name)}</p>
         <p class="text-[13px] font-black leading-tight whitespace-nowrap">${peso(a.amount)}</p>
         <div class="flex justify-end mt-1 h-3">
           ${network ? `<span class="flex flex-shrink-0"><i class="block w-3 h-3 rounded-full" style="background:#eb001b"></i><i class="block w-3 h-3 rounded-full -ml-1.5" style="background:#f79e1b;opacity:.9"></i></span>` : ""}
@@ -1097,7 +1097,7 @@ export function installmentsCardHtml() {
     return `<div data-action="openItemModal" data-arg0="${it.who}" data-arg1="expenses" data-arg2="${it.id}" class="item-row px-2.5 py-1.5 rounded-lg space-y-1 bg-slate-900/30 cursor-pointer">
       <div class="flex items-center justify-between gap-2">
         <div class="min-w-0">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p><span class="text-[8px] font-bold uppercase ${o.text}">${o.label}</span></div>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-200 truncate keep-case">${escapeHtml(it.name)}</p><span class="text-[8px] font-bold uppercase ${o.text} keep-case">${o.label}</span></div>
           <p class="text-[9px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left · <span class="text-indigo-300">tap to edit</span></p>
         </div>
         <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${urgency} uppercase flex-shrink-0">${monthsLeft === 0 ? "Done" : monthsLeft + " mo left"}</span>
@@ -1169,7 +1169,7 @@ export function openOutlookMonth(m) {
   const section = (title, cls, list) => {
     const sorted = [...list].sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt));
     const tot = list.reduce((s, x) => s + x.amt, 0);
-    const rowsHtml = sorted.slice(0, 8).map((x) => `<div class="flex items-center justify-between gap-2 text-[12px]"><span class="truncate text-slate-200">${escapeHtml(x.name)}${label(x)}</span><span class="font-black ${cls} flex-shrink-0">${sp(x.amt)}</span></div>`).join("");
+    const rowsHtml = sorted.slice(0, 8).map((x) => `<div class="flex items-center justify-between gap-2 text-[12px]"><span class="truncate text-slate-200 keep-case">${escapeHtml(x.name)}${label(x)}</span><span class="font-black ${cls} flex-shrink-0">${sp(x.amt)}</span></div>`).join("");
     const more = sorted.length > 8 ? `<p class="text-[10px] text-slate-500">+${sorted.length - 8} smaller item${sorted.length - 8 === 1 ? "" : "s"} (${sp(sorted.slice(8).reduce((s, x) => s + x.amt, 0))})</p>` : "";
     return `<div class="space-y-1"><div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-wider ${cls}">${title}</p><p class="text-xs font-black ${cls}">${sp(tot)}</p></div>${rowsHtml || `<p class="text-[11px] text-slate-500">Nothing</p>`}${more}</div>`;
   };
@@ -1322,7 +1322,7 @@ export function owedScheduleCardHtml() {
     }
     grand += left;
     return `<details class="rounded-lg bg-slate-900/30"><summary class="flex items-center justify-between gap-2 px-2.5 py-2 cursor-pointer list-none">
-        <div class="min-w-0"><p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p>
+        <div class="min-w-0"><p class="text-xs font-bold text-slate-200 truncate keep-case">${escapeHtml(it.name)}</p>
           <p class="text-[10px] text-slate-500">${monthShort(first)} → ${monthShort(it.end)} &middot; ${months} month${months === 1 ? "" : "s"} &middot; ${peso(Number(it.amount) || 0)}/mo</p></div>
         <p class="text-xs font-black text-emerald-300 flex-shrink-0">${peso(left)}</p></summary>
       <div class="px-2.5 pb-2 border-t border-white/[0.04]">${rows}
@@ -1358,10 +1358,10 @@ export function recurringPaymentsCardHtml() {
           ${rowIconHtml(it.name, 22, it.kind)}
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              <p class="text-xs font-bold ${settled ? 'text-slate-400 line-through' : 'text-slate-200'} truncate">${escapeHtml(it.name)}</p>
+              <p class="text-xs font-bold ${settled ? 'text-slate-400 line-through' : 'text-slate-200'} truncate keep-case">${escapeHtml(it.name)}</p>
               ${dd != null ? `<span class="text-[8px] font-bold text-sky-400 px-1 py-0.2 bg-sky-500/10 rounded">${ordinal(dd)}</span>` : ''}
             </div>
-            <p class="text-[9px] text-slate-500">${isInc ? 'Income' : 'Monthly Bill'} · <span class="${o.text}">${o.label}</span></p>
+            <p class="text-[9px] text-slate-500">${isInc ? 'Income' : 'Monthly Bill'} · <span class="${o.text} keep-case">${o.label}</span></p>
           </div>
         </div>
         <div class="text-right flex-shrink-0 flex items-center gap-2">

@@ -208,10 +208,10 @@ export function upcomingBillsWidgetHtml() {
     return `<div ${open} data-reminder="${escapeHtml(b.id)}" class="reminder-row flex items-center gap-2 pl-2 pr-1.5 py-1.5 rounded-xl bg-slate-950/40 border border-white/5 cursor-pointer min-w-0">
       ${rowIconHtml(b.name, 28)}
       <div class="min-w-0 flex-1">
-        <p class="text-xs font-bold text-slate-100 truncate">${nm}</p>
+        <p class="text-xs font-bold text-slate-100 truncate keep-case">${nm}</p>
         <p class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5 min-w-0"><span class="text-[9px] font-black px-1.5 py-0.5 rounded ${cls} flex-shrink-0">${badge}</span>${b.isOverdue ? "" : `<span class="text-[10px] font-bold text-slate-400 flex-shrink-0">${ordinal(b.dueDay)}</span>`}</p>
       </div>
-      <span class="flex flex-col items-end flex-shrink-0 leading-tight"><span class="text-xs font-black text-white">${peso(b.amount)}</span><span class="text-[10px] font-bold ${who.cls}">${who.n}${debt}</span></span>
+      <span class="flex flex-col items-end flex-shrink-0 leading-tight"><span class="text-xs font-black text-white">${peso(b.amount)}</span><span class="text-[10px] font-bold ${who.cls}"><span class="keep-case">${who.n}</span>${debt}</span></span>
       ${mark}
     </div>`;
   }).join("");
@@ -300,7 +300,7 @@ export function renderCalendarModal(k) {
       <div class="flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-900/40">
         <div class="flex items-center gap-2 min-w-0">
           <span class="w-1.5 h-1.5 rounded-full ${b.paid ? 'bg-slate-600' : 'bg-rose-400'}"></span>
-          <span class="text-xs font-bold ${b.paid ? 'text-slate-500 line-through' : 'text-slate-200'} truncate">${escapeHtml(b.name)}${b.parentName ? ` <span class="font-semibold text-slate-500">· ${escapeHtml(b.parentName)}</span>` : ""}</span>
+          <span class="text-xs font-bold ${b.paid ? 'text-slate-500 line-through' : 'text-slate-200'} truncate keep-case">${escapeHtml(b.name)}${b.parentName ? ` <span class="font-semibold text-slate-500">· ${escapeHtml(b.parentName)}</span>` : ""}</span>
         </div>
         <span class="text-xs font-black ${b.paid ? 'text-slate-500 line-through' : 'text-rose-400'}">${peso(b.amount)}</span>
       </div>

@@ -85,7 +85,7 @@ export function qlAddChooser() {
 export function qlSpendPick() {
   const k = getSelectedKey();
   const list = getItems("charlie", "expenses").filter((it) => itemActiveIn(it, k) && !(it.paymentMethod === CARD_METHOD));
-  const rows = list.map((it) => `<button type="button" data-action="srOpen" data-arg0="charlie" data-arg1="expenses" data-arg2="${it.id}" data-arg3="" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/50 text-left"><span class="text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span><span class="text-xs font-black text-slate-400 flex-shrink-0">${peso(itemTotal(it, k))}</span></button>`).join("");
+  const rows = list.map((it) => `<button type="button" data-action="srOpen" data-arg0="charlie" data-arg1="expenses" data-arg2="${it.id}" data-arg3="" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/50 text-left"><span class="text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(it.name)}</span><span class="text-xs font-black text-slate-400 flex-shrink-0">${peso(itemTotal(it, k))}</span></button>`).join("");
   showSheet(`Spend in ${monthShort(k)}`, `<p class="text-[11px] text-slate-400 mb-1">Pick where the money goes, then add the amount under "Spending".</p>${rows || `<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`}`, CLOSE_BTN);
 }export function addNew(kind) { const w = includedWho(); const who = getSimView() ? "simulated" : w.length === 1 ? w[0] : "charlie"; qlClose(); setTimeout(() => openItemModal(who, kind), 120); }
 
@@ -124,7 +124,7 @@ export function openCopyPicker() {
   if (!todo.length) return toast("Nothing to copy", "error");
   const rows = todo.map(({ kind, it }) => `<button type="button" data-action="copyToggle" data-arg0="${it.id}" data-copy="${it.id}" data-on="true" class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900/50 text-left">
       <span class="material-icons text-emerald-300 copy-box" style="font-size:20px">check_circle</span>
-      <span class="flex-1 min-w-0 text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span>
+      <span class="flex-1 min-w-0 text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(it.name)}</span>
       <span class="text-xs font-black flex-shrink-0 ${kind === "income" ? "text-emerald-400" : "text-rose-400"}">${peso(it.amount)}</span></button>`).join("");
   showSheet(`Copy from ${monthShort(addMonths(getSelectedKey(), -1))}`,
     `<div class="flex justify-end pb-1"><button type="button" id="copy-all" data-action="copyAll" class="text-[11px] font-bold text-indigo-300 px-2 py-1 rounded-lg bg-white/5">Deselect all</button></div><div class="space-y-1">${rows}</div>`,

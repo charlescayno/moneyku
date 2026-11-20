@@ -210,7 +210,7 @@ function pickAccount(label, total, income, preferred = null, owner = "charlie") 
       const after = (Number(a.amount) || 0) + (income ? total : -total);
       return `<button type="button" data-acct="${escapeHtml(a.id)}" class="w-full flex items-center gap-3 p-3 rounded-xl border ${a === pre ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-900/60"} text-left">
         <span class="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600">${icon}</span>
-        <span class="flex-1 min-w-0"><span class="block text-sm font-bold text-white truncate">${escapeHtml(a.name)}</span>
+        <span class="flex-1 min-w-0"><span class="block text-sm font-bold text-white truncate keep-case">${escapeHtml(a.name)}</span>
           <span class="block text-[11px] font-bold text-slate-400">${peso(a.amount)} <span class="text-slate-500">&rarr;</span> <span class="${after < 0 ? "text-rose-400" : "text-slate-200"}">${peso(after)}</span></span></span>
       </button>`;
     };

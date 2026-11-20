@@ -244,7 +244,7 @@ export function cardPayOpen(key) {
   let sel = null;
   try { sel = localStorage.getItem("moneyku_pay_acct"); } catch { /* ignore */ }
   let acctId = (accts.find((a) => a.id === sel) || accts[0]).id;
-  const rows = () => accts.map((a) => `<button type="button" data-acct="${escapeHtml(a.id)}" class="w-full flex items-center justify-between gap-2 p-3 rounded-xl border ${a.id === acctId ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-900/60"} text-left"><span class="text-sm font-bold text-white truncate">${escapeHtml(a.name)}</span><span class="text-[11px] font-bold text-slate-400">${peso(a.amount)}</span></button>`).join("");
+  const rows = () => accts.map((a) => `<button type="button" data-acct="${escapeHtml(a.id)}" class="w-full flex items-center justify-between gap-2 p-3 rounded-xl border ${a.id === acctId ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-900/60"} text-left"><span class="text-sm font-bold text-white truncate keep-case">${escapeHtml(a.name)}</span><span class="text-[11px] font-bold text-slate-400">${peso(a.amount)}</span></button>`).join("");
   const el = dialog(`${title("Pay BPI Platinum Rewards", `Cut ${fmtDate(st.cutoff)} &middot; due ${fmtDate(st.due)}`)}
     <p class="text-[11px] font-bold text-slate-400">Left to pay <span class="text-rose-400">${peso(st.remaining)}</span> of ${peso(st.total)}</p>
     ${field("Amount (&#8369;)", `<input id="cp-amount" type="text" inputmode="decimal" value="${st.remaining}" class="${inputCls}" />`)}

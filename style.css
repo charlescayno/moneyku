@@ -1444,3 +1444,8 @@ details[data-persist=proj-details]:not([open]) { margin-top: -0.75rem; }
 details[open] > summary > div > .dt-chev { transform: rotate(90deg); }
 details > summary > div > .dt-chev { transition: transform .15s; }
 
+/* Lowercase UI: every app label, heading and button shows in lowercase. Your own names (items, accounts, people)
+   keep the case you typed, and form fields are never changed. */
+* { text-transform: lowercase !important; }
+.keep-case, .keep-case *, .item-name, input, textarea, select, option { text-transform: none !important; }
+input::placeholder, textarea::placeholder { text-transform: lowercase !important; }

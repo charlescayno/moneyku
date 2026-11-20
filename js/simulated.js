@@ -71,7 +71,7 @@ export function openSimCopy(source, kind) {
     const on = itemActiveIn(it, k);
     return `<button type="button" data-action="simCopyToggle" data-arg0="${escapeHtml(it.id)}" data-simcopy="${escapeHtml(it.id)}" data-month="${on}" data-on="${on}" class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900/50 text-left">
       <span class="material-icons copy-box" style="font-size:20px">radio_button_unchecked</span>
-      <span class="flex-1 min-w-0"><span class="block text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span>${on ? "" : `<span class="block text-[10px] text-slate-500">not in ${monthShort(k)}</span>`}</span>
+      <span class="flex-1 min-w-0"><span class="block text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(it.name)}</span>${on ? "" : `<span class="block text-[10px] text-slate-500">not in ${monthShort(k)}</span>`}</span>
       <span class="text-xs font-black flex-shrink-0 ${kind === "income" ? "text-emerald-400" : "text-rose-400"}">${peso(Number(it.amount) || 0)}</span></button>`;
   }).join("");
   showSheet(`Copy ${kind === "income" ? "income" : "expenses"} from ${SRC_LABEL[source]}`,
