@@ -111,7 +111,6 @@ export function renderBudget() {
           <button data-action="toggleProjected" aria-label="${hideProjected ? "Show amounts" : "Hide amounts"}" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center flex-shrink-0" style="padding:7px;margin:-7px">
             <span class="material-icons" style="font-size:14px">${hideProjected ? 'visibility_off' : 'visibility'}</span>
           </button>
-          <button type="button" data-action="toggleExplain" title="Explain the numbers" aria-label="Explain the numbers" class="text-white/50 hover:text-white transition-colors focus:outline-none flex items-center flex-shrink-0" style="padding:7px;margin:-7px"><span class="material-icons" style="font-size:15px">info_outline</span></button>
         </div>
         <div class="flex items-end justify-between gap-3">
           <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer font-black tracking-tight tabular-nums ${riskText}" style="font-size:34px;line-height:1.1">${hideProjected ? '••••••' : sp(projected)}</p>
@@ -125,17 +124,7 @@ export function renderBudget() {
         <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="text-base font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-toPayAll)}</span></div>
       </div>
       ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
-      <details data-persist="proj-details" class="group/pd">
-        <summary style="display:none" aria-hidden="true">Explain the numbers</summary>
-        <div class="space-y-1.5 pt-1 pl-1">
-          <div class="rounded-lg bg-black/20 px-2.5 py-2 space-y-1">${hideProjected ? `<p class="text-[11px] text-slate-400">Cash &amp; pending hidden</p>` : `
-            <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">Cash now</span><span class="font-black text-white">${peso(pj.cash)}</span></div>
-            <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">+ Still to receive</span><span class="font-black text-emerald-300">${peso(pj.inc)}</span></div>
-            <div class="flex items-center justify-between text-[11px]"><span class="text-slate-400">&minus; Still to pay</span><span class="font-black text-rose-300">${peso(pj.out)}</span></div>
-            <div class="flex items-center justify-between text-[11px] border-t border-white/10 pt-1"><span class="font-bold text-slate-200">= Projected</span><span class="font-black ${projected >= 0 ? "text-white" : "text-rose-300"}">${sp(projected)}</span></div>`}</div>
-          ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
-        </div>
-      </details>
+      ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
       ${cardNote}
 
       <!-- KPI Metrics (collapsed by default; headline shows savings) -->

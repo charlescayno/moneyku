@@ -37,8 +37,8 @@ test("renderBudget draws the Projected block without throwing, with and without 
     renderBudget();
     const html = stub("budget-body").innerHTML;
     assert.ok(html.includes("sum-projected"), "headline rendered");
-    assert.ok(html.includes("Explain the numbers"), "details rendered");
-    assert.ok(html.includes(hide ? "Cash &amp; pending hidden" : "to receive"));
+    assert.ok(!html.includes("Explain the numbers"), "no breakdown box");
+    assert.ok(html.includes("to receive"));
   }
 });
 
