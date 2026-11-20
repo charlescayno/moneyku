@@ -112,6 +112,7 @@ import {
 
 import {
   openCalendarModal,
+  toggleReminders,
   closeCalendarModal,
 } from "./calendar.js";
 
@@ -207,6 +208,7 @@ window.nextOverviewPage = nextOverviewPage;
 window.jumpOverviewYear = jumpOverviewYear;
 window.exportData = exportData;
 window.openCalendarModal = openCalendarModal;
+window.toggleReminders = toggleReminders;
 window.closeCalendarModal = closeCalendarModal;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;
