@@ -1579,7 +1579,7 @@ export function spendSectionHtml(it) {
         <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">From account</label>
           <select id="f-spend-acct" title="Subtracted from this account&#39;s balance" aria-label="Account" class="w-full bg-slate-900 rounded-xl py-2.5 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select></div>
         <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">Date <span class="text-slate-500">(optional)</span></label>
-          <input type="date" id="f-spend-date" data-action="openDatePicker" min="${k}-01" max="${k}-${String(new Date(keyParts(k).y, keyParts(k).m + 1, 0).getDate()).padStart(2, "0")}" aria-label="Date (optional)" class="w-full bg-slate-900 rounded-xl text-[12px] font-bold text-white focus:outline-none" /></div>
+          <input type="date" id="f-spend-date" data-action="openDatePicker" value="${spendTodayIn(k)}" min="${k}-01" max="${k}-${String(new Date(keyParts(k).y, keyParts(k).m + 1, 0).getDate()).padStart(2, "0")}" aria-label="Date (optional)" class="w-full bg-slate-900 rounded-xl text-[12px] font-bold text-white focus:outline-none" /></div>
       </div>
     </div>
   </div>`;
@@ -1589,6 +1589,12 @@ export function refreshSpendSection(id) {
   const item = findItemOrChildById(id);
   const host = $("spend-section");
   if (item && host) host.innerHTML = spendSectionHtml(item);
+}
+
+// Today as YYYY-MM-DD, but only when it falls inside month key k (spend dates are limited to that month)
+function spendTodayIn(k) {
+  const n = new Date(), s = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+  return s.startsWith(k + "-") ? s : "";
 }
 
 export async function addSpend() {
@@ -1605,7 +1611,7 @@ export async function addSpend() {
   // Taking it from an account subtracts it from that balance now (and Delete gives it back)
   const account = acct ? (appData.accounts || []).find((a) => a.id === acct) : null;
   if (account) account.amount = Math.round(((Number(account.amount) || 0) - amount + Number.EPSILON) * 100) / 100;
-  const date = $("f-spend-date")?.value || ""; // optional, YYYY-MM-DD
+  const date = $("f-spend-date")?.value || spendTodayIn(k); // blank = today (when this month is the current one)
   const entry = account ? { id: generateId(), amount, acct, ded: true } : { id: generateId(), amount };
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) entry.date = date;
   cur.push(entry);
