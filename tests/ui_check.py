@@ -117,6 +117,54 @@ async ([cash, inc, exp]) => {
 }
 """
 
+ADD = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const as = await import('/js/ui/addsheet.js'); const c = await import('/js/ui/components.js'); const m = await import('/js/ui/modals.js');
+  const w = ms => new Promise(r => setTimeout(r, ms)); const k = u.currentKey();
+  const mk = (id, name, amount) => ({id, name, amount, recurring: true, start: '2026-01'});
+  st.setAppData({startMonth:'2026-01', items:{charlie:{income:[],expenses:[mk('rent','Rent',12000), mk('xs','Extra spending',10000)]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(k); lay.renderBudget(); m.closeModal(); await w(300);
+  const r = {};
+  as.openAddSheet(); await w(300);
+  r.title = document.getElementById('modal-title').textContent;
+  r.tabOn = document.querySelector('.as-tab.on')?.textContent.trim();
+  r.defaultItem = document.getElementById('f-qs-item')?.value;
+  r.left0 = document.querySelector('.as-left-amt')?.textContent;
+  const amt = document.getElementById('f-qs-amount'); amt.value = '250'; amt.dispatchEvent(new Event('input'));
+  r.left1 = document.querySelector('.as-left-amt')?.textContent;
+  document.getElementById('f-qs-note').value = 'lunch';
+  r.hscroll = document.documentElement.scrollWidth > innerWidth + 1;
+  await c.saveModal(); await w(300);
+  const sp = st.getAppData().spend?.[k]?.xs || [];
+  r.spend = sp.length ? {amount: sp[sp.length - 1].amount, note: sp[sp.length - 1].note} : null;
+  r.closedAfterSpend = !document.getElementById('modal-overlay').classList.contains('open');
+  as.addSheetTab('bill'); await w(300);
+  r.billTab = document.querySelector('.as-tab.on')?.textContent.trim();
+  r.owners = document.querySelectorAll('.as-owner').length;
+  document.querySelector('.as-owner[data-arg0=partner]').click(); await w(100);
+  r.ownerVal = document.getElementById('f-who').dataset.val;
+  document.getElementById('f-name').value = 'Water'; document.getElementById('f-amount').value = '500';
+  await c.saveModal(); await w(300);
+  r.billSaved = (st.getAppData().items.partner.expenses || []).some(x => x.name === 'Water' && Number(x.amount) === 500);
+  as.addSheetTab('income'); await w(300);
+  r.incomeTitle = document.getElementById('modal-title').textContent;
+  document.getElementById('f-name').value = 'Salary'; document.getElementById('f-amount').value = '30000';
+  await c.saveModal(); await w(300);
+  r.incomeSaved = ['charlie', 'partner'].some(p => (st.getAppData().items[p].income || []).some(x => x.name === 'Salary'));
+  return r;
+}
+"""
+
+def check_add(pg, name, fails):
+    r = pg.evaluate(ADD); print(name, "add", r)
+    want = {"title": "add expense", "tabOn": "paymentsquick spend", "defaultItem": "xs", "left0": "₱10,000", "left1": "₱9,750",
+            "hscroll": False, "spend": {"amount": 250, "note": "lunch"}, "closedAfterSpend": True, "billTab": "receipt_longnew bill",
+            "owners": 2, "ownerVal": "partner", "billSaved": True, "incomeTitle": "add income", "incomeSaved": True}
+    bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
+    if bad: fails.append(f"{name}: add sheet wrong (got, want): {bad}")
+
 def check_next5(pg, name, fails, shot=None):
     up = pg.evaluate(NEXT5, [16000, 3000, 0])
     if shot: pg.locator('#next5-card').screenshot(path=shot)
@@ -156,6 +204,7 @@ def main():
                 if name in ("phone-390", "desktop-1280"):
                     check_next5(pg, name, fails, shot=str(pathlib.Path(__import__('tempfile').gettempdir()) / f"next5_{name}.png"))
                 if name == "phone-390":
+                    check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
                     cs = pg.evaluate("() => getComputedStyle(document.documentElement).colorScheme")

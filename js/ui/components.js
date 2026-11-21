@@ -13,6 +13,7 @@ import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../ins
 import { showSheet } from './quicklog.js';
 import { lastMonthOneTimes } from '../extras.js';
 import { toast, fieldError } from './core.js';
+import { saveQuickSpend } from './addsheet.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
 import { jumpOverviewYear, nextOverviewPage, prevOverviewPage, renderMonthStrip, scrollChipIntoView, toggleInvestments, togglePaidGroup, togglePaidQuick, updateHeader } from './actions.js';
 import { renderAll, renderBudget } from './layout.js';
@@ -1553,7 +1554,7 @@ export function spendSectionHtml(it) {
   const rows = list.map((e, i) => `
     <div class="flex items-center gap-2 py-2 px-3 bg-slate-900/60 rounded-xl">
       <span class="material-icons text-emerald-400" style="font-size:16px">payments</span>
-      <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}${e.date ? ` <span class="text-slate-300">&middot; ${escapeHtml(new Date(e.date + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric" }))}</span>` : ""}${e.acct ? ` <span class="text-indigo-300">&middot; from ${escapeHtml(accountName(e.acct))}</span>` : ""}</span>
+      <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}${e.note ? ` <span class="text-slate-200 keep-case">${escapeHtml(e.note)}</span>` : ""}${e.date ? ` <span class="text-slate-300">&middot; ${escapeHtml(new Date(e.date + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric" }))}</span>` : ""}${e.acct ? ` <span class="text-indigo-300">&middot; from ${escapeHtml(accountName(e.acct))}</span>` : ""}</span>
       <span class="text-[13px] font-black text-white">${peso(e.amount)}</span>
       <button type="button" data-action="deleteSpend" data-arg0="${e.id}" title="Remove" class="text-slate-500 hover:text-rose-400 flex-shrink-0"><span class="material-icons" style="font-size:16px">close</span></button>
     </div>`).join("");
@@ -1713,6 +1714,7 @@ async function saveModalInner() {
   const activeEdit = getActiveEdit();
   if (!activeEdit) return;
   if (activeEdit.kind === "budgets") return window.saveBudgets?.();
+  if (activeEdit.kind === "quickspend") return saveQuickSpend();
   const name = ($("f-name")?.value || "").trim();
   const amount = parseMathAmount($("f-amount")?.value);
   const appData = getAppData();

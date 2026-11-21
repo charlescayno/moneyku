@@ -477,7 +477,7 @@ export function openHeaderMenu() {
   showSheet("More",
     `<div class="space-y-1.5">
       ${row("openSearch", "search", "Search")}
-      ${row("qlAddChooser", "add", "Add income or expense")}
+      ${row("openAddSheet", "add", "Add income or expense")}
       ${row("histUndo", "undo", "Undo", u ? undoLabel() : "Nothing to undo", !u)}
       ${row("openHistory", "history", "History")}
       ${row("openMore", "insights", "Overview")}
