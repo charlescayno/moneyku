@@ -191,6 +191,35 @@ def check_tint(pg, name, fails):
     v = list(r.values())
     if any(x is None or x == "rgba(0, 0, 0, 0)" for x in v) or len(set(v)) != 3: fails.append(f"{name}: income / expenses / debt need three different tinted backgrounds: {r}")
 
+FOLD = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const mk = (id, name, amount) => ({id, name, amount, recurring: true, start: '2026-01'});
+  st.setAppData({startMonth:'2026-01', accounts:[], items:{charlie:{income:[mk('s','Salary',30000)],expenses:[mk('rent','Rent',12000)]},partner:{income:[mk('y','Ynah pay',20000)],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  const card = k => document.querySelector(`#budget-body details[data-persist="card-${k}"]`);
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  const r = { hasCards: !!card('charlie') && !!card('partner'), startsOpen: card('charlie').open && card('partner').open };
+  const inc = card('charlie').querySelector('details[data-persist="sec-income"]');
+  r.incomeVisibleOpen = inc.checkVisibility();
+  card('charlie').querySelector(':scope > summary').click(); await w(200);
+  r.foldedAfterTap = !card('charlie').open;
+  r.incomeHiddenWhenFolded = !inc.checkVisibility();
+  r.otherUntouched = card('partner').open;
+  lay.renderBudget(); await w(100);
+  r.stillFoldedAfterRedraw = !card('charlie').open;
+  card('charlie').querySelector(':scope > summary').click(); await w(200);
+  r.reopened = card('charlie').open;
+  return r;
+}
+"""
+
+def check_fold(pg, name, fails):
+    r = pg.evaluate(FOLD); print(name, "fold", r)
+    bad = {k: v for k, v in r.items() if v is not True}
+    if bad: fails.append(f"{name}: person card folding wrong: {bad}")
+
 def check_accounts(pg, name, fails):
     pg.evaluate("() => localStorage.setItem('moneyku_cards', JSON.stringify({accounts: true, 'accounts-p': true}))")
     pg.reload(); pg.wait_for_timeout(2500)
@@ -247,6 +276,7 @@ def main():
                 if name == "phone-390":
                     check_accounts(pg, name, fails)
                     check_tint(pg, name, fails)
+                    check_fold(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")

@@ -629,9 +629,10 @@ export function personSectionHtml(who, includeDebt = true) {
     debtSectionHtml = `<div style="border-top:1px solid rgba(148,163,184,.12);margin-top:12px;padding-top:14px">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
   }
 
-  return `<div class="glass-card rounded-xl overflow-hidden border ${o.ring} w-full flex flex-col">
-    <div class="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r ${o.grad} bg-opacity-10 flex-shrink-0">
+  return `<details open data-persist="card-${who}" class="person-card glass-card rounded-xl overflow-hidden border ${o.ring} w-full">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r ${o.grad} bg-opacity-10 cursor-pointer list-none select-none" style="min-height:48px">
       <div class="flex items-center gap-2">
+        <span class="material-icons card-chev text-white/60 flex-shrink-0" style="font-size:18px" aria-hidden="true">chevron_right</span>
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${o.grad} ring-1 ring-white/25 flex-shrink-0 flex items-center justify-center">
           ${who === "partner" || who === "charlie" ? `<img src="assets/avatar-${who === "partner" ? "ynah" : "charles"}.jpg" alt="${who === "partner" ? "Ynah" : "Charles"}" class="w-full h-full rounded-lg object-cover">` : `<span class="text-xs font-black text-white">${o.label.charAt(0)}</span>`}
         </div>
@@ -645,7 +646,7 @@ export function personSectionHtml(who, includeDebt = true) {
         <p class="font-bold uppercase text-white/60" style="font-size:10px;line-height:1.3">in / out</p>
         <p class="font-black text-white" style="font-size:13px;line-height:1.3">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
       </div>`}
-    </div>
+    </summary>
     <div class="p-2.5 space-y-2 no-scrollbar">
       <details open data-persist="sec-income${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
         <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
@@ -679,7 +680,7 @@ export function personSectionHtml(who, includeDebt = true) {
       ${who === "charlie" ? cardSectionHtml(k) : ""}
       ${debtSectionHtml}
     </div>
-  </div>`;
+  </details>`;
 }
 
 // =============================

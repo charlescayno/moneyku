@@ -124,3 +124,10 @@ select.as-input { text-transform: lowercase; }
 #budget-body details[data-persist^="debts"] { background: rgba(245, 158, 11, .09); border: 1px solid rgba(245, 158, 11, .22); }
 /* the line between income and expenses is replaced by the two tinted blocks */
 #budget-body div:has(> details[data-persist^="sec-expenses"]) { border-top: 0 !important; margin-top: 8px !important; padding-top: 0 !important; }
+
+/* ---- person card (Charles' / Ynah's) folds from its header ---- */
+.person-card > summary { list-style: none; }
+.person-card > summary::-webkit-details-marker { display: none; }
+.person-card .card-chev { transition: transform .18s ease; }
+.person-card[open] > summary .card-chev { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .person-card .card-chev { transition: none; } }
