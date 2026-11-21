@@ -32,13 +32,6 @@ export function renderMonthNav() {
   label.firstChild.textContent = `${monthName(k)} ${keyParts(k).y}`;
   $("mn-prev").disabled = !tl.length || k <= tl[0];
   $("mn-next").disabled = !tl.length || k >= tl[tl.length - 1];
-  const nowK = currentKey();
-  // Keep the button's space when it is not needed (invisible, not removed) so the next arrow never moves under the finger
-  const hideToday = k === nowK || !tl.includes(nowK), tb = $("mn-today");
-  tb.style.visibility = hideToday ? "hidden" : "visible";
-  tb.style.pointerEvents = hideToday ? "none" : "auto";
-  tb.tabIndex = hideToday ? -1 : 0;
-  tb.setAttribute("aria-hidden", hideToday ? "true" : "false");
 }
 
 export function scrollChipIntoView() {
@@ -49,12 +42,15 @@ export function scrollChipIntoView() {
   if (btn && strip) strip.scrollTo({ left: btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2, behavior: "smooth" });
 }
 
-// The month label and the Today button already say which month is shown and how to get back, so no extra banner.
+// A "Back to today" pill on its own row under the month bar (not squeezed in next to the arrows).
+// Only shown when another month is on screen; the arrows never move because it is not in their row.
 export function renderMonthBanner() {
   const el = $("month-banner");
   if (!el) return;
-  el.innerHTML = "";
-  el.classList.add("hidden");
+  const k = getSelectedKey(), nowK = currentKey(), tl = timeline();
+  const away = k !== nowK && tl.includes(nowK);
+  el.innerHTML = away ? `<button type="button" id="mn-today" data-action="goToday" class="mn-today-pill"><span class="material-icons" aria-hidden="true">${cmpKey(k, nowK) > 0 ? "arrow_back" : "arrow_forward"}</span>back to today</button>` : "";
+  el.classList.toggle("hidden", !away);
 }
 
 // =============================

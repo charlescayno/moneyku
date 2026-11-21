@@ -215,6 +215,34 @@ async () => {
 }
 """
 
+TODAY = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js');
+  st.setAppData({startMonth:'2026-01', accounts:[], items:{charlie:{income:[],expenses:[]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  const w = ms => new Promise(r => setTimeout(r, ms)); const R = e => e.getBoundingClientRect();
+  st.setSelectedKey(u.currentKey()); lay.renderAll(); await w(300);
+  const r = { inNav: !!document.querySelector('#month-nav #mn-today'), pillOnCurrent: !!document.getElementById('mn-today') };
+  const nav0 = [...document.querySelectorAll('#mn-prev,#mn-label,#mn-next')].map(e => Math.round(R(e).left) + ':' + Math.round(R(e).width));
+  c.selectMonth(u.addMonths(u.currentKey(), 2)); await w(400);
+  const pill = document.getElementById('mn-today'), nav = document.getElementById('month-nav');
+  r.pillAway = !!pill && pill.getBoundingClientRect().height > 0;
+  r.pillBelowNav = !!pill && R(pill).top >= R(nav).bottom - 1;
+  r.pillCentred = !!pill && Math.abs((R(pill).left + R(pill).right) / 2 - innerWidth / 2) < 6;
+  r.pillTapArea = !!pill && R(pill).height >= 44;
+  r.navStable = JSON.stringify(nav0) === JSON.stringify([...document.querySelectorAll('#mn-prev,#mn-label,#mn-next')].map(e => Math.round(R(e).left) + ':' + Math.round(R(e).width)));
+  pill?.click(); await w(400);
+  r.backToToday = st.getSelectedKey() === u.currentKey() && !document.getElementById('mn-today');
+  return r;
+}
+"""
+
+def check_today(pg, name, fails):
+    r = pg.evaluate(TODAY); print(name, "today", r)
+    want = {"inNav": False, "pillOnCurrent": False, "pillAway": True, "pillBelowNav": True, "pillCentred": True, "pillTapArea": True, "navStable": True, "backToToday": True}
+    bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
+    if bad: fails.append(f"{name}: today pill wrong (got, want): {bad}")
+
 def check_fold(pg, name, fails):
     r = pg.evaluate(FOLD); print(name, "fold", r)
     bad = {k: v for k, v in r.items() if v is not True}
@@ -277,6 +305,7 @@ def main():
                     check_accounts(pg, name, fails)
                     check_tint(pg, name, fails)
                     check_fold(pg, name, fails)
+                    check_today(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
