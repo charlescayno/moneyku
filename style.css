@@ -1424,8 +1424,9 @@ details[data-persist="outlook-more"][open] > summary .material-icons { transform
 /* Phones: compact top area (less wasted space) */
 @media (max-width: 639px) {
   header.app-header { padding-top: 0.625rem; padding-bottom: 0.5rem; }
-  header.app-header .app-header-title { display: flex; align-items: baseline; gap: 0.5rem; }
+  header.app-header .app-header-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; }
   header.app-header .app-header-title p { margin-top: 0; }
+  header.app-header .app-header-title #sync-status { flex: 0 0 100%; margin-top: 0.25rem; }
   #person-tiles { padding-top: 0.5rem; }
   #month-nav { padding-top: 0.5rem; padding-bottom: 0.5rem; }
   #month-nav button { height: 2.75rem; } /* 44px tap target */
