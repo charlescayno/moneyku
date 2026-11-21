@@ -306,7 +306,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
 export function categoryGroupedHtml(items, k, kind, who) {
   if (!items.length) return "";
   const sorted = sortItems(items, kind);
-  const showHeaders = new Set(sorted.map(itemCategory)).size > 1;
+  const showHeaders = new Set(sorted.map(itemCategory)).size > 1 && who !== "debt" && who !== "pdebt";
   
   const buckets = {};
   for (const it of sorted) {
@@ -498,7 +498,7 @@ export function debtTrackerCardHtml(who = "debt") {
         </div>
         <p class="font-bold" style="font-size:14px"><span class="text-emerald-400">${peso(debtIncTot)}</span> <span class="text-slate-500 font-normal">/</span> <span class="text-rose-400">${peso(debtExpTot)}</span></p>
       </summary>
-      <div style="margin:8px 0 0 14px;padding-left:10px;border-left:2px solid rgba(148,163,184,.22)">
+      <div style="margin-top:6px">
         <details open class="group" style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.16);border-radius:10px;padding:2px 6px 6px">
           <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("16,185,129")}">
             <div class="flex items-center gap-1">
@@ -508,7 +508,7 @@ export function debtTrackerCardHtml(who = "debt") {
                 <span class="font-bold text-emerald-400" style="font-size:14px">${peso(debtIncTot)}</span>
               </div>
             </div>
-            <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button>
+            <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold text-emerald-300 flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button>
           </summary>
           <div class="space-y-0.5 mt-1">${debtIncHtml}</div>
         </details>
@@ -522,7 +522,7 @@ export function debtTrackerCardHtml(who = "debt") {
                   <span class="font-bold text-rose-400" style="font-size:14px">${peso(debtExpTot)}</span>
                 </div>
               </div>
-              <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
+              <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold text-rose-300 flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
             </summary>
             <div class="space-y-0.5 mt-1">${debtExpHtml}</div>
           </details>
