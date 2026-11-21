@@ -54,7 +54,7 @@ header[class*="backdrop-blur"] { background-color: #0f172a !important; }
 .fab-add:hover { background: #7578f3 !important; }
 
 /* ---- readability floor: nothing meaningful below 11px, greys readable on dark ---- */
-.text-\[8px\], .text-\[9px\], .text-\[10px\] { font-size: 11px !important; }
+body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px\], .text-\[10px\]) { font-size: 11px !important; } /* Compact mode keeps the dense sizes */
 .text-slate-500 { color: #94a3b8 !important; } /* slate-400 */
 .text-slate-600 { color: #7b8ba3 !important; }
 
