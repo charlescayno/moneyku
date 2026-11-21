@@ -124,6 +124,8 @@ def main():
                 if name == "phone-390":
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
+                    cs = pg.evaluate("() => getComputedStyle(document.documentElement).colorScheme")
+                    if cs != "dark": fails.append(f"color-scheme is {cs!r}, want 'dark'")
                     es = pg.evaluate(ESC); print("esc", es)
                     if not all(es.values()): fails.append(f"Escape did not close overlays: {es}")
                     pd = pg.evaluate(PAID); print("paid", pd)

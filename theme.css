@@ -73,3 +73,6 @@ body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px
 .sim-person-group { border: 1px solid rgba(255,255,255,.07); border-radius: 14px; padding-bottom: 4px; margin-bottom: 8px !important; }
 .sim-person-group[data-who="charlie"] { border-left: 3px solid #38bdf8; }
 .sim-person-group[data-who="partner"] { border-left: 3px solid #c084fc; }
+
+/* ---- native controls (scrollbars, select menus, date pickers) follow the dark theme ---- */
+:root { color-scheme: dark; }
