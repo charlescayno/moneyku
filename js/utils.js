@@ -117,6 +117,12 @@ export function peso(n) {
   return `₱${formatMoney(n)}`; 
 }
 
+/** Whole pesos for list rows (cents stay in the details screens). */
+export function pesoRow(n) {
+  const v = Math.round(Number(n) || 0);
+  return `${v < 0 ? "-" : ""}₱${Math.abs(v).toLocaleString("en-PH")}`;
+}
+
 export function signedPeso(n) {
   const s = n > 0.005 ? "+" : n < -0.005 ? "-" : "";
   return `${s}₱${formatMoney(Math.abs(n))}`;

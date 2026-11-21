@@ -3,7 +3,7 @@ import { chooseScope } from "../scope.js";
 import { isCardItem } from "../card.js";
 import { cardSectionHtml } from "./cardui.js";
 import { childAmt } from "../state.js";
-import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, pesoRow, signedPeso } from '../utils.js';
 import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
 import { isArranging, getSimIncomeScale, getSimPersonSort, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, displayKids, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
@@ -105,7 +105,7 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null)
       ${spendLine}
     </div>
     ${dueTag}
-    <span class="child-amt text-sm font-black ${paid ? "text-slate-600 line-through" : "text-slate-300"} flex-shrink-0">${peso(rightMain)}</span>
+    <span class="child-amt text-sm font-black ${paid ? "text-slate-600 line-through" : rightMain < 0 ? "text-rose-400" : "text-slate-300"} flex-shrink-0 tabular-nums text-right" style="min-width:4.5rem">${pesoRow(rightMain)}</span>
     <button type="button" data-action="openChildMenu" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" aria-label="More actions for ${escapeHtml(c.name)}" class="child-menu-btn w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-slate-500"><span class="material-icons" style="font-size:18px">more_horiz</span></button>
   </div>`;
 }
@@ -152,7 +152,7 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
         </div>
       </div>
       <div class="flex flex-col items-end gap-1 flex-shrink-0">
-        <p class="font-black text-white" style="font-size:15px">${peso(total)}</p>
+        <p class="font-black ${total < 0 ? "text-rose-400" : "text-white"} tabular-nums text-right" style="font-size:15px;min-width:4.5rem">${pesoRow(total)}</p>
         <button data-action="togglePaidGroup" data-arg0="${kidsIds}" data-arg1="${k}" data-arg2="${kind}" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="text-slate-500 hover:text-purple-400 transition-colors flex items-center gap-1 ${allPaid ? "text-purple-500" : ""}">
           <span class="material-icons" style="font-size:16px">${allPaid ? "done_all" : "checklist"}</span>
         </button>
@@ -280,7 +280,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
       ${progress}
     </div>
     ${simSourceHtml(it, who)}
-    <p class="child-amt text-sm font-black ${kind === "income" ? "text-emerald-400" : "text-white"} flex-shrink-0 tabular-nums text-right">${peso(amt)}</p>
+    <p class="child-amt text-sm font-black ${amt < 0 ? "text-rose-400" : kind === "income" ? "text-emerald-400" : "text-white"} flex-shrink-0 tabular-nums text-right" style="min-width:4.5rem">${pesoRow(amt)}</p>
   </div>`;
   }
   return `<div data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
@@ -296,7 +296,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
       ${progress}
     </div>
     ${simSourceHtml(it, who)}
-    <p class="text-sm font-black ${kind === "income" ? "text-emerald-400" : "text-white"} flex-shrink-0">${peso(amt)}</p>
+    <p class="text-sm font-black ${amt < 0 ? "text-rose-400" : kind === "income" ? "text-emerald-400" : "text-white"} flex-shrink-0 tabular-nums text-right" style="min-width:4.5rem">${pesoRow(amt)}</p>
   </div>`;
 }
 
