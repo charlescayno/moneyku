@@ -1437,6 +1437,15 @@ export function recurringPaymentsCardHtml() {
   </details>`;
 }
 
+/** Redraw the Overview cards in place (used when data changes while Overview is open). */
+export function refreshMore() {
+  const body = $("more-body"), ov = $("more-overlay");
+  if (!body || !ov || !ov.classList.contains("open")) return;
+  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
+  body.innerHTML = `\n    ${investmentsCardHtml()}\n    ${inst}\n  `;
+  body.querySelectorAll("details").forEach((d) => (d.open = true));
+}
+
 export function openMore() {
   const body = $("more-body");
   const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;

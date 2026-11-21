@@ -324,6 +324,25 @@ def check_bar(pg, name, fails):
         if not r.get(k) or r[k]["w"] != wd or r[k]["c"] != c: fails.append(f"{name}: installment bar '{k}' expected {wd} {c}, got {r.get(k)}")
     if r["paid1"] and r["base"] and r["paid1"]["rem"] == r["base"]["rem"]: fails.append(f"{name}: '$ to pay in full' text did not change when paid")
     if not r["overview"]: fails.append(f"{name}: header Overview button did not open the overview")
+KIDS = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js');
+  const now = u.currentKey(), A = u.addMonths, w = ms => new Promise(r => setTimeout(r, ms));
+  st.setAppData({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:[
+    {id:'k1',name:'Kuya Rey Iphone',amount:0,recurring:true,start:A(now,-1),end:A(now,2),children:[{id:'k1a',name:'Part A',amount:600,start:A(now,-1)},{id:'k1b',name:'Part B',amount:400,start:A(now,-1)}]}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden'); st.setSelectedKey(now); lay.renderAll(); await w(300);
+  const left = () => { const card = [...document.querySelectorAll('#more-body details')].find(d => d.textContent.includes('Installments')); return card ? (card.textContent.match(/(\\d+) mo left/) || [])[1] : null; };
+  const d = st.getAppData(); d.paid[now] = d.paid[now] || {};
+  c.openMore(); await w(150); const out = { base: left() };
+  d.paid[now].k1a = true; lay.renderAll(); await w(150); out.halfPaid = left();      // only one part paid: month still open, and the open Overview redrew
+  d.paid[now].k1b = true; lay.renderAll(); await w(150); out.allPaid = left();       // both parts paid: the month counts, live
+  return out;
+}
+"""
+
+def check_kids(pg, name, fails):
+    r = pg.evaluate(KIDS); print(name, "installment sub-items", r)
+    if (r["base"], r["halfPaid"], r["allPaid"]) != ("4", "4", "3"): fails.append(f"{name}: installment with sub-items / live refresh wrong (want 4,4,3): {r}")
 def check_fold(pg, name, fails):
     r = pg.evaluate(FOLD); print(name, "fold", r)
     bad = {k: v for k, v in r.items() if v is not True}
@@ -391,6 +410,7 @@ def main():
                     check_inst(pg, name, fails)
                     check_card(pg, name, fails)
                     check_bar(pg, name, fails)
+                    check_kids(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")

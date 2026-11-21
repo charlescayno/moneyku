@@ -558,7 +558,8 @@ export function allRecurring(k) {
 export function monthsPaidCount(it) {
   let count = 0, k = it.start;
   while (cmpKey(k, it.end) <= 0) {
-    if (isPaid(it.id, k)) count++;
+    const kids = getKids(it, k); // an installment split into sub-items counts as paid when all of them are
+    if (kids.length ? kids.every((c) => isPaid(c.id, k)) : isPaid(it.id, k)) count++;
     k = addMonths(k, 1);
   }
   return count;
