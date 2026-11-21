@@ -105,6 +105,8 @@ def main():
                     f = pg.evaluate(FORM); print("form", f)
                     if f["msg"] != "Name required" or not f["invalid"] or not f["focused"] or not f["cleared"]: fails.append(f"inline error behaviour wrong: {f}")
                 if name == "phone-390":
+                    ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
+                    if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
                     pd = pg.evaluate(PAID); print("paid", pd)
                     if pd["paid"]["bg"] == "rgba(0, 0, 0, 0)" or pd["paid"]["icon"] == "rgba(0, 0, 0, 0)" or pd["paid"]["op"] != "1": fails.append(f"paid sub-row tick not visible: {pd['paid']}")
                     if pd["undone"]["icon"] != "rgba(0, 0, 0, 0)" or pd["undone"]["bg"] != "rgba(0, 0, 0, 0)": fails.append(f"undo did not restore the empty box: {pd['undone']}")
