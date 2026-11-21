@@ -2,10 +2,12 @@
 // BPI Platinum Rewards: the separate card section in Expenses, statements,
 // "Pay card" and reconciliation.
 // =============================
-import { CARD_NAME, cardSettings, cardSummary, clearStatement, daysUntil, isCardItem, keysForMonth, payCard, removeCardPayment, saveCardSettings, saveStatement, statement } from "../card.js";
-import { getAppData, getItems, getSelectedKey, monthsPaidCount, setSelectedKey, timeline } from "../state.js";
+import { CARD_NAME, cardSettings, cardSummary, clearStatement, daysUntil, isCardItem, keysForMonth, paidViaStatement, payCard, removeCardPayment, saveCardSettings, saveStatement, statement } from "../card.js";
+import { getAppData, getItems, getSelectedKey, monthsPaidCount, setPaidExtra, setSelectedKey, timeline } from "../state.js";
 import { syncSet } from "../firebase.js";
 import { escapeHtml, monthShort, monthsInclusive, parseMathAmount, peso } from "../utils.js";
+
+setPaidExtra(paidViaStatement); // a fully paid card statement counts its installment months as paid
 import { payableAccounts } from "../payfrom.js";
 import { catInfo, categoryOf } from "../categories.js";
 import { toast } from "./core.js";

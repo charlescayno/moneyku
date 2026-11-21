@@ -343,6 +343,31 @@ async () => {
 def check_kids(pg, name, fails):
     r = pg.evaluate(KIDS); print(name, "installment sub-items", r)
     if (r["base"], r["halfPaid"], r["allPaid"]) != ("4", "4", "3"): fails.append(f"{name}: installment with sub-items / live refresh wrong (want 4,4,3): {r}")
+CARDINST = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js'); const cd = await import('/js/card.js');
+  const now = u.currentKey(), A = u.addMonths, w = ms => new Promise(r => setTimeout(r, ms));
+  st.setAppData({startMonth:'2026-01', accounts:[{id:'a1',name:'BPI Savings',balance:100000,owner:'charlie'}], paid:{}, spend:{}, cardPayments:[], items:{charlie:{income:[],expenses:[
+    {id:'ci',name:'Kuya Rey Iphone',amount:3624.58,recurring:true,start:A(now,-1),end:A(now,14),txDay:10,paymentMethod:'bpi_platinum'}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden'); st.setSelectedKey(now); lay.renderAll(); await w(400);
+  const left = async () => { c.openMore(); await w(150); const card = [...document.querySelectorAll('#more-body details')].find(d => d.textContent.includes('Installments')); const r = card ? (card.textContent.match(/(\\d+) mo left/) || [])[1] : null; c.closeMore(); return r; };
+  const out = { base: await left() };
+  const keys = cd.keysForMonth ? cd.keysForMonth(now) : [];
+  out.stmtKeys = keys;
+  const btn = document.querySelector('#sec-card [data-action="togglePaidQuick"][data-arg0="ci"]');
+  out.hasTick = !!btn;
+  if (btn) { document.querySelectorAll('#sec-card details').forEach(d => d.open = true); btn.click(); await w(500); out.afterTick = await left(); out.paidFlag = !!st.getAppData().paid?.[now]?.ci; btn.click(); await w(500); out.untick = await left(); }
+  // now pay the whole BPI statement that holds this month's charge, without ticking the item
+  const stKey = [now, A(now, 1)].find(k => cd.statement(k).charges.some(x => x.id === 'ci' && x.month === now));
+  out.stKey = stKey;
+  if (stKey) { const s = cd.statement(stKey); const d = st.getAppData(); d.cardPayments = d.cardPayments || []; d.cardPayments.push({id:'p1', key: stKey, amount: s.total, acctId:'a1', date: now + '-20'}); lay.renderAll(); await w(300); out.afterStatementPaid = await left(); out.status = cd.statement(stKey).status; }
+  return out;
+}
+"""
+
+def check_cardinst(pg, name, fails):
+    r = pg.evaluate(CARDINST); print(name, "card installment", r)
+    if (r["base"], r.get("afterTick"), r.get("untick"), r.get("afterStatementPaid")) != ("16", "15", "16", "15"): fails.append(f"{name}: card installment progress wrong (want 16,15,16,15): {r}")
 def check_fold(pg, name, fails):
     r = pg.evaluate(FOLD); print(name, "fold", r)
     bad = {k: v for k, v in r.items() if v is not True}
@@ -411,6 +436,7 @@ def main():
                     check_card(pg, name, fails)
                     check_bar(pg, name, fails)
                     check_kids(pg, name, fails)
+                    check_cardinst(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
