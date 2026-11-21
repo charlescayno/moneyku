@@ -44,6 +44,25 @@ async () => {
 }
 """
 
+SIM = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const mk = (id, name, who) => ({id, name, amount: 1000, recurring: true, start: '2026-01', dueDay: 5, ...(who ? {copiedFromWho: who} : {})});
+  st.setAppData({startMonth:'2026-01', simCash: 0, items:{charlie:{income:[],expenses:[]},debt:{income:[],expenses:[]},
+    simulated:{income:[mk('i1','Salary C','charlie'), mk('i2','Salary Y','partner')], expenses:[mk('e1','Rent','charlie'), mk('e2','Tuition','partner'), mk('e3','Trip')]}}, settings:{}});
+  st.setSimView(true);
+  document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  await new Promise(r => setTimeout(r, 800));
+  const gs = [...document.querySelectorAll('#sim-view .sim-person-group')];
+  const out = { groups: gs.map(e => (e.dataset.who || 'sim') + ':' + e.querySelectorAll('.item-row').length).sort(),
+                borderC: gs.filter(e => e.dataset.who === 'charlie').map(e => getComputedStyle(e).borderLeftWidth),
+                hscroll: document.documentElement.scrollWidth > innerWidth + 1 };
+  st.setSimView(false);
+  return out;
+}
+"""
+
 def main():
     srv = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1.5); fails = []
@@ -67,6 +86,12 @@ def main():
                 if name == "phone-390":
                     f = pg.evaluate(FORM); print("form", f)
                     if f["msg"] != "Name required" or not f["invalid"] or not f["focused"] or not f["cleared"]: fails.append(f"inline error behaviour wrong: {f}")
+                if name == "phone-390":
+                    s = pg.evaluate(SIM); print("sim", s)
+                    want = ["charlie:1", "charlie:1", "partner:1", "partner:1", "sim:1"]
+                    if s["groups"] != want: fails.append(f"sim grouping wrong: {s['groups']} (want {want})")
+                    if s["borderC"] and s["borderC"][0] != "3px": fails.append(f"sim group border missing: {s['borderC']}")
+                    if s["hscroll"]: fails.append("sim: horizontal scroll")
                 pg.close()
             b.close()
     finally:

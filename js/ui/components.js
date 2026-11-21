@@ -390,7 +390,7 @@ export function groupedRowsHtml(items, k, kind, who) {
     return parts.map((p) => {
       const sub = p.list.reduce((s, it) => s + amountIn(it, k), 0);
       const av = p.key ? `<img src="assets/avatar-${p.label.toLowerCase()}.jpg" alt="" class="w-4 h-4 rounded-full object-cover border border-white/20">` : "";
-      return `<div class="sim-person-group mb-1"><div class="flex justify-between items-center px-2 pt-2 pb-0.5"><p class="flex items-center gap-1.5 text-[11px] font-black text-slate-400 ${p.key ? "keep-case" : ""}">${av}${p.label}</p><p class="text-[11px] font-bold tabular-nums ${kind === "income" ? "text-emerald-400" : "text-slate-400"}">${peso(sub)}</p></div>${groupedRowsByDue(p.list, k, kind, who)}</div>`;
+      return `<div class="sim-person-group mb-1" data-who="${p.key}"><div class="flex justify-between items-center px-2 pt-2 pb-0.5"><p class="flex items-center gap-1.5 text-[11px] font-black text-slate-400 ${p.key ? "keep-case" : ""}">${av}${p.label}</p><p class="text-[11px] font-bold tabular-nums ${kind === "income" ? "text-emerald-400" : "text-slate-400"}">${peso(sub)}</p></div>${groupedRowsByDue(p.list, k, kind, who)}</div>`;
     }).join("");
   }
   return groupedRowsByDue(items, k, kind, who);

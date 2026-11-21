@@ -55,7 +55,7 @@ let simIncScale = Math.min(150, Math.max(50, parseInt(localStorage.getItem("simI
 /** What-if income estimate for the simulation, in percent (100 = as entered). Never changes the stored amounts. */
 export function getSimIncomeScale() { return simIncScale; }
 export function setSimIncomeScale(p) { simIncScale = Math.min(150, Math.max(50, Math.round(Number(p) || 100))); localStorage.setItem("simIncScale", String(simIncScale)); }
-let simPersonSort = localStorage.getItem("simPersonSort") === "1";
+let simPersonSort = localStorage.getItem("simPersonSort") !== "0"; // grouped by person unless switched off
 export function getSimPersonSort() { return simPersonSort; }
 export function setSimPersonSort(on) { simPersonSort = !!on; localStorage.setItem("simPersonSort", simPersonSort ? "1" : "0"); }
 
