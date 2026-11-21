@@ -293,15 +293,11 @@ export function togglePersonIncluded(who) {
   renderBudget();
 }
 
-/** Tapping a person's tile shows only that person; tapping them again (when alone) shows everyone. */
+/** Tapping a person's tile shows only that person; tapping Together shows everyone. */
 export function focusPerson(who) {
   setSimView(false); // picking a person (or Together) leaves the simulation
-  if (who === "all") { setWhoIncluded("charlie", true); setWhoIncluded("partner", true); renderBudget(); return; }
-  const inc = includedWho();
-  const alone = inc.length === 1 && inc[0] === who;
-  const other = who === "charlie" ? "partner" : "charlie";
-  setWhoIncluded(who, true);
-  setWhoIncluded(other, alone);
+  setWhoIncluded("charlie", who === "all" || who === "charlie");
+  setWhoIncluded("partner", who === "all" || who === "partner");
   renderBudget();
 }
 
