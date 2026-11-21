@@ -52,3 +52,19 @@ header[class*="backdrop-blur"] { background-color: #0f172a !important; }
 /* floating add button: solid fill, no glow */
 .fab-add, .fab-add:hover { background: #6366f1 !important; box-shadow: none !important; }
 .fab-add:hover { background: #7578f3 !important; }
+
+/* ---- readability floor: nothing meaningful below 11px, greys readable on dark ---- */
+.text-\[8px\], .text-\[9px\], .text-\[10px\] { font-size: 11px !important; }
+.text-slate-500 { color: #94a3b8 !important; } /* slate-400 */
+.text-slate-600 { color: #7b8ba3 !important; }
+
+/* ---- home: due-soon reminders sit right under the headline on phones, full width under both cards on wide screens ---- */
+#reminders-slot:empty { display: none; }
+#reminders-slot { order: 1; }
+#next5-card { order: 0; }
+@media (max-width: 767px) { #projected-row > #next5-card { order: 2; } }
+@media (min-width: 768px) { #reminders-slot { grid-column: 1 / -1; } }
+
+/* ---- inline form errors ---- */
+.field-invalid { outline: 1.5px solid #fb7185 !important; outline-offset: 0; }
+.field-error { color: #fda4af; font-size: 11px; font-weight: 700; margin: 2px 0 0 4px; }

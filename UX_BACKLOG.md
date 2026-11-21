@@ -17,3 +17,6 @@ Status: todo | done | skipped | needs decision
 Notes
 - Never touch: database rules, live data rewrites or migrations, Firebase setup, data model.
 - Each tick: one item, tests (`node --test`, `python tests/layout_check.py`), bump sw cache, commit, push.
+
+
+UI pass (Nov 21): text floor 11px and lighter greys (theme.css); due-soon reminders moved under the headline on phones (layout.js); inline field errors (core.js fieldError). Known: style.css:1431 sets month-nav buttons to 40px on phones (layout_check flags it).

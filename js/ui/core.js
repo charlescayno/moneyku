@@ -260,3 +260,24 @@ if (!navigator.onLine) {
   const ind = document.getElementById('offline-indicator');
   if(ind) ind.classList.remove('hidden');
 }
+
+// Inline form error: red outline + message under the field, focus it, clear on next typing.
+// Falls back to a toast if the field is not on screen.
+export function fieldError(id, msg) {
+  const el = $(id);
+  if (!el) return toast(msg, "error");
+  el.parentElement?.querySelector(".field-error")?.remove();
+  el.classList.add("field-invalid");
+  el.setAttribute("aria-invalid", "true");
+  const p = document.createElement("p");
+  p.className = "field-error";
+  p.setAttribute("role", "alert");
+  p.textContent = msg;
+  el.insertAdjacentElement("afterend", p);
+  el.focus();
+  el.addEventListener("input", () => {
+    el.classList.remove("field-invalid");
+    el.removeAttribute("aria-invalid");
+    p.remove();
+  }, { once: true });
+}

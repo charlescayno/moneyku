@@ -175,8 +175,8 @@ export function renderBudget() {
       <div id="projected-row" class="w-full grid grid-cols-1 ${next5Html ? "md:grid-cols-2" : ""} gap-2 items-stretch min-w-0">
         ${kpiBar}
         ${next5Html}
+        <div id="reminders-slot">${upcomingBillsWidgetHtml()}</div>
       </div>
-      <div id="reminders-slot" class="contents">${upcomingBillsWidgetHtml()}</div>
       <!-- One scrolling column at every width (columns dissolve via contents, cards use order-N). -->
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->

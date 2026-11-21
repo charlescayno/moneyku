@@ -12,7 +12,7 @@ import { addItemData, applyItemAmount } from '../itemOps.js';
 import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
 import { showSheet } from './quicklog.js';
 import { lastMonthOneTimes } from '../extras.js';
-import { toast } from './core.js';
+import { toast, fieldError } from './core.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
 import { jumpOverviewYear, nextOverviewPage, prevOverviewPage, renderMonthStrip, scrollChipIntoView, toggleInvestments, togglePaidGroup, togglePaidQuick, updateHeader } from './actions.js';
 import { renderAll, renderBudget } from './layout.js';
@@ -1593,7 +1593,7 @@ export async function addSpend() {
   const activeEdit = getActiveEdit();
   if (!activeEdit || !activeEdit.id) return;
   const amount = parseFloat($("f-spend-amount")?.value) || 0;
-  if (!amount) return toast("Amount required", "error");
+  if (!amount) return fieldError("f-spend-amount", "Amount required");
   if (activeEdit.who === "simulated") return; // the simulation has no accounts to take spending from
   const { id } = activeEdit, k = getSelectedKey();
   const appData = getAppData();
@@ -1654,7 +1654,7 @@ export async function saveChildAndAddAnother() {
   if (!activeEdit || activeEdit.kind !== "child") return;
   const name = ($("f-name")?.value || "").trim();
   const amount = parseMathAmount($("f-amount")?.value);
-  if (!name) return toast("Name required", "error");
+  if (!name) return fieldError("f-name", "Name required");
   const { who, parentId } = activeEdit;
   const appData = getAppData();
   const parent = getItems(who, "expenses").find((x) => x.id === parentId);
@@ -1757,7 +1757,7 @@ async function saveModalInner() {
   }
 
   if (activeEdit.kind === "account") {
-    if (!name) return toast("Name required", "error");
+    if (!name) return fieldError("f-name", "Name required");
     const owner = activeEdit.owner === "partner" ? "partner" : "charlie";
     if (activeEdit.id) {
       const a = appData.accounts.find((x) => x.id === activeEdit.id);
@@ -1773,7 +1773,7 @@ async function saveModalInner() {
   }
 
   if (activeEdit.kind === "child") {
-    if (!name) return toast("Name required", "error");
+    if (!name) return fieldError("f-name", "Name required");
     const { who, parentId, id } = activeEdit;
     const parent = getItems(who, "expenses").find((x) => x.id === parentId);
     if (parent) {
@@ -1814,7 +1814,7 @@ async function saveModalInner() {
   }
 
   // Regular item
-  if (!name) return toast("Name required", "error");
+  if (!name) return fieldError("f-name", "Name required");
   const bb = budgetBefore();
   const { type, id } = activeEdit;
   // New items can be assigned to a person in the modal ("Whose account")
