@@ -270,6 +270,7 @@ export function refreshRealized() {
   const proj = $("sum-projected");
   const hideProjected = getHideProjected();
   if (proj) proj.textContent = hideProjected ? '••••••' : (() => { const n = householdProjectedAt(selectedKey); return n < 0 ? '-' + peso(-n) : peso(n); })();
+  if (proj && !hideProjected && householdProjectedAt(selectedKey) < -0.005) { proj.classList.remove("text-white", "text-emerald-300", "text-amber-300", "text-blue-300", "text-ynah"); proj.classList.add("text-rose-400"); }
   const sgn = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
   const pc = $("sum-projected-c"), pp = $("sum-projected-p");
   if (pc) pc.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "charlie"));
