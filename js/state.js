@@ -582,6 +582,10 @@ export function sortItems(items, kind) {
       const ca = itemCategory(a.it), cb = itemCategory(b.it);
       if (ca !== cb) return ca - cb;
       if (nameSort) return byName(a.it, b.it) || a.i - b.i;
+      // Dragged order (item.ord) wins inside a category; items never dragged follow after, in the usual order
+      const oa = Number.isFinite(a.it.ord), ob = Number.isFinite(b.it.ord);
+      if (oa && ob) return (a.it.ord - b.it.ord) || a.i - b.i;
+      if (oa !== ob) return oa ? -1 : 1;
       if (ca === 1) return (dueDayFor(a.it) - dueDayFor(b.it)) || a.i - b.i;
       if (ca === 3) return cmpKey(a.it.end, b.it.end) || a.i - b.i;
       return a.i - b.i;

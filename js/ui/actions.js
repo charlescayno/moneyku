@@ -331,6 +331,20 @@ export async function reorderChildren(who, parentId, orderIds) {
   if (changed) await syncSet(appData);
 }
 
+// Save the order produced by dragging income / expense rows. `orderIds` are the rows of one list (same category) in the new order.
+export async function reorderItems(who, kind, orderIds) {
+  const appData = getAppData();
+  if (!appData) return;
+  const items = getItems(who, kind);
+  let changed = false;
+  orderIds.forEach((id, i) => {
+    const it = items.find((x) => x.id === id);
+    if (it && it.ord !== i + 1) { it.ord = i + 1; changed = true; }
+  });
+  renderBudget();
+  if (changed) await syncSet(appData);
+}
+
 export function resetSimIncome() { setSimIncomeScale(100); renderBudget(); }
 
 // Slider: the label follows the finger; the numbers and projection refresh when it is released

@@ -105,6 +105,7 @@ import {
   resetSimIncome,
   toggleArrange,
   reorderChildren,
+  reorderItems,
   prevOverviewPage,
   nextOverviewPage,
   jumpOverviewYear,
@@ -210,6 +211,7 @@ window.toggleSimPerson = toggleSimPerson;
 window.resetSimIncome = resetSimIncome;
 window.toggleArrange = toggleArrange;
 window.reorderChildren = reorderChildren;
+window.reorderItems = reorderItems;
 window.prevOverviewPage = prevOverviewPage;
 window.nextOverviewPage = nextOverviewPage;
 window.jumpOverviewYear = jumpOverviewYear;

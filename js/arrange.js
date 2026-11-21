@@ -52,13 +52,17 @@ export function initArrangeDrag() {
     row.classList.remove("arr-dragging");
     const order = rowsOf(container).map((el) => el.dataset.child);
     const who = container.dataset.who, parentId = container.dataset.parent;
+    const top = container.classList.contains("top-list");
     drag = null;
-    if (commit && order.join() !== startOrder.join() && typeof window.reorderChildren === "function") {
+    if (top) rowsOf(container).forEach((el) => { el.classList.remove("arr-row"); delete el.dataset.child; });
+    if (top && commit && order.join() !== startOrder.join() && typeof window.reorderItems === "function") {
+      window.reorderItems(who, container.dataset.kind, order);
+    } else if (commit && !top && order.join() !== startOrder.join() && typeof window.reorderChildren === "function") {
       window.reorderChildren(who, parentId, order);
     } else if (!commit) {
       // Cancelled: put the rows back in their original order.
       startOrder.forEach((id) => {
-        const el = container.querySelector(`${ROW}[data-child="${id}"]`);
+        const el = container.querySelector(`[data-child="${id}"], [data-item="${id}"]`);
         if (el) container.appendChild(el);
       });
     }
@@ -124,6 +128,39 @@ export function initArrangeDrag() {
   document.addEventListener("pointermove", (e) => {
     if (drag && e.pointerId === drag.pointerId) { drag.y = e.clientY; e.preventDefault(); }
   }, { passive: false });
+  // A row picked up by holding it must not scroll the page while it is being dragged
+  document.addEventListener("touchmove", (e) => { if (drag && e.cancelable) e.preventDefault(); }, { passive: false });
+
+  // Hold an income / expense row (one-time or recurring list) and drag it to put it where you want.
+  // Each list (one-time, recurring ...) reorders only within itself; the order is saved on the items.
+  let topHold = null;
+  const cancelTop = () => { if (topHold) { clearTimeout(topHold.timer); topHold = null; } };
+  document.addEventListener("pointerdown", (e) => {
+    if (drag || (e.pointerType === "mouse" && e.button !== 0)) return;
+    const row = e.target.closest?.(".top-list > [data-item]");
+    if (!row || e.target.closest("button")) return;
+    const list = row.parentElement;
+    if (list.querySelectorAll(":scope > [data-item]").length < 2) return;
+    const h = { row, list, pointerId: e.pointerId, x: e.clientX, y: e.clientY };
+    h.timer = setTimeout(() => {
+      topHold = null;
+      if (navigator.vibrate) { try { navigator.vibrate(15); } catch { /* ignore */ } }
+      [...list.children].forEach((el) => { if (el.dataset.item) { el.classList.add("arr-row"); el.dataset.child = el.dataset.item; } });
+      startDrag(row, h.pointerId, h.y);
+      const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      document.addEventListener("click", swallow, { capture: true, once: true });
+      setTimeout(() => document.removeEventListener("click", swallow, { capture: true }), 600);
+    }, 450);
+    topHold = h;
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (topHold && e.pointerId === topHold.pointerId && Math.hypot(e.clientX - topHold.x, e.clientY - topHold.y) > 8) cancelTop();
+    else if (topHold && e.pointerId === topHold.pointerId) topHold.y = e.clientY;
+  });
+  document.addEventListener("pointerup", cancelTop);
+  document.addEventListener("pointercancel", cancelTop);
+  document.addEventListener("scroll", cancelTop, { passive: true });
+  document.addEventListener("contextmenu", (e) => { if (e.target.closest?.(".top-list > [data-item]")) e.preventDefault(); });
   document.addEventListener("pointerup", (e) => { if (drag && e.pointerId === drag.pointerId) end(true); });
   document.addEventListener("pointercancel", (e) => { if (drag && e.pointerId === drag.pointerId) end(false); });
   // Don't let a long-press on the handle open a context menu on touch devices.

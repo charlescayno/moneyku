@@ -96,6 +96,7 @@ export {
   resetSimIncome,
   toggleArrange,
   reorderChildren,
+  reorderItems,
   prevOverviewPage,
   nextOverviewPage,
   jumpOverviewYear,
