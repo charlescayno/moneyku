@@ -51,10 +51,16 @@ export function setHideInvestments(val) {
 
 let expenseSort = localStorage.getItem("expenseSort") === "name" ? "name" : "default";
 export function getExpenseSort() { return expenseSort; }
-let simIncScale = Math.min(150, Math.max(50, parseInt(localStorage.getItem("simIncScale"), 10) || 100));
+let simIncScale = Math.min(150, Math.max(50, parseFloat(localStorage.getItem("simIncScale")) || 100));
 /** What-if income estimate for the simulation, in percent (100 = as entered). Never changes the stored amounts. */
 export function getSimIncomeScale() { return simIncScale; }
-export function setSimIncomeScale(p) { simIncScale = Math.min(150, Math.max(50, Math.round(Number(p) || 100))); localStorage.setItem("simIncScale", String(simIncScale)); }
+/** What the simulated income lines add up to for month k as entered (before the what-if slider). */
+export function simIncomeEntered(k) {
+  let t = 0;
+  for (const it of getItems("simulated", "income")) if (itemActiveIn(it, k)) t += itemAmts(it, k).total;
+  return t;
+}
+export function setSimIncomeScale(p) { simIncScale = Math.min(150, Math.max(50, Math.round((Number(p) || 100) * 100) / 100)); localStorage.setItem("simIncScale", String(simIncScale)); }
 let simPersonSort = localStorage.getItem("simPersonSort") !== "0"; // grouped by person unless switched off
 export function getSimPersonSort() { return simPersonSort; }
 export function setSimPersonSort(on) { simPersonSort = !!on; localStorage.setItem("simPersonSort", simPersonSort ? "1" : "0"); }

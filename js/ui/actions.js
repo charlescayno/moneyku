@@ -344,16 +344,20 @@ export async function reorderItems(who, kind, orderIds) {
 
 export function resetSimIncome() { setSimIncomeScale(100); renderBudget(); }
 
-// Slider: the label follows the finger; the numbers and projection refresh when it is released
+// Slider (in pesos): the label follows the finger; the numbers and projection refresh when it is released
+const sliderScale = (el) => {
+  const entered = Number(el.dataset.entered) || 0;
+  const v = Number(el.value);
+  return entered > 0 && Math.abs(v - entered) >= 1 ? (v / entered) * 100 : 100;
+};
 document.addEventListener("input", (e) => {
   if (e.target?.id !== "sim-inc-slider") return;
-  const p = Number(e.target.value);
   const lab = document.getElementById("sim-inc-pct");
-  if (lab) lab.textContent = p + "%";
+  if (lab) lab.textContent = peso(Number(e.target.value));
 });
 document.addEventListener("change", (e) => {
   if (e.target?.id !== "sim-inc-slider") return;
-  setSimIncomeScale(e.target.value);
+  setSimIncomeScale(sliderScale(e.target));
   renderBudget();
 });
 
