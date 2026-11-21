@@ -209,6 +209,8 @@ export function renderBudget() {
 const CARDS_KEY = "moneyku_cards";
 let persistBound = false;
 function readCards() { try { return JSON.parse(localStorage.getItem(CARDS_KEY) || "{}"); } catch { return {}; } }
+// The accounts cards always start collapsed on each app load (toggling still sticks while the app is open)
+try { const s = readCards(); delete s.accounts; delete s["accounts-p"]; localStorage.setItem(CARDS_KEY, JSON.stringify(s)); } catch { /* ignore */ }
 function applyPersistedDetails() {
   if (!persistBound) {
     persistBound = true;

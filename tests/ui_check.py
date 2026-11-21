@@ -157,6 +157,29 @@ async () => {
 }
 """
 
+ACCTS = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  st.setAppData({startMonth:'2026-01', accounts:[{id:'a1', name:'Maribank', amount:5000, owner:'charlie'}, {id:'a2', name:'GCash', amount:700, owner:'partner'}],
+    items:{charlie:{income:[],expenses:[]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  const d = () => [...document.querySelectorAll('#budget-body details[data-persist^=accounts]')].map(e => e.open);
+  const first = d();
+  document.querySelector('#budget-body details[data-persist=accounts]').open = true;
+  await new Promise(r => setTimeout(r, 200));
+  lay.renderBudget();
+  return {first, afterRedraw: d()};
+}
+"""
+
+def check_accounts(pg, name, fails):
+    pg.evaluate("() => localStorage.setItem('moneyku_cards', JSON.stringify({accounts: true, 'accounts-p': true}))")
+    pg.reload(); pg.wait_for_timeout(2500)
+    r = pg.evaluate(ACCTS); print(name, "accounts", r)
+    if not r["first"] or any(r["first"]): fails.append(f"{name}: accounts cards should start collapsed even if saved open: {r['first']}")
+    if not r["afterRedraw"] or r["afterRedraw"][0] is not True: fails.append(f"{name}: opening the accounts card should stick through a redraw: {r['afterRedraw']}")
+
 def check_add(pg, name, fails):
     r = pg.evaluate(ADD); print(name, "add", r)
     want = {"title": "add expense", "tabOn": "paymentsquick spend", "defaultItem": "xs", "left0": "₱10,000", "left1": "₱9,750",
@@ -204,6 +227,7 @@ def main():
                 if name in ("phone-390", "desktop-1280"):
                     check_next5(pg, name, fails, shot=str(pathlib.Path(__import__('tempfile').gettempdir()) / f"next5_{name}.png"))
                 if name == "phone-390":
+                    check_accounts(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
