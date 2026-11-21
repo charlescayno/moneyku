@@ -23,6 +23,7 @@ import {
   emptyData,
   getLocalCachedData,
   getLastSaved,
+  markSync,
   watchAuth,
   signInWithGoogle,
   finishRedirectSignIn,
@@ -316,6 +317,7 @@ function startDataSync(user) {
     dbRef,
     (snap) => {
       if (session !== syncSession) return;
+      if (localStorage.getItem("moneyku_dirty") !== "1") markSync("synced"); // a local echo of a not-yet-confirmed save does not count
       const val = snap.val();
       let nextData = val ? normalize(val) : emptyData();
       // Our own save coming back is ignored; anything different is another device's edit and must be applied.

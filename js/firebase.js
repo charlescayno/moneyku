@@ -108,6 +108,37 @@ export function isPermissionDenied(err) {
 // =============================
 // Sync & State Normalization
 // =============================
+// ---- Sync status shown in the header: saving / synced (with time) / not synced yet ----
+const sync = { status: "saving", at: null, since: Date.now() };
+function ago(t) {
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  return h < 24 ? `${h} h ago` : new Date(t).toLocaleDateString();
+}
+export function renderSyncStatus() {
+  const el = $("sync-status");
+  if (!el) return;
+  let status = sync.status;
+  if (status === "saving" && (!navigator.onLine || Date.now() - sync.since > 4000)) status = "unsynced";
+  const dot = (c) => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-right:5px;vertical-align:1px"></span>`;
+  if (status === "synced" && !navigator.onLine) { el.innerHTML = dot("#94a3b8") + "Offline · last synced " + ago(sync.at); el.style.color = "#94a3b8"; }
+  else if (status === "synced") { el.innerHTML = dot("#34d399") + "Synced " + ago(sync.at); el.style.color = "#94a3b8"; }
+  else if (status === "saving") { el.innerHTML = dot("#fbbf24") + "Saving…"; el.style.color = "#fbbf24"; }
+  else { el.innerHTML = dot("#f87171") + (navigator.onLine ? "Not synced yet (saved on this phone)" : "Offline: saved on this phone"); el.style.color = "#fca5a5"; }
+}
+export function markSync(status) {
+  sync.status = status;
+  if (status === "synced") sync.at = Date.now();
+  if (status === "saving") { sync.since = Date.now(); setTimeout(renderSyncStatus, 4200); }
+  renderSyncStatus();
+}
+if (typeof window !== "undefined") {
+  setInterval(renderSyncStatus, 15000);
+  window.addEventListener("online", renderSyncStatus);
+  window.addEventListener("offline", renderSyncStatus);
+}
 export function showSync() { 
   const b = $("sync-bar"); 
   if (b) b.style.opacity = "1"; 
@@ -150,7 +181,7 @@ export async function syncSet(appData, onFail) {
   try { recordChange(appData); } catch (err) { console.warn("History:", err); }
   pendingEchoes++;
   try { lastSaved = JSON.parse(JSON.stringify(appData)); } catch (err) { lastSaved = null; }
-  showSync();
+  showSync(); markSync("saving");
   // Save local copy immediately for instant offline durability
   try {
     localStorage.setItem('moneyku_offline', JSON.stringify(appData));
@@ -165,10 +196,12 @@ export async function syncSet(appData, onFail) {
   const write = (async () => {
     try {
       await set(dbRef, appData);
+      markSync("synced");
       try { localStorage.removeItem('moneyku_dirty'); } catch (err) { /* ignore */ }
     } catch (e) {
       try { localStorage.setItem('moneyku_dirty', '1'); } catch (err) { /* ignore */ }
       pendingEchoes = Math.max(0, pendingEchoes - 1);
+      markSync("unsynced");
       console.error("Firebase sync error:", e);
       if (typeof onFail === "function") onFail(e);
     } finally {
