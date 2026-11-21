@@ -60,10 +60,6 @@ function stackSvg(cx, v, y0, yv, w, ac, op, m) {
       + `<circle cx="${f(cx)}" cy="${f(ny + nh / 2)}" r="9" fill="#34d399" stroke="#047857" stroke-width="1.2"/>`
       + `<text x="${f(cx)}" y="${f(ny + nh / 2 + 0.5)}" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="900" fill="#064e3b">₱</text></g>`;
   }
-  if (!neg) { // sparkles twinkling over the stack and the note
-    const top = y0 - h - 26, sp = [[-0.32, top + 4, 0], [0.34, top + 14, 0.7], [-0.2, y0 - h * 0.55, 1.4], [0.3, y0 - h * 0.25, 2.1]];
-    sp.forEach(([dx, sy, d], i) => { s += `<g transform="translate(${f(cx + dx * w)} ${f(sy)})" pointer-events="none"><path class="n5-spark" style="animation-delay:${d}s;animation-duration:${2.4 + i * 0.3}s" d="M0-6L1.5-1.5L6 0L1.5 1.5L0 6L-1.5 1.5L-6 0L-1.5-1.5Z" fill="#fff"/></g>`; });
-  }
   const uy = neg ? y0 - 4 : y0 + 2.5;
   s += `<rect x="${x}" y="${f(uy)}" width="${f(w)}" height="2" rx="1" fill="${ac}"/>`;
   return `<g class="n5-stack${neg ? " n5-neg" : ""}" data-month="${m}" data-neg="${neg ? 1 : 0}" data-slabs="${n}" opacity="${op}">${s}</g>`;
@@ -95,13 +91,19 @@ export function next5CardHtml() {
   const sel = getSelectedKey();
 
   // chart: one stack of bills per month, centred in its column so it lines up with the figures above
-  const W = 500, H = 150, PADY = 8, NOTE = 26; // NOTE = banknote height, reserved above the tallest stack
+  const W = 500, H = 190, PADY = 8, NOTE = 26; // NOTE = banknote height, reserved above the tallest stack
   const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), span = hi - lo || 1;
   const top = PADY + (hi > 0 ? NOTE + 2 : 0), bottom = H - PADY;
   const X = (i) => ((i + 0.5) / keys.length) * W;
   const Y = (v) => top + ((hi - v) / span) * (bottom - top);
   const bw = (W / keys.length) * 0.5, y0 = Y(0);
-  const stacks = vals.map((v, i) => stackSvg(X(i), v, y0, Y(v), bw, ac, keys[i] === sel || i === 0 ? 1 : 0.8, keys[i])).join("");
+  const stacks = vals.map((v, i) => stackSvg(X(i), v, y0, Y(v), bw, ac, 1, keys[i])).join("");
+  // faint guide lines at round values (about 3), rescaled with the data, so the heights can be compared
+  const niceStep = (raw) => { const p = Math.pow(10, Math.floor(Math.log10(raw || 1))), r = raw / p; return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * p; };
+  const step = niceStep(span / 3), ticks = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) if (Math.abs(v) > 1e-9) ticks.push(Math.round(v / step) * step);
+  const guides = ticks.map((v) => `<line x1="0" x2="${W}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#64748b" stroke-width="1" stroke-dasharray="3 5" opacity=".35"/>`).join("");
+  const guideLabels = ticks.map((v) => `<text x="3" y="${(Y(v) - 4).toFixed(1)}" font-size="14" font-weight="800" fill="#cbd5e1" stroke="#151d34" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${cmp(v)}</text>`).join("");
   const axis = `<line x1="${(X(0) - bw).toFixed(1)}" x2="${(X(keys.length - 1) + bw).toFixed(1)}" y1="${y0.toFixed(1)}" y2="${y0.toFixed(1)}" stroke="#475569" stroke-width="1.5" ${lo < 0 ? 'stroke-dasharray="4 4"' : ""}/>`;
   const anim = !animated; animated = true; // grow in once per page load, not on every redraw
   const cols = (cell) => `<div class="grid" style="grid-template-columns:repeat(${keys.length},minmax(0,1fr))">${keys.map(cell).join("")}</div>`;
@@ -109,13 +111,17 @@ export function next5CardHtml() {
   const figures = cols((m, i) => `<button type="button" data-action="selectMonth" data-arg0="${m}" class="text-center text-[11px] font-black tabular-nums truncate px-0.5 ${vals[i] < 0 ? "text-rose-400" : "text-white"}" aria-label="${MONTHS_SHORT[keyParts(m).m]}: ${sp(vals[i])}">${cmp(vals[i])}</button>`);
   const labels = cols((m) => `<button type="button" data-action="selectMonth" data-arg0="${m}" class="text-center text-[11px] font-bold ${m === sel ? "text-indigo-300" : "text-slate-500"}">${MONTHS_SHORT[keyParts(m).m]}</button>`);
 
-  return `<div id="next5-card" class="bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4">
+  return `<div id="next5-card" class="bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4" style="display:flex;flex-direction:column">
     ${header(keys)}
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
     ${figures}
     <svg viewBox="0 0 ${W} ${H}" class="w-full block my-1 ${anim ? "n5-anim" : ""}" role="img" aria-label="Projected balance, next ${keys.length} months">
+      ${guides}
       ${stacks}
       ${axis}
+      ${guideLabels}
     </svg>
     ${labels}
+    </div>
   </div>`;
 }
