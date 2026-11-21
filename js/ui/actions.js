@@ -104,8 +104,7 @@ async function togglePaidQuickRun(event, id, kind, release = () => {}) {
   }
   refreshRealized();
   if (navigator.vibrate) navigator.vibrate(12);
-  if (moved || btn.closest("#reminders")) renderAll();
-  else if (btn.closest("[data-item]")) setTimeout(() => renderAll(), 700); // let the check animation finish, then move the row into / out of the fold // account balances changed, or paid from the reminders (redraw the list rows too)
+  if (moved || btn.closest("#reminders")) renderAll(); // account balances changed, or paid from the reminders (redraw the list rows too)
   // The change is done locally; do not keep this item locked while the cloud write waits (offline it can wait forever)
   release();
   await syncSet(appData);

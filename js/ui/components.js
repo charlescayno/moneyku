@@ -282,7 +282,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     ${simSourceHtml(it, who)}
     <div class="flex flex-col items-end flex-shrink-0 py-1" style="min-width:4.5rem">
       <p class="child-amt text-sm font-black ${amt < 0 ? "text-rose-400" : kind === "income" ? "text-emerald-400" : settled ? "text-slate-400" : "text-white"} tabular-nums text-right">${pesoRow(amt)}</p>
-      ${badge.length ? `<p class="text-[11px] leading-tight mt-0.5 whitespace-nowrap">${badge.join("")}</p>` : ""}
+      ${badge.length && !settled ? `<p class="text-[11px] leading-tight mt-0.5 whitespace-nowrap">${badge.join("")}</p>` : ""}
     </div>
   </div>`;
   }
@@ -320,17 +320,11 @@ export function categoryGroupedHtml(items, k, kind, who) {
     const list = buckets[c];
     const subtotal = list.reduce((s, it) => s + amountIn(it, k), 0);
     const rowsHtml = list.map(it => itemRowHtml(it, k, kind, who)).join("");
-    // Pending rows stay in view; received / paid ones fold into one line (simulated lists stay flat)
-    const foldable = (kind === "expenses" || kind === "income") && who !== "simulated";
-    const pend = foldable ? list.filter((it) => !isPaid(it.id, k)) : list, done = foldable ? list.filter((it) => isPaid(it.id, k)) : [];
-    const pendingHtml = pend.length > 1 && foldable ? `<div class="space-y-0.5 top-list" data-who="${who}" data-kind="${kind}" data-cat="${c}">${pend.map((it) => itemRowHtml(it, k, kind, who)).join("")}</div>` : `<div class="space-y-0.5">${pend.map((it) => itemRowHtml(it, k, kind, who)).join("")}</div>`;
-    const doneTot = done.reduce((s, it) => s + amountIn(it, k), 0);
-    const foldHtml = done.length ? `<details class="paid-fold group" data-persist="fold-${who}-${kind}-${c}" style="margin-top:4px"><summary class="flex items-center justify-between cursor-pointer list-none select-none rounded-lg" style="padding:7px 8px;background:rgba(16,185,129,.08)"><span class="flex items-center gap-1.5 text-[11px] font-bold" style="color:#6ee7b7"><span class="material-icons pf-chev" style="font-size:14px">chevron_right</span>${kind === "income" ? "Received" : "Paid"} (${done.length})</span><span class="text-[11px] font-bold tabular-nums" style="color:#6ee7b7">${peso(doneTot)}</span></summary><div class="space-y-0.5 mt-0.5">${done.map((it) => itemRowHtml(it, k, kind, who)).join("")}</div></details>` : "";
     const dragList = (inner) => (kind === "expenses" || kind === "income") && who !== "simulated" && list.length > 1 ? `<div class="space-y-0.5 top-list" data-who="${who}" data-kind="${kind}" data-cat="${c}">${inner}</div>` : inner;
     
     if (showHeaders && (kind === "expenses" || kind === "income")) {
       // Clean style: small muted lowercase subheading with a muted subtotal (empty groups never get here)
-      html += `<div class="cat-group" style="margin-top:10px"><div class="flex justify-between items-baseline" style="padding:8px 8px 3px;${html ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold text-slate-400">${CATEGORY_LABELS[c]} <span class="text-slate-600">&middot; ${list.length}</span></p><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(subtotal)}</p></div>${pendingHtml}${foldHtml}</div>`;
+      html += `<div class="cat-group" style="margin-top:10px"><div class="flex justify-between items-baseline" style="padding:8px 8px 3px;${html ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold text-slate-400">${CATEGORY_LABELS[c]}</p><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(subtotal)}</p></div>${dragList(rowsHtml)}</div>`;
     } else if (showHeaders) {
       html += `<details open class="group mb-1">
         <summary class="flex justify-between items-center px-3 pt-2 pb-1 cursor-pointer list-none select-none hover:bg-slate-800/30 rounded-lg outline-none -ml-2 -mr-2 mb-0.5">
@@ -345,7 +339,7 @@ export function categoryGroupedHtml(items, k, kind, who) {
         </div>
       </details>`;
     } else {
-      html += foldable ? pendingHtml + foldHtml : dragList(rowsHtml);
+      html += dragList(rowsHtml);
     }
   }
   return html;
@@ -627,20 +621,6 @@ export function personSectionHtml(who, includeDebt = true) {
   const copyN = who === "charlie" ? lastMonthOneTimes().length : 0;
   const copyBtn = copyN ? `<button type="button" data-action="openCopyPicker" class="w-full mt-1 py-2 text-[11px] font-bold text-indigo-300 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from last month (${copyN})</button>` : "";
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
-  // Thin progress line under the section header: how much of the month is already received / paid
-  const progHtml = (list, kind) => {
-    if (who === "simulated" || !list.length) return "";
-    let tot = 0, left = 0;
-    for (const it of list) {
-      const kids = getKids(it, k);
-      if (kids.length) { for (const ch of kids) { const a = amountIn(ch, k); tot += a; if (!isPaid(ch.id, k)) left += a; } }
-      else { const a = amountIn(it, k); tot += a; if (!isPaid(it.id, k)) left += a; }
-    }
-    if (tot <= 0.005) return "";
-    const pct = Math.max(0, Math.min(100, Math.round(((tot - left) / tot) * 100)));
-    const done = left <= 0.005;
-    return `<div style="padding:0 8px 4px"><div style="height:4px;border-radius:9999px;background:rgba(148,163,184,.18);overflow:hidden"><div style="height:100%;width:${pct}%;background:#10b981;border-radius:9999px"></div></div><p class="text-[11px] font-bold mt-1 tabular-nums" style="color:${done ? "#6ee7b7" : "#94a3b8"}">${done ? (kind === "income" ? "All received" : "All paid") : `${peso(left)} left to ${kind === "income" ? "receive" : "pay"}`}</p></div>`;
-  };
   // Simulated only: snapshot copies of Charles' or Ynah's items (new ids, nothing shared with the source)
   const simCopyBar = (kind) => who !== "simulated" ? "" : `<div class="grid grid-cols-2 gap-1.5 mt-1.5">
     <button type="button" data-action="openSimCopy" data-arg0="charlie" data-arg1="${kind}" class="py-2 text-[11px] font-bold text-blue-300 bg-blue-500/10 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from Charles</button>
@@ -682,7 +662,7 @@ export function personSectionHtml(who, includeDebt = true) {
           </div>
           <span class="flex items-center gap-2">${simPersonBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></span>
         </summary>
-        ${progHtml(income, "income")}<div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simIncomeSliderHtml(who)}${simCopyBar("income")}
+        <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simIncomeSliderHtml(who)}${simCopyBar("income")}
       </details>
       <div style="border-top:1px solid rgba(148,163,184,.12);margin-top:12px;padding-top:14px">
         <details open data-persist="sec-expenses${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
@@ -696,7 +676,7 @@ export function personSectionHtml(who, includeDebt = true) {
             </div>
             <div class="flex items-center gap-2"><button data-action="openExpenseChart" data-arg0="${who}" class="text-[10px] font-bold text-slate-400 px-1.5 py-0.5 rounded-md flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">pie_chart</span>View</button>${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
           </summary>
-          ${progHtml(expenses, "expenses")}<div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>${simCopyBar("expenses")}
+          <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>${simCopyBar("expenses")}
           ${copyBtn}
         </details>
       </div>
