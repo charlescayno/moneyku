@@ -7,12 +7,12 @@ Status: todo | done | skipped | needs decision
 | 2 | done | Month bar buttons (‹ › Today, label) raised from 40px to 44px | index.html #month-nav |
 | 3 | done | Overview close and sign-out buttons raised to 44px and spaced 16px apart | index.html #more-overlay |
 | 4 | done | Item row tags (card, due date, installment end) raised from 9px to 11px; remaining 8-10px text elsewhere left as is | js/ui/components.js, cardui.js |
-| 5 | todo | Month picker close button is small and far from the thumb; make it larger and fixed at the bottom | index.html #month-picker |
-| 6 | todo | Pressing a bottom-tab shows no active-state feedback beyond color; add a clearer active indicator | index.html tabs, style.css |
-| 7 | todo | Empty states: months with no items show a blank area; add a short hint | js/ui/layout.js |
-| 8 | todo | Search and History buttons have only an icon; add visible labels in their screens' titles | js/ui/historyui.js |
-| 9 | todo | Disabled Undo has no explanation on touch (title tooltip only shows on hover) | index.html #undo-btn |
-| 10 | todo | Confirm dialogs: destructive button is as large as cancel; add spacing so it is not tapped by accident | index.html #confirm-overlay |
+| 5 | done | Month picker close button is already 56px and fixed at the bottom centre | index.html #month-picker |
+| 6 | skipped | Bottom tab bar no longer exists in the app (no #tabbar element) | js/tabs.js is unused |
+| 7 | done | Empty months already show "No income/expenses yet" with an Add button | js/ui/components.js |
+| 8 | done | Search and History sheets already have titles "Search" and "History" | js/extras.js, js/ui/historyui.js |
+| 9 | skipped | #undo-btn no longer exists; Undo now appears as a toast action and in the History sheet | js/ui/historyui.js |
+| 10 | done | Confirm dialog: gap between Delete and Cancel raised from 8px to 20px | index.html #confirm-buttons |
 
 Notes
 - Never touch: database rules, live data rewrites or migrations, Firebase setup, data model.
