@@ -79,3 +79,9 @@ body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px
 
 /* ---- scrolling inside the month picker and sheets never drags the page behind them ---- */
 #month-picker, #ql-overlay, #ql-body, #confirm-overlay { overscroll-behavior: contain; }
+
+/* ---- next-months money stacks: grow from the axis once per page load ---- */
+@keyframes n5-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.n5-anim .n5-stack { transform-box: fill-box; transform-origin: bottom; animation: n5-grow .5s ease-out both; }
+.n5-anim .n5-stack.n5-neg { transform-origin: top; }
+@media (prefers-reduced-motion: reduce) { .n5-anim .n5-stack { animation: none; } }

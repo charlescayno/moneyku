@@ -98,6 +98,38 @@ async () => {
 }
 """
 
+NEXT5 = """
+async ([cash, inc, exp]) => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const mk = (id, amount) => ({id, name: id, amount, recurring: true, start: '2026-01', dueDay: 28});
+  st.setAppData({startMonth:'2026-01', simCash: cash, items:{charlie:{income:[],expenses:[]},debt:{income:[],expenses:[]},
+    simulated:{income: inc ? [mk('inc', inc)] : [], expenses: exp ? [mk('exp', exp)] : []}}, settings:{}});
+  st.setSimView(true); st.setHideProjected(false);
+  document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  await new Promise(r => setTimeout(r, 900));
+  const gs = [...document.querySelectorAll('#next5-card .n5-stack')];
+  const out = { months: document.querySelectorAll('#next5-card [data-action=selectMonth]').length / 2,
+    stacks: gs.map(g => ({ neg: g.dataset.neg === '1', note: !!g.querySelector('.n5-note'), h: Math.round(g.getBoundingClientRect().height) })),
+    hscroll: document.documentElement.scrollWidth > innerWidth + 1 };
+  st.setSimView(false);
+  return out;
+}
+"""
+
+def check_next5(pg, name, fails, shot=None):
+    up = pg.evaluate(NEXT5, [16000, 3000, 0])
+    if shot: pg.locator('#next5-card').screenshot(path=shot)
+    down = pg.evaluate(NEXT5, [2000, 0, 1500])
+    print(name, "next5 up", up, "down", down)
+    s = up["stacks"]
+    if len(s) != up["months"]: fails.append(f"{name}: {len(s)} stacks for {up['months']} months")
+    if any(x["neg"] or not x["note"] for x in s): fails.append(f"{name}: positive months need a banknote and no red: {s}")
+    if any(b["h"] <= a["h"] for a, b in zip(s, s[1:])): fails.append(f"{name}: stack heights should grow with the balance: {[x['h'] for x in s]}")
+    d = down["stacks"]
+    if not any(x["neg"] for x in d) or any(x["neg"] and x["note"] for x in d): fails.append(f"{name}: negative months must be red without a banknote: {d}")
+    if up["hscroll"] or down["hscroll"]: fails.append(f"{name}: horizontal scroll with next5 stacks")
+
 def main():
     srv = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1.5); fails = []
@@ -121,6 +153,8 @@ def main():
                 if name == "phone-390":
                     f = pg.evaluate(FORM); print("form", f)
                     if f["msg"] != "Name required" or not f["invalid"] or not f["focused"] or not f["cleared"]: fails.append(f"inline error behaviour wrong: {f}")
+                if name in ("phone-390", "desktop-1280"):
+                    check_next5(pg, name, fails, shot=str(pathlib.Path(__import__('tempfile').gettempdir()) / f"next5_{name}.png"))
                 if name == "phone-390":
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
