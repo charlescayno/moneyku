@@ -439,6 +439,20 @@ function boot() {
     if (currentUser && getAppData()) fetchInvestmentRates(false);
   }, 60000);
 
+  // Keep what the screen shows current without a reload: bills that reach their due day are completed
+  // (and charged to their account), and everything (Overview, installments, the "now" marker) redraws
+  // when that happens or the date rolls over while the app stays open
+  let lastDay = new Date().toDateString();
+  const liveTick = () => {
+    if (document.hidden || !currentUser || !getAppData()) return;
+    const day = new Date().toDateString();
+    const changed = reconcileAutoPaid(autoDeduct);
+    if (changed) { syncSet(getAppData()); rebaseHistory(getAppData()); }
+    if (changed || day !== lastDay) { lastDay = day; renderAll(); }
+  };
+  setInterval(liveTick, 60000);
+  document.addEventListener("visibilitychange", liveTick);
+
   // Complete a redirect-based sign-in if we just came back from Google
   finishRedirectSignIn().then((err) => { if (err) setAuthError(describeAuthError(err)); });
 

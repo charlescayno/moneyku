@@ -4,7 +4,7 @@ import { choosePayment, applyPayment, refundPayment, recordPayment, paidMessage,
 import { refreshReminders } from '../calendar.js';
 import { setSimIncomeScale, toggleArranging, getSimPersonSort, setSimPersonSort, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, includedWho, setWhoIncluded, getSimView, setSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
-import { openMore, parentSummaryText, selectMonth, statsGridHtml } from './components.js';
+import { openMore, parentSummaryText, refreshMore, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
 import { cardSummaryHtml } from './cardui.js';
 import { toast } from './core.js';
@@ -282,6 +282,7 @@ export function refreshRealized() {
   refreshReminders(); // a bill marked paid leaves the reminders
   const cardSlot = $("card-summary-slot");
   if (cardSlot) cardSlot.innerHTML = cardSummaryHtml();
+  refreshMore(); // an open Overview (installments) follows every paid tick
 }
 
 // =============================
