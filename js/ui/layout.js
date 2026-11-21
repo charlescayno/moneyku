@@ -103,7 +103,7 @@ export function renderBudget() {
   const tilesSlot = document.getElementById("person-tiles");
   if (tilesSlot) tilesSlot.innerHTML = personTiles;
   const kpiBar = `
-    <div class="w-full bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex flex-col items-stretch gap-3 flex-shrink-0">
+    <div class="proj-card w-full bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex flex-col items-stretch gap-3 flex-shrink-0">
       <!-- Projected hero: small label, one big number -->
       <div class="flex flex-col gap-1 px-1">
         <div class="flex items-center gap-1.5">
@@ -148,7 +148,7 @@ export function renderBudget() {
           <button type="button" data-action="askClearSimulation" class="flex-1 py-2 text-[11px] font-bold rounded-lg bg-rose-500/15 text-rose-200 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">delete_sweep</span>Clear simulation</button>
         </div>
       </div>
-      <div class="w-full bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex flex-col items-stretch gap-3 flex-shrink-0">
+      <div class="proj-card w-full bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex flex-col items-stretch gap-3 flex-shrink-0">
         <div class="flex flex-col gap-1 px-1">
           <div class="flex items-center gap-1.5">
             <span class="sec-title text-[11px] font-bold text-slate-400 min-w-0 truncate">projected · simulated · ${monthShort(k)}</span>

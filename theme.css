@@ -148,3 +148,6 @@ select.as-input { text-transform: lowercase; }
 .paid-fold > summary .pf-chev { transition: transform .18s ease; }
 .paid-fold[open] > summary .pf-chev { transform: rotate(90deg); }
 .paid-fold > summary::-webkit-details-marker { display: none; }
+
+/* projected card + next-months card: lifted off the page so each reads as its own card */
+.proj-card, #next5-card { background: linear-gradient(180deg, #1c2540 0%, #151d34 100%) !important; border: 1px solid rgba(148, 163, 184, .30) !important; box-shadow: 0 10px 28px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .06); }
