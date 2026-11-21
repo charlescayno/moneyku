@@ -33,8 +33,10 @@ export function toast(msg, type = "ok", opts = {}) {
   }
 
   t.classList.add("show");
+  try { navigator.vibrate?.(type === "error" ? [30, 40, 30] : 10); } catch { /* not supported */ }
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), opts.duration || 2000);
+  const hasUndo = !!(opts.actionLabel && typeof opts.onAction === "function");
+  toastTimer = setTimeout(() => t.classList.remove("show"), Math.max(opts.duration || 2400, hasUndo ? 5500 : 0));
 }
 
 // =============================

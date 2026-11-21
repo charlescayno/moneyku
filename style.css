@@ -1474,3 +1474,11 @@ button[data-action="toggleProjected"], button[data-action="toggleExpenseSort"], 
 button[data-action="cardStatementOpen"], button[data-action="openCopyPicker"], button[data-action="openAccountModal"][class*="flex-1"] { min-height: 44px; }
 #sim-tile, #sum-projected { min-height: 44px; }
 button[data-action="openItemModal"] { min-height: 44px !important; }
+
+/* Feedback: checkbox pops when ticked, bigger Undo, paid-from note on the row */
+@keyframes pc-pop { 0% { transform: scale(.7); } 55% { transform: scale(1.22); } 100% { transform: scale(1); } }
+.paid-check.is-paid { animation: pc-pop .32s ease-out; }
+#toast { padding: 10px 12px 10px 16px; font-size: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+#toast-action { min-height: 44px; min-width: 64px; padding: 0 16px; border-radius: 12px; background: rgba(99, 102, 241, .25); color: #c7d2fe; font-weight: 800; font-size: 14px; }
+#toast-action:active { background: rgba(99, 102, 241, .45); }
+.paid-note { font-size: 10px; font-weight: 700; color: #34d399; opacity: .85; margin-top: 2px; }

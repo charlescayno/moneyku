@@ -192,6 +192,16 @@ export function simSourceHtml(it, who) {
   return `<img src="assets/avatar-${n.toLowerCase()}.jpg" alt="${n}" title="Copied from ${n}" class="sim-src w-5 h-5 rounded-full object-cover flex-shrink-0 border border-white/20">`;
 }
 
+/** "Paid from Cash" / "Received into Maribank" under a settled row, so the result of a tap is visible on the row itself. */
+function paidNoteHtml(it, k, kind, settled) {
+  if (!settled) return "";
+  const rec = getAppData()?.paidFrom?.[k]?.[it.id];
+  if (!rec || !rec.a) return "";
+  const name = accountName(rec.a);
+  if (!name) return "";
+  return `<p class="paid-note">${kind === "income" ? "Received into" : "Paid from"} ${escapeHtml(name)}</p>`;
+}
+
 export function itemRowHtml(it, k, kind, who, opts = {}) {
   if (getKids(it, k).length) return parentRowHtml(it, k, kind, who, opts);
   const settled = isPaid(it.id, k);
@@ -265,6 +275,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     <div class="flex-1 min-w-0 py-1.5">
       <p class="item-name text-sm font-bold ${settled ? "text-slate-500 line-through" : "text-slate-200"} truncate">${escapeHtml(it.name)}</p>
       ${badge.length ? `<p class="text-[11px] leading-tight mt-0.5 truncate">${badge.join("")}</p>` : ""}
+      ${paidNoteHtml(it, k, kind, settled)}
       ${spendLine}
       ${progress}
     </div>
