@@ -2,7 +2,7 @@
 // Extras: search, add chooser, duplicate, copy last month, settings (text size, CSV),
 // offline badge, double-tap guard, first-run tip
 // =============================
-import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso } from "./utils.js";
+import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso, PM_LABELS } from "./utils.js";
 import { exportData } from "./ui/actions.js";
 import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, outlookRows, runningFundsAt, getSimView, setAppData, timeline, includedWho } from "./state.js";
 import { normalize, syncSet } from "./firebase.js";
@@ -81,28 +81,45 @@ export function qlAddChooser() {
     b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "Expense"));
 }
 
-/** Pie (donut) chart of one person's expenses for the month being viewed. */
-export function openExpenseChart(who) {
+/** Pie (donut) chart of one person's expenses for the month being viewed. `mode` picks what the slices are. */
+const PIE_MODES = [["item", "Expense"], ["cat", "Category"], ["type", "Type"], ["pay", "Pay via"], ["paid", "Status"]];
+export function openExpenseChart(who, mode = "item") {
   const k = getSelectedKey();
-  const rows = getItems(who, "expenses").filter((it) => itemActiveIn(it, k)).map((it) => ({ name: it.name, v: itemTotal(it, k) })).filter((r) => r.v > 0.005).sort((a, b) => b.v - a.v);
+  if (!PIE_MODES.some(([id]) => id === mode)) mode = "item";
+  const items = getItems(who, "expenses").filter((it) => itemActiveIn(it, k)).map((it) => ({ it, v: itemTotal(it, k) })).filter((r) => r.v > 0.005);
+  const palette = ["#f43f5e", "#f59e0b", "#10b981", "#6366f1", "#06b6d4", "#d946ef", "#84cc16", "#f97316"];
+  // Collapse the items into slices { name, v, color? } according to the chosen view
+  const group = (keyOf, nameOf, colorOf) => {
+    const m = new Map();
+    for (const r of items) { const key = keyOf(r.it); const g = m.get(key) || { name: nameOf(key, r.it), v: 0, color: colorOf ? colorOf(key) : null }; g.v += r.v; m.set(key, g); }
+    return [...m.values()];
+  };
+  let rows;
+  if (mode === "cat") rows = group((it) => categoryOf(it), (id) => catInfo(id).label, (id) => catInfo(id).color);
+  else if (mode === "type") rows = group((it) => (!it.recurring ? "One-time" : it.end ? "Installment" : "Recurring"), (key) => key);
+  else if (mode === "pay") rows = group((it) => it.paymentMethod && it.paymentMethod !== "cash" && it.paymentMethod !== "none" ? it.paymentMethod : "cash", (key) => (key === "cash" ? "Cash / other" : PM_LABELS[key] || (String(key).startsWith("cc_") ? "Credit card" : key)));
+  else if (mode === "paid") rows = group((it) => (isPaid(it.id, k) ? "paid" : "unpaid"), (key) => (key === "paid" ? "Paid" : "Still to pay"), (key) => (key === "paid" ? "#10b981" : "#f43f5e"));
+  else rows = items.map((r) => ({ name: r.it.name, v: r.v }));
+  rows.sort((a, b) => b.v - a.v);
   const total = rows.reduce((s, r) => s + r.v, 0);
-  if (!total) { showSheet(`Expenses in ${monthShort(k)}`, `<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`, CLOSE_BTN); return; }
+  const tabs = `<div class="flex flex-wrap gap-1.5 mb-3">${PIE_MODES.map(([id, label]) => `<button type="button" data-action="openExpenseChart" data-arg0="${who}" data-arg1="${id}" aria-pressed="${id === mode}" class="text-[11px] font-bold px-2.5 rounded-full ${id === mode ? "bg-indigo-600 text-white" : "bg-white/5 text-slate-400"}" style="min-height:32px">${label}</button>`).join("")}</div>`;
+  if (!total) { showSheet(`Expenses in ${monthShort(k)}`, `${tabs}<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`, CLOSE_BTN); return; }
   const MAX = 7;
   const slices = rows.length > MAX + 1 ? [...rows.slice(0, MAX), { name: "Other", v: rows.slice(MAX).reduce((s, r) => s + r.v, 0) }] : rows;
-  const colors = ["#f43f5e", "#f59e0b", "#10b981", "#6366f1", "#06b6d4", "#d946ef", "#84cc16", "#f97316"];
+  const col = (s, i) => s.color || palette[i % palette.length];
   const R = 80, C = 100, r2 = 48;
   let ang = -Math.PI / 2;
   const pt = (a, r) => `${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`;
   const paths = slices.map((s, i) => {
-    const col = colors[i % colors.length], frac = s.v / total;
-    if (frac > 0.9999) return `<circle cx="${C}" cy="${C}" r="${(R + r2) / 2}" fill="none" stroke="${col}" stroke-width="${R - r2}"/>`;
+    const frac = s.v / total;
+    if (frac > 0.9999) return `<circle cx="${C}" cy="${C}" r="${(R + r2) / 2}" fill="none" stroke="${col(s, i)}" stroke-width="${R - r2}"/>`;
     const a0 = ang, a1 = ang + frac * Math.PI * 2; ang = a1;
     const big = frac > 0.5 ? 1 : 0;
-    return `<path d="M${pt(a0, R)} A${R} ${R} 0 ${big} 1 ${pt(a1, R)} L${pt(a1, r2)} A${r2} ${r2} 0 ${big} 0 ${pt(a0, r2)} Z" fill="${col}" stroke="#0f172a" stroke-width="1.5"/>`;
+    return `<path d="M${pt(a0, R)} A${R} ${R} 0 ${big} 1 ${pt(a1, R)} L${pt(a1, r2)} A${r2} ${r2} 0 ${big} 0 ${pt(a0, r2)} Z" fill="${col(s, i)}" stroke="#0f172a" stroke-width="1.5"/>`;
   }).join("");
-  const legend = slices.map((s, i) => `<div class="flex items-center gap-2 py-1"><span class="flex-shrink-0 rounded-full" style="width:10px;height:10px;background:${colors[i % colors.length]}"></span><span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-200 keep-case">${escapeHtml(s.name)}</span><span class="text-[11px] font-bold text-slate-500 flex-shrink-0">${Math.round((s.v / total) * 100)}%</span><span class="text-[12px] font-black text-white flex-shrink-0 tabular-nums" style="min-width:4.5rem;text-align:right">${peso(s.v)}</span></div>`).join("");
+  const legend = slices.map((s, i) => `<div class="flex items-center gap-2 py-1"><span class="flex-shrink-0 rounded-full" style="width:10px;height:10px;background:${col(s, i)}"></span><span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-200 keep-case">${escapeHtml(s.name)}</span><span class="text-[11px] font-bold text-slate-500 flex-shrink-0">${Math.round((s.v / total) * 100)}%</span><span class="text-[12px] font-black text-white flex-shrink-0 tabular-nums" style="min-width:4.5rem;text-align:right">${peso(s.v)}</span></div>`).join("");
   const svg = `<svg viewBox="0 0 200 200" class="block mx-auto" style="width:200px;height:200px" role="img" aria-label="Expenses pie chart">${paths}<text x="${C}" y="${C - 2}" text-anchor="middle" font-size="10" font-weight="700" fill="#94a3b8">TOTAL</text><text x="${C}" y="${C + 14}" text-anchor="middle" font-size="14" font-weight="900" fill="#fff">${peso(total)}</text></svg>`;
-  showSheet(`Expenses in ${monthShort(k)}`, `${svg}<div class="mt-2">${legend}</div>`, CLOSE_BTN);
+  showSheet(`Expenses in ${monthShort(k)}`, `${tabs}${svg}<div class="mt-2">${legend}</div>`, CLOSE_BTN);
 }
 
 /** Quick spend: pick the bill/budget this month, then log the amount in its spending section. */
