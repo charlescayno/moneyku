@@ -188,8 +188,8 @@ async () => {
 
 def check_tint(pg, name, fails):
     r = pg.evaluate(TINT); print(name, "tint", r)
-    v = list(r.values())
-    if any(x is None or x == "rgba(0, 0, 0, 0)" for x in v) or len(set(v)) != 3: fails.append(f"{name}: income / expenses / debt need three different tinted backgrounds: {r}")
+    v = [r["income"], r["expenses"]]  # debts is intentionally flat now
+    if any(x is None or x == "rgba(0, 0, 0, 0)" for x in v) or len(set(v)) != 2: fails.append(f"{name}: income and expenses need different tinted backgrounds: {r}")
 
 FOLD = """
 async () => {
