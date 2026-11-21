@@ -8,7 +8,7 @@ Status: todo | done | skipped | needs decision
 | 3 | done | Overview close and sign-out buttons raised to 44px and spaced 16px apart | index.html #more-overlay |
 | 4 | done | Item row tags (card, due date, installment end) raised from 9px to 11px; remaining 8-10px text elsewhere left as is | js/ui/components.js, cardui.js |
 | 5 | done | Month picker close button is already 56px and fixed at the bottom centre | index.html #month-picker |
-| 6 | skipped | Bottom tab bar no longer exists in the app (no #tabbar element) | js/tabs.js is unused |
+| 6 | done | Slim bottom bar with 4 tabs: Home / Bills / Accounts / Overview (hides under sheets and the keyboard) | index.html #tabbar, js/tabs.js |
 | 7 | done | Empty months already show "No income/expenses yet" with an Add button | js/ui/components.js |
 | 8 | done | Search and History sheets already have titles "Search" and "History" | js/extras.js, js/ui/historyui.js |
 | 9 | skipped | #undo-btn no longer exists; Undo now appears as a toast action and in the History sheet | js/ui/historyui.js |

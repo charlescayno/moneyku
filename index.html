@@ -41,7 +41,7 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20261121_nav" />
+    <link rel="stylesheet" href="style.css?v=20261122_tabs" />
     <link rel="stylesheet" href="theme.css?v=20261122_quick" />
   </head>
   <body
@@ -198,6 +198,14 @@
         </div>
       </main>
     </div>
+
+    <!-- BOTTOM BAR: Home / Bills / Accounts / Overview -->
+    <nav id="tabbar" aria-label="Main">
+      <button type="button" data-tab="home" data-action="tabGo" data-arg0="home"><span class="material-icons" aria-hidden="true">home</span><span>Home</span></button>
+      <button type="button" data-tab="bills" data-action="tabGo" data-arg0="bills"><span class="material-icons" aria-hidden="true">receipt_long</span><span>Bills</span></button>
+      <button type="button" data-tab="accounts" data-action="tabGo" data-arg0="accounts"><span class="material-icons" aria-hidden="true">account_balance_wallet</span><span>Accounts</span></button>
+      <button type="button" data-tab="overview" data-action="tabGo" data-arg0="overview"><span class="material-icons" aria-hidden="true">insights</span><span>Overview</span></button>
+    </nav>
 
 
     <!-- QUICK LOG SHEET -->
