@@ -1428,7 +1428,7 @@ details[data-persist="outlook-more"][open] > summary .material-icons { transform
   header.app-header .app-header-title p { margin-top: 0; }
   #person-tiles { padding-top: 0.5rem; }
   #month-nav { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-  #month-nav button { height: 2.5rem; }
+  #month-nav button { height: 2.75rem; } /* 44px tap target */
 }
 
 
