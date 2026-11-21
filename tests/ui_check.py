@@ -173,6 +173,24 @@ async () => {
 }
 """
 
+TINT = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const mk = (id, name, amount) => ({id, name, amount, recurring: true, start: '2026-01'});
+  st.setAppData({startMonth:'2026-01', accounts:[], items:{charlie:{income:[mk('s','Salary',30000)],expenses:[mk('rent','Rent',12000)]},partner:{income:[],expenses:[]},
+    debt:{income:[mk('d1','Karla owes me',2000)],expenses:[mk('d2','I owe Mom',1500)]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  const bg = k => { const e = document.querySelector(`#budget-body details[data-persist="${k}"]`); return e ? getComputedStyle(e).backgroundColor : null; };
+  return {income: bg('sec-income'), expenses: bg('sec-expenses'), debts: bg('debts')};
+}
+"""
+
+def check_tint(pg, name, fails):
+    r = pg.evaluate(TINT); print(name, "tint", r)
+    v = list(r.values())
+    if any(x is None or x == "rgba(0, 0, 0, 0)" for x in v) or len(set(v)) != 3: fails.append(f"{name}: income / expenses / debt need three different tinted backgrounds: {r}")
+
 def check_accounts(pg, name, fails):
     pg.evaluate("() => localStorage.setItem('moneyku_cards', JSON.stringify({accounts: true, 'accounts-p': true}))")
     pg.reload(); pg.wait_for_timeout(2500)
@@ -228,6 +246,7 @@ def main():
                     check_next5(pg, name, fails, shot=str(pathlib.Path(__import__('tempfile').gettempdir()) / f"next5_{name}.png"))
                 if name == "phone-390":
                     check_accounts(pg, name, fails)
+                    check_tint(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
