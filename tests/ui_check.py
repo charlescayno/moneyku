@@ -368,6 +368,35 @@ async () => {
 def check_cardinst(pg, name, fails):
     r = pg.evaluate(CARDINST); print(name, "card installment", r)
     if (r["base"], r.get("afterTick"), r.get("untick"), r.get("afterStatementPaid")) != ("16", "15", "16", "15"): fails.append(f"{name}: card installment progress wrong (want 16,15,16,15): {r}")
+QUICK = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js'); const ex = await import('/js/extras.js');
+  const now = u.currentKey(), A = u.addMonths, w = ms => new Promise(r => setTimeout(r, ms));
+  const base = (exp) => ({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:exp},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  const out = {};
+  st.setAppData(base([])); st.setSelectedKey(now); lay.renderAll(); await w(300);
+  c.openMore(); await w(150); out.emptyAdd = !!document.querySelector('#more-body [data-action="openItemModal"]'); c.closeMore();
+  out.cardEmptyAdd = !!document.querySelector('#sec-card [data-action="openItemModal"]') || document.getElementById('sec-card') === null;
+  st.setAppData(base([{id:'i1',name:'Phone',amount:1000,recurring:true,start:A(now,-1),end:A(now,2),dueDay:5}]));
+  st.getAppData().paid[A(now,-1)] = {i1: true}; lay.renderAll(); await w(300);
+  c.openMore(); await w(150);
+  const card = [...document.querySelectorAll('#more-body details')].find(d => d.textContent.includes('Installments'));
+  out.dots = card.querySelectorAll('.inst-dot').length; out.paidDots = card.querySelectorAll('.inst-dot.is-paid').length; out.nowDot = card.querySelectorAll('.inst-dot.is-now').length;
+  out.paidText = /1\\/4 paid/.test(card.textContent); c.closeMore();
+  out.syncTap = document.getElementById('sync-status').dataset.action === 'syncNow';
+  ex.openHeaderMenu(); await w(200); out.menuSync = !!document.querySelector('[data-action="headerMenuGo"][data-arg0="syncNow"]');
+  out.dividers = document.querySelectorAll('.person-card div[style*="border-top:1px solid"]').length;
+  (await import('/js/ui/quicklog.js')).qlClose(); await w(300);
+  return out;
+}
+"""
+
+def check_quick(pg, name, fails):
+    r = pg.evaluate(QUICK); print(name, "quick wins", r)
+    want = {"emptyAdd": True, "cardEmptyAdd": True, "dots": 4, "paidDots": 1, "nowDot": 1, "paidText": True, "syncTap": True, "menuSync": True, "dividers": 0}
+    bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
+    if bad: fails.append(f"{name}: quick wins wrong (got, want): {bad}")
 def check_fold(pg, name, fails):
     r = pg.evaluate(FOLD); print(name, "fold", r)
     bad = {k: v for k, v in r.items() if v is not True}
@@ -437,6 +466,7 @@ def main():
                     check_bar(pg, name, fails)
                     check_kids(pg, name, fails)
                     check_cardinst(pg, name, fails)
+                    check_quick(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")

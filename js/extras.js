@@ -517,6 +517,7 @@ export function openHeaderMenu() {
   const u = canUndo();
   showSheet("More",
     `<div class="space-y-1.5">
+      ${row("syncNow", "sync", "Sync now", "Send this phone's changes and refresh")}
       ${row("openSearch", "search", "Search")}
       ${row("openAddSheet", "add", "Add income or expense")}
       ${row("histUndo", "undo", "Undo", u ? undoLabel() : "Nothing to undo", !u)}
@@ -525,6 +526,12 @@ export function openHeaderMenu() {
       ${row("toggleMonthPicker", "calendar_month", "Jump to month")}
       ${row("openSettings", "settings", "Settings")}
     </div>`, CLOSE_BTN);
+}
+export async function syncNow() {
+  const d = getAppData(); if (!d) return;
+  if (!navigator.onLine) { toast("Offline: your changes are saved on this phone and will sync when you are back online", "error"); return; }
+  toast("Syncing…", "ok", { duration: 1500 });
+  try { await syncSet(d); renderAll(); toast("Synced", "ok", { duration: 2000 }); } catch (e) { toast("Sync failed, will retry", "error"); }
 }
 export function headerMenuGo(action) {
   qlClose();

@@ -558,11 +558,15 @@ export function allRecurring(k) {
 // Other modules can say a month is settled in another way (e.g. a fully paid BPI card statement covers that month's charge)
 let paidExtra = null;
 export function setPaidExtra(fn) { paidExtra = fn; }
+/** Is month k of an installment settled? (sub-items all ticked, the item ticked, or a fully paid card statement) */
+export function monthPaid(it, k) {
+  const kids = getKids(it, k);
+  return kids.length ? kids.every((c) => isPaid(c.id, k)) : isPaid(it.id, k) || !!(paidExtra && paidExtra(it, k));
+}
 export function monthsPaidCount(it) {
   let count = 0, k = it.start;
   while (cmpKey(k, it.end) <= 0) {
-    const kids = getKids(it, k); // an installment split into sub-items counts as paid when all of them are
-    if (kids.length ? kids.every((c) => isPaid(c.id, k)) : isPaid(it.id, k) || (paidExtra && paidExtra(it, k))) count++;
+    if (monthPaid(it, k)) count++;
     k = addMonths(k, 1);
   }
   return count;

@@ -111,7 +111,8 @@ export function cardSectionHtml(k) {
   const owed = keys.reduce((s, key) => s + statement(key).remaining, 0);
   const count = getItems("charlie", "expenses").filter(isCardItem).length;
   const empty = `<div class="px-3 py-3 text-center"><p class="text-[11px] font-bold text-slate-500">${count ? "No card statements to show for this month." : "No card expenses yet."}</p>
-      <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p></div>`;
+      <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p>
+      <button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 text-[11px] font-bold"><span class="material-icons" style="font-size:16px">add</span>Add a card expense</button></div>`;
   return `<div id="sec-card" style="scroll-margin-top:5.5rem;margin-top:8px">
     <details data-persist="sec-card-v2" class="group">
       <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">

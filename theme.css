@@ -160,3 +160,11 @@ select.as-input { text-transform: lowercase; }
 
 /* projected card + next-months card: lifted off the page so each reads as its own card */
 .proj-card, #next5-card { background: linear-gradient(180deg, #1c2540 0%, #151d34 100%) !important; border: 1px solid rgba(148, 163, 184, .30) !important; box-shadow: 0 10px 28px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .06); }
+
+/* ---- quick wins: installment month dots, header sizing ---- */
+.inst-dots { margin-top: 2px; }
+.inst-dot { width: 8px; height: 8px; border-radius: 3px; background: rgba(148,163,184,.22); }
+.inst-dot.is-paid { background: #34d399; }
+.inst-dot.is-now { outline: 1.5px solid #a5b4fc; outline-offset: 1px; }
+.app-header-title { flex: 1 1 auto; min-width: 0; }
+#sync-status { display: inline-block; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }

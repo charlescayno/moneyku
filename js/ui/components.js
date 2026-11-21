@@ -1,3 +1,4 @@
+import { monthPaid } from '../state.js';
 import { accountForMethod, accountName, autoDeduct, paidMessage, payableAccounts, refundPayment } from "../payfrom.js";
 import { chooseScope } from "../scope.js";
 import { isCardItem } from "../card.js";
@@ -629,7 +630,7 @@ export function personSectionHtml(who, includeDebt = true) {
 
   let debtSectionHtml = "";
   if ((who === "charlie" || who === "partner") && includeDebt) {
-    debtSectionHtml = `<div style="border-top:1px solid rgba(148,163,184,.12);margin-top:12px;padding-top:14px">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
+    debtSectionHtml = `<div style="margin-top:10px">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
   }
 
   return `<details open data-persist="card-${who}" class="person-card glass-card rounded-xl overflow-hidden border ${o.ring} w-full">
@@ -664,7 +665,7 @@ export function personSectionHtml(who, includeDebt = true) {
         </summary>
         <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simIncomeSliderHtml(who)}${simCopyBar("income")}
       </details>
-      <div style="border-top:1px solid rgba(148,163,184,.12);margin-top:12px;padding-top:14px">
+      <div style="margin-top:10px">
         <details open data-persist="sec-expenses${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
           <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
             <div class="flex items-center gap-1 min-w-0">
@@ -1140,6 +1141,8 @@ export function installmentsCardHtml() {
     const monthsLeft = Math.max(0, total - monthsPaid);
     const monthly = Number(it.amount) || 0;
     const remaining = monthly * monthsLeft;
+    const nowK = currentKey();
+    let dots = ""; for (let i = 0, k = it.start; i < total; i++, k = addMonths(k, 1)) dots += `<span title="${monthShort(k)}" class="inst-dot${monthPaid(it, k) ? " is-paid" : ""}${k === nowK ? " is-now" : ""}"></span>`;
     const pct = total ? Math.round((monthsPaid / total) * 100) : 0;
     grandRemaining += remaining; if (monthsLeft > 0) grandMonthly += monthly;
     const urgency = monthsLeft === 0 ? "text-emerald-400 bg-emerald-500/15" : monthsLeft <= 6 ? "text-rose-400 bg-rose-500/15" : monthsLeft <= 12 ? "text-amber-400 bg-amber-500/15" : "text-slate-400 bg-slate-500/15";
@@ -1147,11 +1150,12 @@ export function installmentsCardHtml() {
       <div class="flex items-center justify-between gap-2">
         <div class="min-w-0">
           <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-200 truncate keep-case">${escapeHtml(it.name)}</p><span class="text-[8px] font-bold uppercase ${o.text} keep-case">${o.label}</span></div>
-          <p class="text-[9px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left · <span class="text-indigo-300">tap to edit</span></p>
+          <p class="text-[9px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left · <b class="text-emerald-300">${monthsPaid}/${total} paid</b> · <span class="text-indigo-300">tap to edit</span></p>
         </div>
         <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${urgency} uppercase flex-shrink-0">${monthsLeft === 0 ? "Done" : monthsLeft + " mo left"}</span>
       </div>
       <div class="h-1.5 bg-slate-900/60 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r ${o.grad} rounded-full" style="width:${pct}%"></div></div>
+      <div class="inst-dots flex flex-wrap gap-[3px]" aria-label="${monthsPaid} of ${total} months paid">${dots}</div>
     </div>`;
   }).join("");
   return `<details open class="glass-card rounded-xl overflow-hidden border border-fuchsia-500/15 w-full flex-shrink-0">
@@ -1441,14 +1445,14 @@ export function recurringPaymentsCardHtml() {
 export function refreshMore() {
   const body = $("more-body"), ov = $("more-overlay");
   if (!body || !ov || !ov.classList.contains("open")) return;
-  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
+  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
   body.innerHTML = `\n    ${investmentsCardHtml()}\n    ${inst}\n  `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
 }
 
 export function openMore() {
   const body = $("more-body");
-  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
+  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
   body.innerHTML = `
     ${investmentsCardHtml()}
     ${inst}
