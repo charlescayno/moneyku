@@ -81,6 +81,23 @@ async () => {
 }
 """
 
+ESC = """
+async () => {
+  const m = await import('/js/ui/modals.js'); const c = await import('/js/ui/components.js');
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  const open = id => document.getElementById(id).classList.contains('open');
+  m.closeModal(); await w(100); // the form check before this one leaves a modal open
+  c.toggleMonthPicker(); await w(200);
+  const pickerOpened = open('month-picker');
+  document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await w(200);
+  const pickerClosed = !open('month-picker');
+  m.openItemModal('charlie', 'expenses'); await w(300);
+  const modalOpened = open('modal-overlay');
+  document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await w(200);
+  return {pickerOpened, pickerClosed, modalOpened, modalClosed: !open('modal-overlay')};
+}
+"""
+
 def main():
     srv = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1.5); fails = []
@@ -107,6 +124,8 @@ def main():
                 if name == "phone-390":
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
+                    es = pg.evaluate(ESC); print("esc", es)
+                    if not all(es.values()): fails.append(f"Escape did not close overlays: {es}")
                     pd = pg.evaluate(PAID); print("paid", pd)
                     if pd["paid"]["bg"] == "rgba(0, 0, 0, 0)" or pd["paid"]["icon"] == "rgba(0, 0, 0, 0)" or pd["paid"]["op"] != "1": fails.append(f"paid sub-row tick not visible: {pd['paid']}")
                     if pd["undone"]["icon"] != "rgba(0, 0, 0, 0)" or pd["undone"]["bg"] != "rgba(0, 0, 0, 0)": fails.append(f"undo did not restore the empty box: {pd['undone']}")

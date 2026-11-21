@@ -246,3 +246,24 @@ export function initEventListeners() {
     }
   });
 }
+
+// Escape closes the top-most open overlay (keyboard / desktop). Overlays with their own Escape handling
+// (payfrom, scope, card dialogs) stop the event first, so they are left alone.
+const ESC_ORDER = [
+  ["confirm-overlay", "closeConfirm"],
+  ["ql-overlay", "qlClose"],
+  ["modal-overlay", "closeModal"],
+  ["month-picker", "toggleMonthPicker"],
+  ["more-overlay", "closeMore"],
+];
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || e.defaultPrevented) return;
+  for (const [id, fn] of ESC_ORDER) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains("open") && typeof window[fn] === "function") {
+      e.preventDefault();
+      window[fn]();
+      return;
+    }
+  }
+});
