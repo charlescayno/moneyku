@@ -24,6 +24,7 @@ import {
   getLocalCachedData,
   getLastSaved,
   markSync,
+  dataHash,
   watchAuth,
   signInWithGoogle,
   finishRedirectSignIn,
@@ -269,7 +270,7 @@ const sameData = (a, b) => JSON.stringify(stable(a)) === JSON.stringify(stable(b
  * Returns the local data to keep (and upload), or null to use the cloud data.
  */
 function resolveLocalConflict(cached, remote) {
-  if (!cached) return null;
+  if (!cached) { localStorage.setItem("moneyku_sync_v2", "1"); return null; }
   const legacy = localStorage.getItem("moneyku_sync_v2") !== "1"; // first run of the sign-in version
   const dirty = localStorage.getItem("moneyku_dirty") === "1";
   localStorage.setItem("moneyku_sync_v2", "1");
@@ -278,13 +279,15 @@ function resolveLocalConflict(cached, remote) {
     localStorage.removeItem("moneyku_dirty");
     return null;
   }
+  // Edits were made offline and the cloud has not changed since this device last synced: nothing to argue about, upload them
+  if (dirty && !legacy && localStorage.getItem("moneyku_base") === dataHash(remote)) return cached;
   try {
     localStorage.setItem("moneyku_backup_local", JSON.stringify({ savedAt: new Date().toISOString(), data: cached }));
   } catch (e) { /* storage full: continue */ }
   const keepLocal = window.confirm(
-    "This device has data that differs from the cloud (changes made while syncing was blocked).\n\n" +
-    "OK = keep this device's data and upload it to the cloud\n" +
-    "Cancel = use the cloud data (a backup of this device's data is kept)"
+    "Your changes on this phone have not reached the cloud, and the cloud was also changed from another device.\n\n" +
+    "OK = keep this phone\u0027s version and upload it\n" +
+    "Cancel = use the cloud version (this phone\u0027s version is saved as a backup)"
   );
   return keepLocal ? cached : null;
 }
@@ -332,6 +335,7 @@ function startDataSync(user) {
         const keep = resolveLocalConflict(cached, nextData);
         if (keep) { nextData = keep; uploadLocal = true; }
       }
+      if (!uploadLocal) { try { localStorage.setItem("moneyku_base", dataHash(nextData)); } catch (e) { /* ignore */ } }
       setAppData(nextData);
       rebaseHistory(nextData);
 
@@ -345,7 +349,7 @@ function startDataSync(user) {
       const migrated = migrateGroceryPerMonday(getAppData()) | migrateRemovePcItems(getAppData()) | migrateRenameFamilyExpense(getAppData()) | migrateAddHouseholdExpense(getAppData());
       if (uploadLocal) {
         syncSet(getAppData());
-        toast("Uploaded this device's data to the cloud");
+        toast("Your offline changes were uploaded");
       } else if (reconcileAutoPaid() || migrated) {
         syncSet(getAppData());
         rebaseHistory(getAppData()); // automatic, so not something Undo should reverse

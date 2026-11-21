@@ -176,6 +176,19 @@ function stampAccountDates(appData) {
   }
 }
 
+/** Stable fingerprint of the data, used to tell whether the cloud changed since this device last synced. */
+function stableValue(v) {
+  if (Array.isArray(v)) return v.map(stableValue);
+  if (v && typeof v === "object") { const o = {}; for (const k of Object.keys(v).sort()) o[k] = stableValue(v[k]); return o; }
+  return v;
+}
+export function dataHash(d) {
+  const s = JSON.stringify(stableValue(d));
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return `${h}:${s.length}`;
+}
+
 export async function syncSet(appData, onFail) {
   try { stampAccountDates(appData); } catch (err) { console.warn("Account dates:", err); }
   try { recordChange(appData); } catch (err) { console.warn("History:", err); }
@@ -193,10 +206,13 @@ export async function syncSet(appData, onFail) {
 
   // Offline, Firebase's set() never resolves until the server acks. Don't make the UI wait for it:
   // the local copy is already saved and the SDK keeps the write queued and sends it on reconnect.
+  let snapshotForBase = appData;
+  try { snapshotForBase = JSON.parse(JSON.stringify(appData)); } catch (err) { /* use live object */ }
   const write = (async () => {
     try {
-      await set(dbRef, appData);
+      await set(dbRef, snapshotForBase);
       markSync("synced");
+      try { localStorage.setItem("moneyku_base", dataHash(normalize(JSON.parse(JSON.stringify(snapshotForBase))))); } catch (err) { /* ignore */ }
       try { localStorage.removeItem('moneyku_dirty'); } catch (err) { /* ignore */ }
     } catch (e) {
       try { localStorage.setItem('moneyku_dirty', '1'); } catch (err) { /* ignore */ }
