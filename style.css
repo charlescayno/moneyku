@@ -1464,7 +1464,7 @@ details > summary.bg-indigo-900\/10, details > summary[class*="bg-indigo-900"] {
 .sec-title, summary h3, details > summary > div > h3, header h3 { text-transform: uppercase !important; letter-spacing: .06em; }
 
 /* Touch targets: every tappable thing is at least ~44px tall. Small icons keep their look and get an invisible larger hit area. */
-button[data-action="setAccountsView"], button[data-action="openAccountModal"][title], button[data-action="cardSettingsOpen"],
+button[data-action="setAccountsView"], button[data-action="openAccountModal"]:not([class*="flex-1"]), button[data-action="cardSettingsOpen"],
 button[data-action="toggleField"], button#toast-action, button[data-action="openItemModal"][data-arg1] { position: relative; }
 button[data-action="setAccountsView"]::after, button[data-action="cardSettingsOpen"]::after, button[data-action="toggleField"]::after, button#toast-action::after,
 button[data-action="openAccountModal"]:not([class*="flex-1"])::after { content: ""; position: absolute; inset: -11px -6px; }
