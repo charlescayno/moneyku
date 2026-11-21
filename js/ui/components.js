@@ -672,7 +672,7 @@ export function personSectionHtml(who, includeDebt = true) {
                 <span class="font-bold text-rose-400" style="font-size:14px">${peso(expTot)}</span>
               </div>
             </div>
-            <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
+            <div class="flex items-center gap-2"><button data-action="openExpenseChart" data-arg0="${who}" class="text-[10px] font-bold text-slate-400 px-1.5 py-0.5 rounded-md flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">pie_chart</span>View</button>${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
           </summary>
           <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>${simCopyBar("expenses")}
           ${copyBtn}

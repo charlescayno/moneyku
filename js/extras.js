@@ -81,6 +81,30 @@ export function qlAddChooser() {
     b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "Expense"));
 }
 
+/** Pie (donut) chart of one person's expenses for the month being viewed. */
+export function openExpenseChart(who) {
+  const k = getSelectedKey();
+  const rows = getItems(who, "expenses").filter((it) => itemActiveIn(it, k)).map((it) => ({ name: it.name, v: itemTotal(it, k) })).filter((r) => r.v > 0.005).sort((a, b) => b.v - a.v);
+  const total = rows.reduce((s, r) => s + r.v, 0);
+  if (!total) { showSheet(`Expenses in ${monthShort(k)}`, `<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`, CLOSE_BTN); return; }
+  const MAX = 7;
+  const slices = rows.length > MAX + 1 ? [...rows.slice(0, MAX), { name: "Other", v: rows.slice(MAX).reduce((s, r) => s + r.v, 0) }] : rows;
+  const colors = ["#f43f5e", "#f59e0b", "#10b981", "#6366f1", "#06b6d4", "#d946ef", "#84cc16", "#f97316"];
+  const R = 80, C = 100, r2 = 48;
+  let ang = -Math.PI / 2;
+  const pt = (a, r) => `${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`;
+  const paths = slices.map((s, i) => {
+    const col = colors[i % colors.length], frac = s.v / total;
+    if (frac > 0.9999) return `<circle cx="${C}" cy="${C}" r="${(R + r2) / 2}" fill="none" stroke="${col}" stroke-width="${R - r2}"/>`;
+    const a0 = ang, a1 = ang + frac * Math.PI * 2; ang = a1;
+    const big = frac > 0.5 ? 1 : 0;
+    return `<path d="M${pt(a0, R)} A${R} ${R} 0 ${big} 1 ${pt(a1, R)} L${pt(a1, r2)} A${r2} ${r2} 0 ${big} 0 ${pt(a0, r2)} Z" fill="${col}" stroke="#0f172a" stroke-width="1.5"/>`;
+  }).join("");
+  const legend = slices.map((s, i) => `<div class="flex items-center gap-2 py-1"><span class="flex-shrink-0 rounded-full" style="width:10px;height:10px;background:${colors[i % colors.length]}"></span><span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-200 keep-case">${escapeHtml(s.name)}</span><span class="text-[11px] font-bold text-slate-500 flex-shrink-0">${Math.round((s.v / total) * 100)}%</span><span class="text-[12px] font-black text-white flex-shrink-0 tabular-nums" style="min-width:4.5rem;text-align:right">${peso(s.v)}</span></div>`).join("");
+  const svg = `<svg viewBox="0 0 200 200" class="block mx-auto" style="width:200px;height:200px" role="img" aria-label="Expenses pie chart">${paths}<text x="${C}" y="${C - 2}" text-anchor="middle" font-size="10" font-weight="700" fill="#94a3b8">TOTAL</text><text x="${C}" y="${C + 14}" text-anchor="middle" font-size="14" font-weight="900" fill="#fff">${peso(total)}</text></svg>`;
+  showSheet(`Expenses in ${monthShort(k)}`, `${svg}<div class="mt-2">${legend}</div>`, CLOSE_BTN);
+}
+
 /** Quick spend: pick the bill/budget this month, then log the amount in its spending section. */
 export function qlSpendPick() {
   const k = getSelectedKey();
