@@ -143,3 +143,8 @@ select.as-input { text-transform: lowercase; }
 @keyframes n5-twinkle { 0%, 55%, 100% { transform: scale(0) rotate(0); opacity: 0; } 70% { transform: scale(1.2) rotate(45deg); opacity: 1; } 85% { transform: scale(.6) rotate(90deg); opacity: .7; } }
 .n5-spark { transform-box: fill-box; transform-origin: center; transform: scale(0); opacity: 0; animation: n5-twinkle 2.6s ease-in-out infinite; filter: drop-shadow(0 0 2px #a7f3d0); }
 @media (prefers-reduced-motion: reduce) { .n5-spark { animation: none; opacity: .8; transform: scale(.7); } }
+
+/* received / paid fold */
+.paid-fold > summary .pf-chev { transition: transform .18s ease; }
+.paid-fold[open] > summary .pf-chev { transform: rotate(90deg); }
+.paid-fold > summary::-webkit-details-marker { display: none; }
