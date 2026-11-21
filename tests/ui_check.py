@@ -228,7 +228,7 @@ async () => {
   const pill = document.getElementById('mn-today'), nav = document.getElementById('month-nav');
   r.pillAway = !!pill && pill.getBoundingClientRect().height > 0;
   r.pillBelowNav = !!pill && R(pill).top >= R(nav).bottom - 1;
-  r.pillCentred = !!pill && Math.abs((R(pill).left + R(pill).right) / 2 - innerWidth / 2) < 6;
+  r.pillCentred = !!pill && innerWidth - R(pill).right < 24 && R(pill).right <= innerWidth; // right-aligned
   r.pillTapArea = !!pill && R(pill).height >= 44;
   r.navStable = JSON.stringify(nav0) === JSON.stringify([...document.querySelectorAll('#mn-prev,#mn-label,#mn-next')].map(e => Math.round(R(e).left) + ':' + Math.round(R(e).width)));
   pill?.click(); await w(400);

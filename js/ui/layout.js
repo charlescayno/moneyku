@@ -48,7 +48,7 @@ export function renderBudget() {
     const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), sp2 = hi - lo || 1;
     const X = (i) => 2 + (i * 96) / (vals.length - 1), Y = (v) => 2 + ((hi - v) / sp2) * 24;
     const d = vals.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(" ");
-    sparkHtml = `<svg viewBox="0 0 100 28" class="ml-auto w-24 h-7 flex-shrink-0" role="img" aria-label="Projected balance trend, next 12 months" data-action="openOutlook" data-arg0="all">${lo < 0 ? `<line x1="0" x2="100" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#fb7185" stroke-width="1" stroke-dasharray="2 2" opacity=".7"/>` : ""}<path d="${d}" fill="none" stroke="${Math.min(...vals) < 0 ? "#fb7185" : "#a5b4fc"}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+    sparkHtml = `<svg viewBox="0 0 100 28" class="ml-auto w-24 h-7 flex-shrink-0" role="img" aria-label="Projected balance trend, next 12 months">${lo < 0 ? `<line x1="0" x2="100" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#fb7185" stroke-width="1" stroke-dasharray="2 2" opacity=".7"/>` : ""}<path d="${d}" fill="none" stroke="${Math.min(...vals) < 0 ? "#fb7185" : "#a5b4fc"}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
   }
   const staleDays = Math.max(showC ? (staleBalanceDays("charlie") ?? -1) : -1, showP ? (staleBalanceDays("partner") ?? -1) : -1);
   const projChip = (cls, txt) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${txt}</span>`;
@@ -113,7 +113,7 @@ export function renderBudget() {
           </button>
         </div>
         <div class="flex items-end justify-between gap-3">
-          <p id="sum-projected" data-action="openOutlook" data-arg0="all" title="Open the 12-month outlook" class="cursor-pointer font-black tracking-tight tabular-nums ${riskText}" style="font-size:34px;line-height:1.1">${hideProjected ? '••••••' : sp(projected)}</p>
+          <p id="sum-projected" class="font-black tracking-tight tabular-nums ${riskText}" style="font-size:34px;line-height:1.1">${hideProjected ? '••••••' : sp(projected)}</p>
           ${sparkHtml}
         </div>
       </div>
