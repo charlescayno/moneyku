@@ -292,6 +292,38 @@ def check_card(pg, name, fails):
     r = pg.evaluate(CARD); print(name, "bpi card", r)
     bad = {k: r[k] for k in ("hasCard", "afterDebt", "lastSection", "logoOk", "cardIcon") if not r[k]}
     if bad: fails.append(f"{name}: BPI Platinum section wrong: {r}")
+BAR = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const now = u.currentKey(), A = u.addMonths;
+  st.setAppData({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:[
+    {id:'i1',name:'Phone plan',amount:1000,recurring:true,start:A(now,-1),end:A(now,2),dueDay:5}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  const bar = () => { const row = document.querySelector('[data-action="togglePaidQuick"][data-arg0="i1"]')?.closest('.item-row'); return row ? { w: row.querySelector('.inst-bar-fill')?.style.width, c: row.querySelector('.inst-bar-count')?.textContent, rem: (row.querySelector('.inst-bar-rem')?.textContent || '').trim() } : null; };
+  const go = async (m) => { st.setSelectedKey(m); lay.renderAll(); await w(300); document.querySelectorAll('#budget-body details').forEach(d => d.open = true); };
+  const click = async () => { document.querySelector('[data-action="togglePaidQuick"][data-arg0="i1"]').click(); await w(400); };
+  const out = {};
+  await go(now); out.base = bar();
+  await click(); out.paid1 = bar();
+  await go(A(now, -1)); await click(); out.paid2 = bar();
+  await go(now); out.afterRedraw = bar();           // a redraw must show the same progress
+  await click(); out.unpaid = bar();
+  await go(A(now, -1)); await click(); await go(now);
+  out.allUnpaid = bar();
+  document.getElementById('btn-overview').click(); await w(300);
+  out.overview = document.getElementById('more-overlay').classList.contains('open') && !!document.querySelector('#more-body');
+  return out;
+}
+"""
+
+def check_bar(pg, name, fails):
+    r = pg.evaluate(BAR); print(name, "inst bar", r)
+    want = [("base", "0%", "0/4"), ("paid1", "25%", "1/4"), ("paid2", "50%", "2/4"), ("afterRedraw", "50%", "2/4"), ("unpaid", "25%", "1/4"), ("allUnpaid", "0%", "0/4")]
+    for k, wd, c in want:
+        if not r.get(k) or r[k]["w"] != wd or r[k]["c"] != c: fails.append(f"{name}: installment bar '{k}' expected {wd} {c}, got {r.get(k)}")
+    if r["paid1"] and r["base"] and r["paid1"]["rem"] == r["base"]["rem"]: fails.append(f"{name}: '$ to pay in full' text did not change when paid")
+    if not r["overview"]: fails.append(f"{name}: header Overview button did not open the overview")
 def check_fold(pg, name, fails):
     r = pg.evaluate(FOLD); print(name, "fold", r)
     bad = {k: v for k, v in r.items() if v is not True}
@@ -358,6 +390,7 @@ def main():
                     check_today(pg, name, fails)
                     check_inst(pg, name, fails)
                     check_card(pg, name, fails)
+                    check_bar(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
