@@ -1439,9 +1439,10 @@ export function recurringPaymentsCardHtml() {
 
 export function openMore() {
   const body = $("more-body");
+  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
   body.innerHTML = `
     ${investmentsCardHtml()}
-    ${owedScheduleCardHtml()}
+    ${inst}
   `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
   const ov = $("more-overlay");

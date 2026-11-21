@@ -243,6 +243,35 @@ def check_today(pg, name, fails):
     bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
     if bad: fails.append(f"{name}: today pill wrong (got, want): {bad}")
 
+INST = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js');
+  const now = u.currentKey(), A = u.addMonths;
+  st.setAppData({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:[
+    {id:'i1',name:'Phone plan',amount:1000,recurring:true,start:A(now,-3),end:A(now,5),dueDay:5}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  st.setSelectedKey(now); lay.renderAll(); await w(300);
+  const read = async () => { c.openMore(); await w(150); const card = [...document.querySelectorAll('#more-body details')].find(d => d.textContent.includes('Installments'));
+    const t = card ? card.textContent.replace(/\\s+/g, ' ') : ''; const bar = card?.querySelector('.rounded-full > div');
+    return { left: (t.match(/(\\d+) mo left/) || [])[1], remaining: (t.match(/₱([\\d,]+) left/) || [])[1], pct: bar ? bar.style.width : null, head: (card?.querySelector('summary p.text-fuchsia-300')?.textContent || '') }; };
+  const tick = async (m) => { st.setSelectedKey(m); lay.renderAll(); await w(300); document.querySelectorAll('#budget-body details').forEach(d => d.open = true);
+    const b = document.querySelector('[data-action="togglePaidQuick"][data-arg0="i1"]'); if (!b) return false; b.click(); await w(400); return true; };
+  const out = { base: await read() };
+  out.ticked = await tick(now); out.afterNow = await read();
+  out.tickedPast = await tick(A(now, -1)); out.afterPast = await read();
+  await tick(A(now, -1)); await tick(now); out.restored = await read();
+  return out;
+}
+"""
+
+def check_inst(pg, name, fails):
+    r = pg.evaluate(INST); print(name, "installments", r)
+    b, a1, a2, rs = r["base"], r["afterNow"], r["afterPast"], r["restored"]
+    if not (r["ticked"] and r["tickedPast"]): fails.append(f"{name}: could not find the paid check for the installment"); return
+    if int(b["left"]) - int(a1["left"]) != 1 or a1["pct"] == b["pct"]: fails.append(f"{name}: installment card did not update after ticking this month paid: {b} -> {a1}")
+    if int(a1["left"]) - int(a2["left"]) != 1: fails.append(f"{name}: installment card did not update after ticking last month paid: {a1} -> {a2}")
+    if rs != b: fails.append(f"{name}: installment card did not restore after unticking: {b} vs {rs}")
 def check_fold(pg, name, fails):
     r = pg.evaluate(FOLD); print(name, "fold", r)
     bad = {k: v for k, v in r.items() if v is not True}
@@ -307,6 +336,7 @@ def main():
                     check_tint(pg, name, fails)
                     check_fold(pg, name, fails)
                     check_today(pg, name, fails)
+                    check_inst(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
