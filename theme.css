@@ -76,3 +76,6 @@ body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px
 
 /* ---- native controls (scrollbars, select menus, date pickers) follow the dark theme ---- */
 :root { color-scheme: dark; }
+
+/* ---- scrolling inside the month picker and sheets never drags the page behind them ---- */
+#month-picker, #ql-overlay, #ql-body, #confirm-overlay { overscroll-behavior: contain; }

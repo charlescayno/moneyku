@@ -20,3 +20,6 @@ Notes
 
 
 UI pass (Nov 21): text floor 11px and lighter greys (theme.css); due-soon reminders moved under the headline on phones (layout.js); inline field errors (core.js fieldError). Known: style.css:1431 sets month-nav buttons to 40px on phones (layout_check flags it).
+
+
+UI 5-pass (Nov 21): (1) month bar buttons 44px on phones, (2) toast is a live region, (3) Escape closes top-most overlay, (4) color-scheme dark for native controls, (5) scroll containment on month picker and sheets. Skipped on purpose: role=dialog on overlays (closed overlays are only faded out, would need aria-hidden wiring).

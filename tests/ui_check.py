@@ -126,6 +126,8 @@ def main():
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
                     cs = pg.evaluate("() => getComputedStyle(document.documentElement).colorScheme")
                     if cs != "dark": fails.append(f"color-scheme is {cs!r}, want 'dark'")
+                    oc = pg.evaluate("() => ['month-picker','ql-overlay','ql-body','confirm-overlay'].map(i => getComputedStyle(document.getElementById(i)).overscrollBehaviorY)")
+                    if oc != ["contain"] * 4: fails.append(f"overscroll not contained: {oc}")
                     es = pg.evaluate(ESC); print("esc", es)
                     if not all(es.values()): fails.append(f"Escape did not close overlays: {es}")
                     pd = pg.evaluate(PAID); print("paid", pd)
