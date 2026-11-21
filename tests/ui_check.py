@@ -1,0 +1,495 @@
+"""Browser check for the Nov 21 UI pass (run manually: python tests/ui_check.py).
+Checks: 11px text floor, reminders order (phone vs wide), inline field errors, no horizontal scroll.
+Needs: pip install playwright, and Chrome installed."""
+import subprocess, sys, time, pathlib
+from playwright.sync_api import sync_playwright
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+PORT = 8767
+SETUP = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const day = Math.min(28, new Date().getDate() + 1);
+  st.setAppData({startMonth:'2026-01', items:{charlie:{income:[],expenses:[
+    {id:'a',name:'Meralco electricity bill',amount:5852,recurring:true,start:'2026-01',dueDay:day},
+    {id:'b',name:'Phone installment',amount:1200,recurring:true,start:'2026-01',end:'2027-06',dueDay:day}]},debt:{income:[],expenses:[]}}, settings:{}});
+  document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  await new Promise(r => setTimeout(r, 800));
+}
+"""
+LAYOUT = """
+() => {
+  const top = s => { const e = document.querySelector(s); return e ? e.getBoundingClientRect().top : null; };
+  const slot = document.getElementById('reminders-slot');
+  const small = [...document.querySelectorAll('[class*="text-[8px]"],[class*="text-[9px]"],[class*="text-[10px]"]')]
+    .filter(e => parseFloat(getComputedStyle(e).fontSize) < 10.99).length;
+  const off = [...document.querySelectorAll('#budget-body *')].filter(e => e.children.length === 0 && e.textContent.trim() && e.getBoundingClientRect().width > 0
+    && (e.getBoundingClientRect().right > innerWidth + 0.5 || e.getBoundingClientRect().left < -0.5)).map(e => e.textContent.trim().slice(0, 20));
+  return { hasSlot: !!slot, slotEmpty: slot ? slot.innerHTML.trim() === '' : null, slotTop: top('#reminders-slot'), next5Top: top('#next5-card'),
+           projTop: top('#projected-row'), small, off, hscroll: document.documentElement.scrollWidth > innerWidth + 1 };
+}
+"""
+FORM = """
+async () => {
+  const m = await import('/js/ui/modals.js'); const c = await import('/js/ui/components.js');
+  m.openItemModal('charlie', 'expenses'); await new Promise(r => setTimeout(r, 300));
+  const name = document.getElementById('f-name'); name.value = '';
+  await c.saveModal(); await new Promise(r => setTimeout(r, 100));
+  const err = document.querySelector('.field-error');
+  const r1 = { msg: err && err.textContent, invalid: name.classList.contains('field-invalid'), focused: document.activeElement === name };
+  name.value = 'x'; name.dispatchEvent(new Event('input', { bubbles: true }));
+  const r2 = { cleared: !document.querySelector('.field-error') && !name.classList.contains('field-invalid') };
+  return { ...r1, ...r2 };
+}
+"""
+
+SIM = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const mk = (id, name, who) => ({id, name, amount: 1000, recurring: true, start: '2026-01', dueDay: 5, ...(who ? {copiedFromWho: who} : {})});
+  st.setAppData({startMonth:'2026-01', simCash: 0, items:{charlie:{income:[],expenses:[]},debt:{income:[],expenses:[]},
+    simulated:{income:[mk('i1','Salary C','charlie'), mk('i2','Salary Y','partner')], expenses:[mk('e1','Rent','charlie'), mk('e2','Tuition','partner'), mk('e3','Trip')]}}, settings:{}});
+  st.setSimView(true);
+  document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  await new Promise(r => setTimeout(r, 800));
+  const gs = [...document.querySelectorAll('#sim-view .sim-person-group')];
+  const out = { groups: gs.map(e => (e.dataset.who || 'sim') + ':' + e.querySelectorAll('.item-row').length).sort(),
+                borderC: gs.filter(e => e.dataset.who === 'charlie').map(e => getComputedStyle(e).borderLeftWidth),
+                hscroll: document.documentElement.scrollWidth > innerWidth + 1 };
+  st.setSimView(false);
+  return out;
+}
+"""
+
+PAID = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const ac = await import('/js/ui/actions.js');
+  st.setAppData({startMonth:'2026-01', items:{charlie:{income:[],expenses:[
+    {id:'g1',name:'Home',amount:0,recurring:true,start:'2026-01',children:[{id:'r1',name:'Rent',amount:12000,start:'2026-01',dueDay:1}]}]},debt:{income:[],expenses:[]}}, settings:{}});
+  document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  await new Promise(r => setTimeout(r, 900));
+  document.querySelectorAll('#budget-body details').forEach(d => d.open = true);
+  const btn = document.querySelector('[data-child="r1"] .paid-check');
+  const snap = () => { const s = getComputedStyle(btn), si = getComputedStyle(btn.querySelector('.check-icon')); return {bg: s.backgroundColor, icon: si.color, op: si.opacity}; };
+  ac.applyPaidVisual(btn, true); await new Promise(r => setTimeout(r, 500));
+  const paid = snap();
+  ac.applyPaidVisual(btn, false); await new Promise(r => setTimeout(r, 500));
+  return {paid, undone: snap()};
+}
+"""
+
+ESC = """
+async () => {
+  const m = await import('/js/ui/modals.js'); const c = await import('/js/ui/components.js');
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  const open = id => document.getElementById(id).classList.contains('open');
+  m.closeModal(); await w(100); // the form check before this one leaves a modal open
+  c.toggleMonthPicker(); await w(200);
+  const pickerOpened = open('month-picker');
+  document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await w(200);
+  const pickerClosed = !open('month-picker');
+  m.openItemModal('charlie', 'expenses'); await w(300);
+  const modalOpened = open('modal-overlay');
+  document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); await w(200);
+  return {pickerOpened, pickerClosed, modalOpened, modalClosed: !open('modal-overlay')};
+}
+"""
+
+NEXT5 = """
+async ([cash, inc, exp]) => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const mk = (id, amount) => ({id, name: id, amount, recurring: true, start: '2026-01', dueDay: 28});
+  st.setAppData({startMonth:'2026-01', simCash: cash, items:{charlie:{income:[],expenses:[]},debt:{income:[],expenses:[]},
+    simulated:{income: inc ? [mk('inc', inc)] : [], expenses: exp ? [mk('exp', exp)] : []}}, settings:{}});
+  st.setSimView(true); st.setHideProjected(false);
+  document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  await new Promise(r => setTimeout(r, 900));
+  const gs = [...document.querySelectorAll('#next5-card .n5-stack')];
+  const out = { months: document.querySelectorAll('#next5-card [data-action=selectMonth]').length / 2,
+    stacks: gs.map(g => ({ neg: g.dataset.neg === '1', note: !!g.querySelector('.n5-note'), h: Math.round(g.getBoundingClientRect().height) })),
+    hscroll: document.documentElement.scrollWidth > innerWidth + 1 };
+  st.setSimView(false);
+  return out;
+}
+"""
+
+ADD = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const as = await import('/js/ui/addsheet.js'); const c = await import('/js/ui/components.js'); const m = await import('/js/ui/modals.js');
+  const w = ms => new Promise(r => setTimeout(r, ms)); const k = u.currentKey();
+  const mk = (id, name, amount) => ({id, name, amount, recurring: true, start: '2026-01'});
+  st.setAppData({startMonth:'2026-01', items:{charlie:{income:[],expenses:[mk('rent','Rent',12000), mk('xs','Extra spending',10000)]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(k); lay.renderBudget(); m.closeModal(); await w(300);
+  const r = {};
+  as.openAddSheet(); await w(300);
+  r.title = document.getElementById('modal-title').textContent;
+  r.tabOn = document.querySelector('.as-tab.on')?.textContent.trim();
+  r.defaultItem = document.getElementById('f-qs-item')?.value;
+  r.left0 = document.querySelector('.as-left-amt')?.textContent;
+  const amt = document.getElementById('f-qs-amount'); amt.value = '250'; amt.dispatchEvent(new Event('input'));
+  r.left1 = document.querySelector('.as-left-amt')?.textContent;
+  document.getElementById('f-qs-note').value = 'lunch';
+  r.hscroll = document.documentElement.scrollWidth > innerWidth + 1;
+  await c.saveModal(); await w(300);
+  const sp = st.getAppData().spend?.[k]?.xs || [];
+  r.spend = sp.length ? {amount: sp[sp.length - 1].amount, note: sp[sp.length - 1].note} : null;
+  r.closedAfterSpend = !document.getElementById('modal-overlay').classList.contains('open');
+  as.addSheetTab('bill'); await w(300);
+  r.billTab = document.querySelector('.as-tab.on')?.textContent.trim();
+  r.owners = document.querySelectorAll('.as-owner').length;
+  document.querySelector('.as-owner[data-arg0=partner]').click(); await w(100);
+  r.ownerVal = document.getElementById('f-who').dataset.val;
+  document.getElementById('f-name').value = 'Water'; document.getElementById('f-amount').value = '500';
+  await c.saveModal(); await w(300);
+  r.billSaved = (st.getAppData().items.partner.expenses || []).some(x => x.name === 'Water' && Number(x.amount) === 500);
+  as.addSheetTab('income'); await w(300);
+  r.incomeTitle = document.getElementById('modal-title').textContent;
+  document.getElementById('f-name').value = 'Salary'; document.getElementById('f-amount').value = '30000';
+  await c.saveModal(); await w(300);
+  r.incomeSaved = ['charlie', 'partner'].some(p => (st.getAppData().items[p].income || []).some(x => x.name === 'Salary'));
+  return r;
+}
+"""
+
+ACCTS = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  st.setAppData({startMonth:'2026-01', accounts:[{id:'a1', name:'Maribank', amount:5000, owner:'charlie'}, {id:'a2', name:'GCash', amount:700, owner:'partner'}],
+    items:{charlie:{income:[],expenses:[]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  const d = () => [...document.querySelectorAll('#budget-body details[data-persist^=accounts]')].map(e => e.open);
+  const first = d();
+  document.querySelector('#budget-body details[data-persist=accounts]').open = true;
+  await new Promise(r => setTimeout(r, 200));
+  lay.renderBudget();
+  return {first, afterRedraw: d()};
+}
+"""
+
+TINT = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const mk = (id, name, amount) => ({id, name, amount, recurring: true, start: '2026-01'});
+  st.setAppData({startMonth:'2026-01', accounts:[], items:{charlie:{income:[mk('s','Salary',30000)],expenses:[mk('rent','Rent',12000)]},partner:{income:[],expenses:[]},
+    debt:{income:[mk('d1','Karla owes me',2000)],expenses:[mk('d2','I owe Mom',1500)]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  const bg = k => { const e = document.querySelector(`#budget-body details[data-persist="${k}"]`); return e ? getComputedStyle(e).backgroundColor : null; };
+  return {income: bg('sec-income'), expenses: bg('sec-expenses'), debts: bg('debts')};
+}
+"""
+
+def check_tint(pg, name, fails):
+    r = pg.evaluate(TINT); print(name, "tint", r)
+    v = [r["income"], r["expenses"]]  # debts is intentionally flat now
+    if any(x is None or x == "rgba(0, 0, 0, 0)" for x in v) or len(set(v)) != 2: fails.append(f"{name}: income and expenses need different tinted backgrounds: {r}")
+
+FOLD = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const mk = (id, name, amount) => ({id, name, amount, recurring: true, start: '2026-01'});
+  st.setAppData({startMonth:'2026-01', accounts:[], items:{charlie:{income:[mk('s','Salary',30000)],expenses:[mk('rent','Rent',12000)]},partner:{income:[mk('y','Ynah pay',20000)],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  const card = k => document.querySelector(`#budget-body details[data-persist="card-${k}"]`);
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  const r = { hasCards: !!card('charlie') && !!card('partner'), startsOpen: card('charlie').open && card('partner').open };
+  const inc = card('charlie').querySelector('details[data-persist="sec-income"]');
+  r.incomeVisibleOpen = inc.checkVisibility();
+  card('charlie').querySelector(':scope > summary').click(); await w(200);
+  r.foldedAfterTap = !card('charlie').open;
+  r.incomeHiddenWhenFolded = !inc.checkVisibility();
+  r.otherUntouched = card('partner').open;
+  lay.renderBudget(); await w(100);
+  r.stillFoldedAfterRedraw = !card('charlie').open;
+  card('charlie').querySelector(':scope > summary').click(); await w(200);
+  r.reopened = card('charlie').open;
+  return r;
+}
+"""
+
+TODAY = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js');
+  st.setAppData({startMonth:'2026-01', accounts:[], items:{charlie:{income:[],expenses:[]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  const w = ms => new Promise(r => setTimeout(r, ms)); const R = e => e.getBoundingClientRect();
+  st.setSelectedKey(u.currentKey()); lay.renderAll(); await w(300);
+  const r = { inNav: !!document.querySelector('#month-nav #mn-today'), pillOnCurrent: !!document.getElementById('mn-today') };
+  const nav0 = [...document.querySelectorAll('#mn-prev,#mn-label,#mn-next')].map(e => Math.round(R(e).left) + ':' + Math.round(R(e).width));
+  c.selectMonth(u.addMonths(u.currentKey(), 2)); await w(400);
+  const pill = document.getElementById('mn-today'), nav = document.getElementById('month-nav');
+  r.pillAway = !!pill && pill.getBoundingClientRect().height > 0;
+  r.pillBelowNav = !!pill && R(pill).top >= R(nav).bottom - 1;
+  r.pillCentred = !!pill && innerWidth - R(pill).right < 24 && R(pill).right <= innerWidth; // right-aligned
+  r.pillTapArea = !!pill && R(pill).height >= 44;
+  r.navStable = JSON.stringify(nav0) === JSON.stringify([...document.querySelectorAll('#mn-prev,#mn-label,#mn-next')].map(e => Math.round(R(e).left) + ':' + Math.round(R(e).width)));
+  pill?.click(); await w(400);
+  r.backToToday = st.getSelectedKey() === u.currentKey() && !document.getElementById('mn-today');
+  return r;
+}
+"""
+
+def check_today(pg, name, fails):
+    r = pg.evaluate(TODAY); print(name, "today", r)
+    want = {"inNav": False, "pillOnCurrent": False, "pillAway": True, "pillBelowNav": True, "pillCentred": True, "pillTapArea": True, "navStable": True, "backToToday": True}
+    bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
+    if bad: fails.append(f"{name}: today pill wrong (got, want): {bad}")
+
+INST = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js');
+  const now = u.currentKey(), A = u.addMonths;
+  st.setAppData({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:[
+    {id:'i1',name:'Phone plan',amount:1000,recurring:true,start:A(now,-3),end:A(now,5),dueDay:5}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  st.setSelectedKey(now); lay.renderAll(); await w(300);
+  const read = async () => { c.openMore(); await w(150); const card = [...document.querySelectorAll('#more-body details')].find(d => d.textContent.includes('Installments'));
+    const t = card ? card.textContent.replace(/\\s+/g, ' ') : ''; const bar = card?.querySelector('.rounded-full > div');
+    return { left: (t.match(/(\\d+) mo left/) || [])[1], remaining: (t.match(/₱([\\d,]+) left/) || [])[1], pct: bar ? bar.style.width : null, head: (card?.querySelector('summary p.text-fuchsia-300')?.textContent || '') }; };
+  const tick = async (m) => { st.setSelectedKey(m); lay.renderAll(); await w(300); document.querySelectorAll('#budget-body details').forEach(d => d.open = true);
+    const b = document.querySelector('[data-action="togglePaidQuick"][data-arg0="i1"]'); if (!b) return false; b.click(); await w(400); return true; };
+  const out = { base: await read() };
+  out.ticked = await tick(now); out.afterNow = await read();
+  out.tickedPast = await tick(A(now, -1)); out.afterPast = await read();
+  await tick(A(now, -1)); await tick(now); out.restored = await read();
+  return out;
+}
+"""
+
+def check_inst(pg, name, fails):
+    r = pg.evaluate(INST); print(name, "installments", r)
+    b, a1, a2, rs = r["base"], r["afterNow"], r["afterPast"], r["restored"]
+    if not (r["ticked"] and r["tickedPast"]): fails.append(f"{name}: could not find the paid check for the installment"); return
+    if int(b["left"]) - int(a1["left"]) != 1 or a1["pct"] == b["pct"]: fails.append(f"{name}: installment card did not update after ticking this month paid: {b} -> {a1}")
+    if int(a1["left"]) - int(a2["left"]) != 1: fails.append(f"{name}: installment card did not update after ticking last month paid: {a1} -> {a2}")
+    if rs != b: fails.append(f"{name}: installment card did not restore after unticking: {b} vs {rs}")
+CARD = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const now = u.currentKey();
+  st.setAppData({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:[{id:'c1',name:'Grab',amount:500,recurring:false,start:now,paymentMethod:'bpi_platinum'}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(now); lay.renderAll(); await new Promise(r => setTimeout(r, 600));
+  const card = document.getElementById('sec-card'); const pc = card?.closest('.person-card');
+  const debt = pc && [...pc.querySelectorAll('[data-persist^="debts"], [data-persist^="debt"]')][0];
+  const logo = card?.querySelector('img[src*="bpi-logo"]'), svg = card?.querySelector('svg[aria-label*="Platinum"]');
+  if (logo) await new Promise(r => logo.complete ? r() : (logo.onload = logo.onerror = r));
+  return { hasCard: !!card, hasDebt: !!debt, afterDebt: !!(card && debt && (debt.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING)),
+           lastSection: !!card && pc && card.parentElement.lastElementChild === card, logoOk: !!logo && logo.naturalWidth > 0, cardIcon: !!svg };
+}
+"""
+
+def check_card(pg, name, fails):
+    r = pg.evaluate(CARD); print(name, "bpi card", r)
+    bad = {k: r[k] for k in ("hasCard", "afterDebt", "lastSection", "logoOk", "cardIcon") if not r[k]}
+    if bad: fails.append(f"{name}: BPI Platinum section wrong: {r}")
+BAR = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const now = u.currentKey(), A = u.addMonths;
+  st.setAppData({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:[
+    {id:'i1',name:'Phone plan',amount:1000,recurring:true,start:A(now,-1),end:A(now,2),dueDay:5}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  const bar = () => { const row = document.querySelector('[data-action="togglePaidQuick"][data-arg0="i1"]')?.closest('.item-row'); return row ? { w: row.querySelector('.inst-bar-fill')?.style.width, c: row.querySelector('.inst-bar-count')?.textContent, rem: (row.querySelector('.inst-bar-rem')?.textContent || '').trim() } : null; };
+  const go = async (m) => { st.setSelectedKey(m); lay.renderAll(); await w(300); document.querySelectorAll('#budget-body details').forEach(d => d.open = true); };
+  const click = async () => { document.querySelector('[data-action="togglePaidQuick"][data-arg0="i1"]').click(); await w(400); };
+  const out = {};
+  await go(now); out.base = bar();
+  await click(); out.paid1 = bar();
+  await go(A(now, -1)); await click(); out.paid2 = bar();
+  await go(now); out.afterRedraw = bar();           // a redraw must show the same progress
+  await click(); out.unpaid = bar();
+  await go(A(now, -1)); await click(); await go(now);
+  out.allUnpaid = bar();
+  document.getElementById('btn-overview').click(); await w(300);
+  out.overview = document.getElementById('more-overlay').classList.contains('open') && !!document.querySelector('#more-body');
+  return out;
+}
+"""
+
+def check_bar(pg, name, fails):
+    r = pg.evaluate(BAR); print(name, "inst bar", r)
+    want = [("base", "0%", "0/4"), ("paid1", "25%", "1/4"), ("paid2", "50%", "2/4"), ("afterRedraw", "50%", "2/4"), ("unpaid", "25%", "1/4"), ("allUnpaid", "0%", "0/4")]
+    for k, wd, c in want:
+        if not r.get(k) or r[k]["w"] != wd or r[k]["c"] != c: fails.append(f"{name}: installment bar '{k}' expected {wd} {c}, got {r.get(k)}")
+    if r["paid1"] and r["base"] and r["paid1"]["rem"] == r["base"]["rem"]: fails.append(f"{name}: '$ to pay in full' text did not change when paid")
+    if not r["overview"]: fails.append(f"{name}: header Overview button did not open the overview")
+KIDS = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js');
+  const now = u.currentKey(), A = u.addMonths, w = ms => new Promise(r => setTimeout(r, ms));
+  st.setAppData({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:[
+    {id:'k1',name:'Kuya Rey Iphone',amount:0,recurring:true,start:A(now,-1),end:A(now,2),children:[{id:'k1a',name:'Part A',amount:600,start:A(now,-1)},{id:'k1b',name:'Part B',amount:400,start:A(now,-1)}]}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden'); st.setSelectedKey(now); lay.renderAll(); await w(300);
+  const left = () => { const card = [...document.querySelectorAll('#more-body details')].find(d => d.textContent.includes('Installments')); return card ? (card.textContent.match(/(\\d+) mo left/) || [])[1] : null; };
+  const d = st.getAppData(); d.paid[now] = d.paid[now] || {};
+  c.openMore(); await w(150); const out = { base: left() };
+  d.paid[now].k1a = true; lay.renderAll(); await w(150); out.halfPaid = left();      // only one part paid: month still open, and the open Overview redrew
+  d.paid[now].k1b = true; lay.renderAll(); await w(150); out.allPaid = left();       // both parts paid: the month counts, live
+  return out;
+}
+"""
+
+def check_kids(pg, name, fails):
+    r = pg.evaluate(KIDS); print(name, "installment sub-items", r)
+    if (r["base"], r["halfPaid"], r["allPaid"]) != ("4", "4", "3"): fails.append(f"{name}: installment with sub-items / live refresh wrong (want 4,4,3): {r}")
+CARDINST = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js'); const cd = await import('/js/card.js');
+  const now = u.currentKey(), A = u.addMonths, w = ms => new Promise(r => setTimeout(r, ms));
+  st.setAppData({startMonth:'2026-01', accounts:[{id:'a1',name:'BPI Savings',balance:100000,owner:'charlie'}], paid:{}, spend:{}, cardPayments:[], items:{charlie:{income:[],expenses:[
+    {id:'ci',name:'Kuya Rey Iphone',amount:3624.58,recurring:true,start:A(now,-1),end:A(now,14),txDay:10,paymentMethod:'bpi_platinum'}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden'); st.setSelectedKey(now); lay.renderAll(); await w(400);
+  const left = async () => { c.openMore(); await w(150); const card = [...document.querySelectorAll('#more-body details')].find(d => d.textContent.includes('Installments')); const r = card ? (card.textContent.match(/(\\d+) mo left/) || [])[1] : null; c.closeMore(); return r; };
+  const out = { base: await left() };
+  const keys = cd.keysForMonth ? cd.keysForMonth(now) : [];
+  out.stmtKeys = keys;
+  const btn = document.querySelector('#sec-card [data-action="togglePaidQuick"][data-arg0="ci"]');
+  out.hasTick = !!btn;
+  if (btn) { document.querySelectorAll('#sec-card details').forEach(d => d.open = true); btn.click(); await w(500); out.afterTick = await left(); out.paidFlag = !!st.getAppData().paid?.[now]?.ci; btn.click(); await w(500); out.untick = await left(); }
+  // now pay the whole BPI statement that holds this month's charge, without ticking the item
+  const stKey = [now, A(now, 1)].find(k => cd.statement(k).charges.some(x => x.id === 'ci' && x.month === now));
+  out.stKey = stKey;
+  if (stKey) { const s = cd.statement(stKey); const d = st.getAppData(); d.cardPayments = d.cardPayments || []; d.cardPayments.push({id:'p1', key: stKey, amount: s.total, acctId:'a1', date: now + '-20'}); lay.renderAll(); await w(300); out.afterStatementPaid = await left(); out.status = cd.statement(stKey).status; }
+  return out;
+}
+"""
+
+def check_cardinst(pg, name, fails):
+    r = pg.evaluate(CARDINST); print(name, "card installment", r)
+    if (r["base"], r.get("afterTick"), r.get("untick"), r.get("afterStatementPaid")) != ("16", "15", "16", "15"): fails.append(f"{name}: card installment progress wrong (want 16,15,16,15): {r}")
+QUICK = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const c = await import('/js/ui/components.js'); const ex = await import('/js/extras.js');
+  const now = u.currentKey(), A = u.addMonths, w = ms => new Promise(r => setTimeout(r, ms));
+  const base = (exp) => ({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:exp},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  const out = {};
+  st.setAppData(base([])); st.setSelectedKey(now); lay.renderAll(); await w(300);
+  c.openMore(); await w(150); out.emptyAdd = !!document.querySelector('#more-body [data-action="openItemModal"]'); c.closeMore();
+  out.cardEmptyAdd = !!document.querySelector('#sec-card [data-action="openItemModal"]') || document.getElementById('sec-card') === null;
+  st.setAppData(base([{id:'i1',name:'Phone',amount:1000,recurring:true,start:A(now,-1),end:A(now,2),dueDay:5}]));
+  st.getAppData().paid[A(now,-1)] = {i1: true}; lay.renderAll(); await w(300);
+  c.openMore(); await w(150);
+  const card = [...document.querySelectorAll('#more-body details')].find(d => d.textContent.includes('Installments'));
+  out.dots = card.querySelectorAll('.inst-dot').length; out.paidDots = card.querySelectorAll('.inst-dot.is-paid').length; out.nowDot = card.querySelectorAll('.inst-dot.is-now').length;
+  out.paidText = /1\\/4 paid/.test(card.textContent); c.closeMore();
+  out.syncTap = document.getElementById('sync-status').dataset.action === 'syncNow';
+  ex.openHeaderMenu(); await w(200); out.menuSync = !!document.querySelector('[data-action="headerMenuGo"][data-arg0="syncNow"]');
+  out.dividers = document.querySelectorAll('.person-card div[style*="border-top:1px solid"]').length;
+  (await import('/js/ui/quicklog.js')).qlClose(); await w(300);
+  return out;
+}
+"""
+
+def check_quick(pg, name, fails):
+    r = pg.evaluate(QUICK); print(name, "quick wins", r)
+    want = {"emptyAdd": True, "cardEmptyAdd": True, "dots": 4, "paidDots": 1, "nowDot": 1, "paidText": True, "syncTap": True, "menuSync": True, "dividers": 0}
+    bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
+    if bad: fails.append(f"{name}: quick wins wrong (got, want): {bad}")
+def check_fold(pg, name, fails):
+    r = pg.evaluate(FOLD); print(name, "fold", r)
+    bad = {k: v for k, v in r.items() if v is not True}
+    if bad: fails.append(f"{name}: person card folding wrong: {bad}")
+
+def check_accounts(pg, name, fails):
+    pg.evaluate("() => localStorage.setItem('moneyku_cards', JSON.stringify({accounts: true, 'accounts-p': true}))")
+    pg.reload(); pg.wait_for_timeout(2500)
+    r = pg.evaluate(ACCTS); print(name, "accounts", r)
+    if not r["first"] or any(r["first"]): fails.append(f"{name}: accounts cards should start collapsed even if saved open: {r['first']}")
+    if not r["afterRedraw"] or r["afterRedraw"][0] is not True: fails.append(f"{name}: opening the accounts card should stick through a redraw: {r['afterRedraw']}")
+
+def check_add(pg, name, fails):
+    r = pg.evaluate(ADD); print(name, "add", r)
+    want = {"title": "add expense", "tabOn": "paymentsquick spend", "defaultItem": "xs", "left0": "₱10,000", "left1": "₱9,750",
+            "hscroll": False, "spend": {"amount": 250, "note": "lunch"}, "closedAfterSpend": True, "billTab": "receipt_longnew bill",
+            "owners": 2, "ownerVal": "partner", "billSaved": True, "incomeTitle": "add income", "incomeSaved": True}
+    bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
+    if bad: fails.append(f"{name}: add sheet wrong (got, want): {bad}")
+
+def check_next5(pg, name, fails, shot=None):
+    up = pg.evaluate(NEXT5, [16000, 3000, 0])
+    if shot: pg.locator('#next5-card').screenshot(path=shot)
+    down = pg.evaluate(NEXT5, [2000, 0, 1500])
+    print(name, "next5 up", up, "down", down)
+    s = up["stacks"]
+    if up["months"] != 3: fails.append(f"{name}: next5 shows {up['months']} months, want 3")
+    if len(s) != up["months"]: fails.append(f"{name}: {len(s)} stacks for {up['months']} months")
+    if any(x["neg"] or not x["note"] for x in s): fails.append(f"{name}: positive months need a banknote and no red: {s}")
+    if any(b["h"] <= a["h"] for a, b in zip(s, s[1:])): fails.append(f"{name}: stack heights should grow with the balance: {[x['h'] for x in s]}")
+    d = down["stacks"]
+    if not any(x["neg"] for x in d) or any(x["neg"] and x["note"] for x in d): fails.append(f"{name}: negative months must be red without a banknote: {d}")
+    if up["hscroll"] or down["hscroll"]: fails.append(f"{name}: horizontal scroll with next5 stacks")
+
+def main():
+    srv = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(1.5); fails = []
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch(channel="chrome")
+            for name, w, h in [("phone-320", 320, 640), ("phone-390", 390, 800), ("desktop-1280", 1280, 800)]:
+                pg = b.new_page(viewport={"width": w, "height": h})
+                pg.goto(f"http://localhost:{PORT}/index.html"); pg.wait_for_timeout(2500)
+                pg.evaluate(SETUP)
+                r = pg.evaluate(LAYOUT)
+                print(name, r)
+                if r["small"]: fails.append(f"{name}: {r['small']} elements still under 11px")
+                if r["off"]: fails.append(f"{name}: text off-screen {r['off'][:3]}")
+                if r["hscroll"]: fails.append(f"{name}: horizontal scroll")
+                if r["hasSlot"] and not r["slotEmpty"]:
+                    if w < 768 and not (r["projTop"] <= r["slotTop"] < r["next5Top"]): fails.append(f"{name}: reminders should be above the outlook on phones")
+                    if w >= 768 and not (r["slotTop"] > r["next5Top"]): fails.append(f"{name}: reminders should be below the cards on wide screens")
+                elif not r["hasSlot"]: fails.append(f"{name}: no #reminders-slot")
+                else: print(name, "note: no reminders to show, order not checked")
+                if name == "phone-390":
+                    f = pg.evaluate(FORM); print("form", f)
+                    if f["msg"] != "Name required" or not f["invalid"] or not f["focused"] or not f["cleared"]: fails.append(f"inline error behaviour wrong: {f}")
+                if name in ("phone-390", "desktop-1280"):
+                    check_next5(pg, name, fails, shot=str(pathlib.Path(__import__('tempfile').gettempdir()) / f"next5_{name}.png"))
+                if name == "phone-390":
+                    check_accounts(pg, name, fails)
+                    check_tint(pg, name, fails)
+                    check_fold(pg, name, fails)
+                    check_today(pg, name, fails)
+                    check_inst(pg, name, fails)
+                    check_card(pg, name, fails)
+                    check_bar(pg, name, fails)
+                    check_kids(pg, name, fails)
+                    check_cardinst(pg, name, fails)
+                    check_quick(pg, name, fails)
+                    check_add(pg, name, fails)
+                    ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
+                    if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")
+                    cs = pg.evaluate("() => getComputedStyle(document.documentElement).colorScheme")
+                    if cs != "dark": fails.append(f"color-scheme is {cs!r}, want 'dark'")
+                    oc = pg.evaluate("() => ['month-picker','ql-overlay','ql-body','confirm-overlay'].map(i => getComputedStyle(document.getElementById(i)).overscrollBehaviorY)")
+                    if oc != ["contain"] * 4: fails.append(f"overscroll not contained: {oc}")
+                    es = pg.evaluate(ESC); print("esc", es)
+                    if not all(es.values()): fails.append(f"Escape did not close overlays: {es}")
+                    pd = pg.evaluate(PAID); print("paid", pd)
+                    if pd["paid"]["bg"] == "rgba(0, 0, 0, 0)" or pd["paid"]["icon"] == "rgba(0, 0, 0, 0)" or pd["paid"]["op"] != "1": fails.append(f"paid sub-row tick not visible: {pd['paid']}")
+                    if pd["undone"]["icon"] != "rgba(0, 0, 0, 0)" or pd["undone"]["bg"] != "rgba(0, 0, 0, 0)": fails.append(f"undo did not restore the empty box: {pd['undone']}")
+                if name == "phone-390":
+                    s = pg.evaluate(SIM); print("sim", s)
+                    want = ["charlie:1", "charlie:1", "partner:1", "partner:1", "sim:1"]
+                    if s["groups"] != want: fails.append(f"sim grouping wrong: {s['groups']} (want {want})")
+                    if s["borderC"] and s["borderC"][0] != "3px": fails.append(f"sim group border missing: {s['borderC']}")
+                    if s["hscroll"]: fails.append("sim: horizontal scroll")
+                pg.close()
+            b.close()
+    finally:
+        srv.terminate()
+    print("FAIL" if fails else "PASS"); [print(" -", x) for x in fails]
+    sys.exit(1 if fails else 0)
+
+main()

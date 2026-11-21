@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeData } from "./setup.mjs";
 import { mondaysInMonth } from "../js/utils.js";
-import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals } from "../js/state.js";
+import { setAppData, amountIn, childAmt, itemActiveIn, itemTotal, monthTotals, householdTotals, accountsTotal, runningFundsAt, householdProjectedAt, outlookRows, flowItems, projectionBreakdown, firstNegative, staleBalanceDays } from "../js/state.js";
 
 test("mondaysInMonth counts 4 or 5 Mondays", () => {
   assert.equal(mondaysInMonth("2026-12"), 4);
@@ -69,4 +69,129 @@ test("monthTotals adds income and expenses for the month", () => {
   assert.equal(t.income, 50000);
   assert.equal(t.expenses, 12000);
   assert.equal(t.savings, 38000);
+});
+
+test("partner items stay out of Charles' totals; household combines both", () => {
+  const d = makeData();
+  d.items.charlie.income.push({ id: "i", name: "Salary", amount: 50000, recurring: true, start: "2026-08" });
+  d.items.charlie.expenses.push({ id: "e", name: "Rent", amount: 12000, recurring: true, start: "2026-08" });
+  d.accounts = [{ id: "a1", name: "BPI", amount: 1000 }, { id: "a2", name: "GCash", amount: 400, owner: "partner" }, { id: "a3", name: "Card", amount: 99, owner: "partner", type: "credit" }];
+  d.items.partner = { income: [{ id: "pi", name: "Pay", amount: 30000, recurring: true, start: "2026-08" }], expenses: [{ id: "pe", name: "Bills", amount: 5000, recurring: true, start: "2026-08" }] };
+  setAppData(d);
+  const t = monthTotals("2026-09");
+  assert.equal(t.income, 50000);
+  assert.equal(t.expenses, 12000);
+  assert.equal(t.savings, 38000);
+  assert.equal(t.pI, 30000);
+  assert.equal(t.pE, 5000);
+  const h = householdTotals("2026-09");
+  assert.equal(h.income, 80000);
+  assert.equal(h.expenses, 17000);
+  assert.equal(h.net, 63000);
+  assert.equal(h.partnerNet, 25000);
+  d.items.pdebt = { income: [{ id: "pd1", name: "Lent", amount: 700, recurring: true, start: "2026-08" }], expenses: [] };
+  setAppData(d);
+  assert.equal(monthTotals("2026-09").pdI, 700);
+  assert.equal(monthTotals("2026-09").netPending, 38000); // Charles' projection unaffected by Ynah's debts
+  assert.equal(householdTotals("2026-09").partner.debtNet, 700);
+  const cur = currentKey();
+  const pj = (w) => runningFundsAt(cur, w);
+  assert.equal(pj("partner"), 400 + (30000 - 5000) + 700); // her cash + her income - bills + debts owed to her
+  assert.equal(householdProjectedAt(cur), pj("charlie") + pj("partner"));
+  // Outlook: each month's net equals the change in projected balance, per person and for all
+  const keys = [cur, addMonths(cur, 1), addMonths(cur, 2)];
+  const rowsO = outlookRows(keys);
+  for (const w of ["charlie", "partner", "all"]) {
+    assert.equal(Math.round(rowsO[0][w].bal * 100), Math.round((w === "all" ? accountsTotal() + accountsTotal("partner") : accountsTotal(w)) * 100 + rowsO[0][w].net * 100));
+    for (let i = 1; i < rowsO.length; i++) {
+      assert.equal(Math.round((rowsO[i][w].bal - rowsO[i - 1][w].bal) * 100), Math.round(rowsO[i][w].net * 100));
+    }
+  }
+  assert.equal(rowsO[1].all.bal, rowsO[1].charlie.bal + rowsO[1].partner.bal);
+  // Drill-down items add up to the month's flow; recurring-only never exceeds the full inflow
+  for (const w of ["charlie", "partner"]) {
+    const f = flowItems(cur, w);
+    assert.equal(Math.round(f.income.reduce((s, x) => s + x.amt, 0) * 100), Math.round(rowsO[0][w].inc * 100));
+    assert.equal(Math.round(f.expense.reduce((s, x) => s + x.amt, 0) * 100), Math.round(rowsO[0][w].out * 100));
+  }
+  const cons = outlookRows(keys, { cons: true }), noI = outlookRows(keys, { noInst: true });
+  assert.ok(cons[0].all.inc <= rowsO[0].all.inc);
+  assert.ok(noI[0].all.out <= rowsO[0].all.out);
+  const pb = projectionBreakdown(cur);
+  assert.equal(Math.round((pb.cash + pb.inc - pb.out) * 100), Math.round(rowsO[0].all.bal * 100));
+  assert.equal(firstNegative(rowsO).all, rowsO.find((r) => r.all.bal < 0)?.m ?? null);
+  assert.equal(staleBalanceDays("charlie"), null); // no account has a date in the fixture
+  assert.equal(accountsTotal(), 1000);
+  assert.equal(accountsTotal("partner"), 400);
+  assert.equal(h.cash, 1400);
+  assert.equal(h.charlie.net + h.partner.net, h.net);
+  assert.equal(h.charlie.income + h.partner.income, h.income);
+});
+
+import { stepKey, yearStepKey, currentKey, addMonths } from "../js/utils.js";
+test("stepKey clamps and steps", () => {
+  const tl = ["2026-10", "2026-11", "2026-12", "2027-01"];
+  assert.equal(stepKey(tl, "2026-11", 1), "2026-12");
+  assert.equal(stepKey(tl, "2026-12", 1), "2027-01");
+  assert.equal(stepKey(tl, "2027-01", 1), "2027-01");
+  assert.equal(stepKey(tl, "2026-10", -1), "2026-10");
+  assert.equal(stepKey(tl, "2026-12", -2), "2026-10");
+});
+test("yearStepKey keeps month, clamps at ends", () => {
+  const tl = ["2026-10", "2026-11", "2027-10", "2027-12"];
+  assert.equal(yearStepKey(tl, "2026-10", 1), "2027-10");
+  assert.equal(yearStepKey(tl, "2027-10", -1), "2026-10");
+  assert.equal(yearStepKey(tl, "2026-11", 1), "2027-12");
+  assert.equal(yearStepKey(tl, "2027-10", 1), "2027-12");
+});
+
+test("excluded items stay in the list but are left out of totals", () => {
+  const d = makeData();
+  d.items.charlie.expenses.push({ id: "x", name: "Household", amount: 1000, recurring: true, start: "2026-08" }, { id: "y", name: "Rent", amount: 500, recurring: true, start: "2026-08" });
+  setAppData(d);
+  assert.equal(monthTotals("2026-09").cE, 1500);
+  d.items.charlie.expenses[0].excluded = true;
+  setAppData(d);
+  assert.equal(monthTotals("2026-09").cE, 500);
+  assert.equal(monthTotals("2026-09").toPay, 500);
+});
+
+import { includedWho, setWhoIncluded } from "../js/state.js";
+test("switching a person off removes them from combined numbers only", () => {
+  const d = makeData({ accounts: [{ id: "a", name: "A", amount: 1000 }, { id: "b", name: "B", amount: 400, owner: "partner" }] });
+  d.items.charlie.income = [{ id: "i1", name: "S", amount: 100, recurring: true, start: "2026-08" }];
+  d.items.partner = { income: [{ id: "p1", name: "P", amount: 50, recurring: true, start: "2026-08" }], expenses: [] };
+  d.items.pdebt = { income: [], expenses: [] };
+  setAppData(d);
+  const cur = currentKey();
+  const both = householdProjectedAt(cur), cOnly = runningFundsAt(cur, "charlie");
+  assert.equal(both, runningFundsAt(cur, "charlie") + runningFundsAt(cur, "partner"));
+  assert.equal(setWhoIncluded("partner", false), true);
+  assert.deepEqual(includedWho(), ["charlie"]);
+  assert.equal(householdProjectedAt(cur), cOnly);
+  assert.equal(runningFundsAt(cur, "partner"), 400 + 50); // her own number is unchanged
+  assert.equal(outlookRows([cur])[0].all.bal, cOnly);
+  assert.equal(setWhoIncluded("charlie", false), true); // switching off the last one ticked ticks the other
+  assert.deepEqual(includedWho(), ["partner"]);
+  assert.equal(setWhoIncluded("partner", false), true);
+  assert.deepEqual(includedWho(), ["charlie"]);
+  assert.equal(setWhoIncluded("partner", true), true);
+  assert.deepEqual(includedWho(), ["charlie", "partner"]);
+});
+
+import { includedTotals } from "../js/state.js";
+test("headline tiles follow the ticked people", () => {
+  const d = makeData({ accounts: [{ id: "a", name: "A", amount: 1000 }, { id: "b", name: "B", amount: 400, owner: "partner" }] });
+  d.items.charlie.income = [{ id: "i1", name: "S", amount: 100, recurring: true, start: "2026-08" }];
+  d.items.charlie.expenses = [{ id: "e1", name: "R", amount: 30, recurring: true, start: "2026-08" }];
+  d.items.partner = { income: [{ id: "p1", name: "P", amount: 50, recurring: true, start: "2026-08" }], expenses: [{ id: "pe", name: "Q", amount: 10, recurring: true, start: "2026-08" }] };
+  d.items.pdebt = { income: [], expenses: [] };
+  setAppData(d);
+  const k = currentKey();
+  let t = includedTotals(k);
+  assert.deepEqual([t.current, t.toReceive, t.toPay, t.savings], [1400, 150, 40, 110]);
+  setWhoIncluded("partner", false);
+  t = includedTotals(k);
+  assert.deepEqual([t.current, t.toReceive, t.toPay, t.savings], [1000, 100, 30, 70]);
+  setWhoIncluded("partner", true);
 });

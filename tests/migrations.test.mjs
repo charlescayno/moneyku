@@ -69,3 +69,37 @@ test("is idempotent and a no-op without a Grocery line", () => {
   assert.equal(migrateGroceryPerMonday(empty), false);
   assert.equal(migrateGroceryPerMonday(null), false);
 });
+
+import { migrateRemovePcItems } from "../js/migrations.js";
+test("migrateRemovePcItems removes PC lines and their month data, once", () => {
+  const d = makeData();
+  d.items.charlie.expenses.push({ id: "uniy6tx55", name: "PC", amount: 5000, recurring: true },
+    { id: "keep", name: "Rent", amount: 100, recurring: true, children: [{ id: "zfsz971r3", name: "PC Payment", amount: 1 }, { id: "k2", name: "x", amount: 2 }] });
+  d.paid["2026-11"] = { uniy6tx55: true, keep: true };
+  assert.equal(migrateRemovePcItems(d), true);
+  const names = d.items.charlie.expenses.map((e) => e.id);
+  assert.ok(!names.includes("uniy6tx55") && names.includes("keep"));
+  assert.deepEqual(d.items.charlie.expenses.find((e) => e.id === "keep").children.map((c) => c.id), ["k2"]);
+  assert.deepEqual(d.paid["2026-11"], { keep: true });
+  assert.equal(migrateRemovePcItems(d), false);
+});
+
+import { migrateRenameFamilyExpense } from "../js/migrations.js";
+test("migrateRenameFamilyExpense renames once and is a no-op when missing", () => {
+  const d = makeData();
+  assert.equal(migrateRenameFamilyExpense(d), false);
+  d.items.charlie.expenses.push({ id: "fam", name: "Family Expense", amount: 1, recurring: true, start: "2026-08" });
+  assert.equal(migrateRenameFamilyExpense(d), true);
+  assert.equal(d.items.charlie.expenses.at(-1).name, "Cayno Family Expenses");
+  assert.equal(migrateRenameFamilyExpense(d), false);
+});
+
+import { migrateAddHouseholdExpense } from "../js/migrations.js";
+test("migrateAddHouseholdExpense adds the group once", () => {
+  const d = makeData();
+  assert.equal(migrateAddHouseholdExpense(d), true);
+  const it = d.items.charlie.expenses.find((e) => e.name === "Charles + Ynah Household Expense");
+  assert.ok(it && it.recurring && Array.isArray(it.children));
+  assert.equal(migrateAddHouseholdExpense(d), false);
+  assert.equal(d.items.charlie.expenses.length, 1);
+});

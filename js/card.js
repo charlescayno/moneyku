@@ -237,3 +237,13 @@ export function clearStatement(key) {
   const d = getAppData();
   d.cardStatements = (d.cardStatements || []).filter((s) => s && s.key !== key);
 }
+
+/** A card item's month counts as paid once the statement holding that month's charge is fully paid (installment progress, etc.). */
+export function paidViaStatement(it, m) {
+  if (!isCardItem(it)) return false;
+  for (const key of [m, addMonths(m, 1)]) {
+    const st = statement(key);
+    if (st.status === "paid" && st.charges.some((c) => c.id === it.id && c.month === m)) return true;
+  }
+  return false;
+}

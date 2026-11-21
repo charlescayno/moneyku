@@ -2,7 +2,7 @@
 // One-time data migrations, applied automatically when the data loads.
 // Each returns true when it changed something (the caller then saves to the cloud).
 // =============================
-import { cmpKey, generateId } from "./utils.js";
+import { cmpKey, currentKey, generateId } from "./utils.js";
 
 const GROCERY_FROM = "2026-12";
 const GROCERY_RATE = 3000;
@@ -56,4 +56,62 @@ export function migrateGroceryPerMonday(d) {
     }
   }
   return false;
+}
+
+const PC_IDS = ["uniy6tx55", "zfsz971r3"]; // duplicate "PC" and "PC Payment" lines the user asked to remove
+
+/** Removes the PC / PC Payment lines (and their per-month data). Runs once (flag in settings). */
+export function migrateRemovePcItems(d) {
+  if (!d || !d.items) return false;
+  d.settings = d.settings || {};
+  if (d.settings.pcItemsRemoved) return false;
+  const walk = (list) => (list || []).filter((it) => !PC_IDS.includes(it?.id)).map((it) => {
+    if (Array.isArray(it?.children)) it.children = walk(it.children);
+    return it;
+  });
+  for (const who of ["charlie", "debt"]) {
+    for (const kind of ["income", "expenses"]) {
+      if (Array.isArray(d.items[who]?.[kind])) d.items[who][kind] = walk(d.items[who][kind]);
+    }
+  }
+  for (const field of ["paid", "paidFrom", "overrides", "spend", "deleted"]) {
+    for (const m of Object.values(d[field] || {})) {
+      if (m && typeof m === "object") for (const id of PC_IDS) delete m[id];
+    }
+  }
+  d.settings.pcItemsRemoved = true;
+  return true;
+}
+
+const FAMILY_NAME = "Cayno Family Expenses";
+
+/**
+ * Renames Charles' "Family Expense(s)" parent item to "Cayno Family Expenses".
+ * Acts once (marked in settings) and only if the item is found, so it is safe on every load.
+ */
+export function migrateRenameFamilyExpense(d) {
+  if (!d || !d.items) return false;
+  d.settings = d.settings || {};
+  if (d.settings.familyRenamed) return false;
+  const it = (d.items.charlie?.expenses || []).find((x) => x && /^family\s+expenses?$/i.test((x.name || "").trim()));
+  if (!it) return false;
+  it.name = FAMILY_NAME;
+  d.settings.familyRenamed = true;
+  return true;
+}
+
+const HOUSEHOLD_NAME = "Charles + Ynah Household Expense";
+/**
+ * Adds a monthly "Charles + Ynah Household Expense" group (sub-expenses to be added) under Charles' card, once.
+ * Skipped if an item with that name already exists.
+ */
+export function migrateAddHouseholdExpense(d) {
+  if (!d || !d.items) return false;
+  d.settings = d.settings || {};
+  if (d.settings.householdAdded) return false;
+  d.settings.householdAdded = true;
+  d.items.charlie = d.items.charlie || { income: [], expenses: [] };
+  const exists = (d.items.charlie.expenses || []).some((x) => x && (x.name || "").trim().toLowerCase() === HOUSEHOLD_NAME.toLowerCase());
+  if (!exists) d.items.charlie.expenses.push({ id: generateId(), name: HOUSEHOLD_NAME, amount: 0, recurring: true, start: currentKey(), children: [] });
+  return true;
 }

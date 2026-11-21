@@ -21,13 +21,19 @@ import {
   itemTotal,
   isPaid,
   getKids,
+  dueKids,
+  childAmt,
   getSelectedKey,
+  includedWho,
   timeline,
 } from "./state.js";
+import { CARD_METHOD, statement } from "./card.js";
+import { addMonths } from "./utils.js";
+import { rowIconHtml } from "./ui/components.js";
 
 
 // Returns active items that have a due date in month k
-export function getMonthBillSchedule(k) {
+export function getMonthBillSchedule(k, whos = ["charlie", "debt"]) {
   const { y, m } = keyParts(k);
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const scheduleByDay = {};
@@ -43,7 +49,7 @@ export function getMonthBillSchedule(k) {
   }
 
   // Gather Expenses
-  for (const who of ["charlie", "debt"]) {
+  for (const who of whos) {
     for (const it of getItems(who, "expenses")) {
       if (!itemActiveIn(it, k)) continue;
       const dd = dueDayFor(it);
@@ -52,9 +58,13 @@ export function getMonthBillSchedule(k) {
         const parts = it.txDate.split("-");
         if (parts.length === 3) day = parseInt(parts[2], 10);
       }
-      if (day && day >= 1 && day <= daysInMonth) {
-        const amt = itemTotal(it, k);
-        const settled = isPaid(it.id, k);
+      // Sub-expenses with their own due day are scheduled on their own day; the group covers only the rest
+      const own = dueKids(it, k);
+      const rest = getKids(it, k).filter((c) => dueDayFor(c) == null);
+      if (day && day >= 1) day = Math.min(day, daysInMonth); // a 31st bill falls on the last day of a shorter month
+      if (day && day >= 1 && day <= daysInMonth && (!own.length || rest.length)) {
+        const amt = itemTotal(it, k) - own.reduce((s, c) => s + childAmt(c, k), 0);
+        const settled = own.length ? rest.every((c) => isPaid(c.id, k)) : isPaid(it.id, k);
         scheduleByDay[day].bills.push({
           id: it.id,
           name: it.name,
@@ -62,15 +72,35 @@ export function getMonthBillSchedule(k) {
           paid: settled,
           who,
           paymentMethod: it.paymentMethod,
+          excluded: !!it.excluded,
+          parentId: null,
           isParent: getKids(it).length > 0
         });
         scheduleByDay[day].totalExpenses += amt;
+      }
+      for (const c of own) {
+        const cd = Math.min(dueDayFor(c), daysInMonth);
+        if (!(cd >= 1 && cd <= daysInMonth)) continue;
+        const amt = childAmt(c, k);
+        scheduleByDay[cd].bills.push({
+          id: c.id,
+          name: c.name,
+          parentName: it.name,
+          parentId: it.id,
+          excluded: !!it.excluded,
+          amount: amt,
+          paid: isPaid(c.id, k),
+          who,
+          paymentMethod: it.paymentMethod,
+          isParent: false
+        });
+        scheduleByDay[cd].totalExpenses += amt;
       }
     }
   }
 
   // Gather Incomes
-  for (const who of ["charlie", "debt"]) {
+  for (const who of whos) {
     for (const it of getItems(who, "income")) {
       if (!itemActiveIn(it, k)) continue;
       const dd = dueDayFor(it);
@@ -92,120 +122,112 @@ export function getMonthBillSchedule(k) {
   return { daysInMonth, scheduleByDay, year: y, monthIndex: m };
 }
 
-// Finds bills due within the next N days
-export function getUpcomingBills(daysWindow = 7) {
+// Real bills still unpaid for the current month that are overdue or due within `daysWindow` days, soonest first.
+// `whos` = which lists to read (never the simulation). BPI Platinum purchases are not listed one by one:
+// the card shows as one bill on the statement due date it already uses.
+export function getUpcomingBills(daysWindow = 7, whos = ["charlie", "debt"]) {
   const curK = currentKey();
-  const today = new Date();
-  const currentDay = today.getDate();
-  const { scheduleByDay, daysInMonth } = getMonthBillSchedule(curK);
-  
+  const currentDay = new Date().getDate();
+  const { scheduleByDay, daysInMonth } = getMonthBillSchedule(curK, whos);
   const upcoming = [];
-  
-  // Check from today up to today + daysWindow
-  for (let offset = 0; offset <= daysWindow; offset++) {
-    const checkDay = currentDay + offset;
-    if (checkDay <= daysInMonth) {
-      const dayData = scheduleByDay[checkDay];
-      if (dayData && dayData.bills.length > 0) {
-        for (const b of dayData.bills) {
-          if (!b.paid) {
-            upcoming.push({
-              ...b,
-              dueDay: checkDay,
-              daysDiff: offset,
-              isOverdue: false,
-            });
-          }
-        }
-      }
+  for (let d = 1; d <= Math.min(daysInMonth, currentDay + daysWindow); d++) {
+    for (const b of scheduleByDay[d].bills) {
+      if (b.paid || b.excluded || b.paymentMethod === CARD_METHOD) continue;
+      upcoming.push({ ...b, dueDay: d, daysDiff: d - currentDay, isOverdue: d < currentDay });
     }
   }
-
-  // Also check for any overdue bills (past due day in current month and still unpaid)
-  for (let d = 1; d < currentDay; d++) {
-    const dayData = scheduleByDay[d];
-    if (dayData && dayData.bills.length > 0) {
-      for (const b of dayData.bills) {
-        if (!b.paid) {
-          upcoming.unshift({
-            ...b,
-            dueDay: d,
-            daysDiff: d - currentDay,
-            isOverdue: true,
-          });
-        }
-      }
+  if (whos.includes("charlie")) {
+    for (const s of [addMonths(curK, -2), addMonths(curK, -1), curK]) {
+      const st = statement(s);
+      if (st.dueKey !== curK || !(st.remaining > 0.005)) continue;
+      const d = parseInt(st.due.slice(8, 10), 10);
+      const diff = d - currentDay;
+      if (diff > daysWindow) continue;
+      upcoming.push({ id: `card-${s}`, name: "BPI Platinum card bill", amount: st.remaining, who: "charlie", paymentMethod: CARD_METHOD, isCard: true, cardKey: s, dueDay: d, daysDiff: diff, isOverdue: diff < 0 });
     }
   }
-
-  return upcoming;
+  return upcoming.sort((a, b) => a.daysDiff - b.daysDiff || String(a.name).localeCompare(String(b.name)));
 }
 
-// Upcoming Bills banner widget HTML on dashboard
+// "Show all" state of the reminders list (this session only)
+let remindersExpanded = false;
+const REMINDERS_SHOWN = 4;
+
+export function toggleReminders() {
+  remindersExpanded = !remindersExpanded;
+  const slot = $("reminders-slot");
+  if (slot) slot.innerHTML = upcomingBillsWidgetHtml();
+}
+
+/** Redraw the reminders in place (after something was marked paid). */
+export function refreshReminders() {
+  const slot = $("reminders-slot");
+  if (slot) slot.innerHTML = upcomingBillsWidgetHtml();
+}
+
+// Payment reminders at the top of the dashboard: unpaid real bills for the people ticked in the top bar.
 export function upcomingBillsWidgetHtml() {
-  const upcoming = getUpcomingBills(7);
-  if (!upcoming.length) return "";
+  const curK = currentKey();
+  if (getSelectedKey() !== curK) return ""; // reminders are about this month (marking paid acts on the month on screen)
+  const ws = includedWho();
+  const whos = ws.flatMap((w) => (w === "partner" ? ["partner", "pdebt"] : ["charlie", "debt"]));
+  const upcoming = getUpcomingBills(7, whos);
 
-  const totalDueSoon = upcoming.reduce((sum, b) => sum + b.amount, 0);
+  const shell = (inner, right = "") => `<section id="reminders" aria-label="Payment reminders" class="w-full rounded-2xl border border-indigo-500/20 bg-slate-900/70 px-3 py-2.5 flex flex-col gap-2 flex-shrink-0">${inner}</section>`;
+  if (!upcoming.length) {
+    return shell(`<div class="flex items-center gap-2"><span class="material-icons text-emerald-400" style="font-size:18px">check_circle</span><p class="text-xs font-bold text-slate-300 flex-1 min-w-0 truncate">All caught up <span class="font-medium text-slate-500">· nothing due in the next 7 days</span></p>
+      <button type="button" data-action="openCalendarModal" aria-label="Open the due calendar" class="flex-shrink-0 text-indigo-300 flex items-center" style="padding:8px;margin:-8px"><span class="material-icons" style="font-size:18px">calendar_month</span></button></div>`);
+  }
 
-  const billChips = upcoming.slice(0, 4).map(b => {
-    let badgeText = "";
-    let badgeClass = "";
-    if (b.isOverdue) {
-      badgeText = `Overdue (${ordinal(b.dueDay)})`;
-      badgeClass = "bg-rose-500/20 text-rose-300 border border-rose-500/30";
-    } else if (b.daysDiff === 0) {
-      badgeText = "Due Today!";
-      badgeClass = "bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse";
-    } else if (b.daysDiff === 1) {
-      badgeText = "Due Tomorrow";
-      badgeClass = "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30";
+  const total = upcoming.reduce((sum, b) => sum + b.amount, 0);
+  const overdue = upcoming.filter((b) => b.isOverdue).length;
+  const whoOf = (w) => (w === "partner" || w === "pdebt" ? { n: "Ynah", cls: "text-ynah" } : { n: "Charles", cls: "text-blue-300" });
+  const shown = remindersExpanded ? upcoming : upcoming.slice(0, REMINDERS_SHOWN);
+
+  const rows = shown.map((b) => {
+    let badge, cls;
+    if (b.isOverdue) { badge = `Overdue · ${ordinal(b.dueDay)}`; cls = "bg-rose-500/20 text-rose-300"; }
+    else if (b.daysDiff === 0) { badge = "Due today"; cls = "bg-amber-500/20 text-amber-300"; }
+    else if (b.daysDiff === 1) { badge = "Due tomorrow"; cls = "bg-indigo-500/20 text-indigo-300"; }
+    else { badge = `Due in ${b.daysDiff}d`; cls = "bg-slate-700/60 text-slate-300"; }
+    const who = whoOf(b.who);
+    const debt = b.who === "debt" || b.who === "pdebt" ? " · Debt" : "";
+    const nm = `${escapeHtml(b.name)}${b.parentName ? ` <span class="font-semibold text-slate-500">· ${escapeHtml(b.parentName)}</span>` : ""}`;
+    const plain = escapeHtml(b.name);
+    let open, mark;
+    if (b.isCard) {
+      open = `data-action="cardPayOpen" data-arg0="${b.cardKey}"`;
+      mark = `<button type="button" data-action="cardPayOpen" data-arg0="${b.cardKey}" title="Pay card" aria-label="Pay the BPI Platinum card bill" class="reminder-pay w-10 h-10 rounded-xl border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-300"><span class="material-icons" style="font-size:18px">payments</span></button>`;
+    } else if (b.parentId) {
+      open = `data-action="openChildModal" data-arg0="${b.who}" data-arg1="${b.parentId}" data-arg2="${b.id}"`;
+      mark = `<button type="button" data-action="togglePaidQuick" data-arg0="${b.id}" data-arg1="expenses" title="Mark paid" aria-label="Mark ${plain} paid" class="reminder-pay w-10 h-10 rounded-xl border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-300"><span class="material-icons" style="font-size:18px">check</span></button>`;
     } else {
-      badgeText = `Due in ${b.daysDiff}d (${ordinal(b.dueDay)})`;
-      badgeClass = "bg-slate-700/60 text-slate-300 border border-slate-600/40";
+      open = `data-action="openItemModal" data-arg0="${b.who}" data-arg1="expenses" data-arg2="${b.id}"`;
+      mark = `<button type="button" data-action="dueMarkPaid" data-arg0="${b.id}" title="Mark paid" aria-label="Mark ${plain} paid" class="reminder-pay w-10 h-10 rounded-xl border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-300"><span class="material-icons" style="font-size:18px">check</span></button>`;
     }
-
-    return `
-      <div class="flex items-center justify-between gap-3 p-3 bg-slate-900/60 rounded-xl border border-white/5 hover:border-indigo-500/30 transition-all">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-slate-200 truncate">${escapeHtml(b.name)}</span>
-            <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${badgeClass} uppercase tracking-wider">${badgeText}</span>
-          </div>
-          <p class="text-[10px] text-slate-400 font-medium mt-0.5">${b.paymentMethod === 'bpi_platinum' ? '💳 BPI Platinum' : (PM_LABELS[b.paymentMethod] && isAccountMethod(b.paymentMethod) ? PM_LABELS[b.paymentMethod] : (b.who === 'debt' ? 'Debt / Owed' : 'Expense'))}</p>
-        </div>
-        <div class="flex items-center gap-2.5 flex-shrink-0">
-          <span class="text-xs font-black text-white">${peso(b.amount)}</span>
-          <button data-action="togglePaidQuick" data-arg0="${b.id}" data-arg1="expenses" title="Mark paid" class="w-7 h-7 rounded-lg border border-slate-600 hover:border-emerald-500 hover:bg-emerald-500/20 flex items-center justify-center transition-colors">
-            <span class="material-icons text-slate-400 hover:text-emerald-400" style="font-size:16px">check</span>
-          </button>
-        </div>
+    return `<div ${open} data-reminder="${escapeHtml(b.id)}" class="reminder-row flex items-center gap-2 pl-2 pr-1.5 py-1.5 rounded-xl bg-slate-950/40 border border-white/5 cursor-pointer min-w-0">
+      ${rowIconHtml(b.name, 28)}
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-bold text-slate-100 truncate keep-case">${nm}</p>
+        <p class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5 min-w-0"><span class="text-[9px] font-black px-1.5 py-0.5 rounded ${cls} flex-shrink-0">${badge}</span>${b.isOverdue ? "" : `<span class="text-[10px] font-bold text-slate-400 flex-shrink-0">${ordinal(b.dueDay)}</span>`}</p>
       </div>
-    `;
+      <span class="flex flex-col items-end flex-shrink-0 leading-tight"><span class="text-xs font-black text-white">${peso(b.amount)}</span><span class="text-[10px] font-bold ${who.cls}"><span class="keep-case">${who.n}</span>${debt}</span></span>
+      ${mark}
+    </div>`;
   }).join("");
 
-  return `
-    <div class="md:col-span-2 glass-card rounded-2xl p-4 border border-indigo-500/20 bg-gradient-to-r from-indigo-950/40 to-slate-900 shadow-xl">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
-            <span class="material-icons text-indigo-400" style="font-size: 16px">notifications_active</span>
-          </div>
-          <div>
-            <h4 class="text-xs font-black text-white uppercase tracking-wider">Upcoming &amp; Due Bills</h4>
-            <p class="text-[10px] text-indigo-300/80 font-bold">${upcoming.length} bill${upcoming.length > 1 ? 's' : ''} due soon · ${peso(totalDueSoon)}</p>
-          </div>
-        </div>
-        <button data-action="openCalendarModal" class="px-2.5 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-[10px] font-black text-indigo-300 uppercase tracking-wider flex items-center gap-1 transition-all">
-          <span class="material-icons" style="font-size:13px">calendar_month</span>
-          <span>Timeline</span>
-        </button>
+  const more = upcoming.length > REMINDERS_SHOWN
+    ? `<button type="button" data-action="toggleReminders" aria-expanded="${remindersExpanded}" class="w-full py-1.5 text-[11px] font-bold text-indigo-300 flex items-center justify-center gap-1">${remindersExpanded ? "Show less" : `Show all ${upcoming.length}`}<span class="material-icons" style="font-size:16px">${remindersExpanded ? "expand_less" : "expand_more"}</span></button>`
+    : "";
+
+  return shell(`
+      <div class="flex items-center gap-2">
+        <span class="material-icons ${overdue ? "text-rose-400" : "text-indigo-300"}" style="font-size:18px">notifications_active</span>
+        <div class="min-w-0 flex-1"><p class="text-xs font-black text-white leading-tight">${upcoming.length} bill${upcoming.length > 1 ? "s" : ""} due soon · ${peso(total)}</p>${overdue ? `<p class="text-[10px] font-bold text-rose-300 leading-tight">${overdue} overdue</p>` : ""}</div>
+        <button type="button" data-action="openCalendarModal" aria-label="Open the due calendar" class="flex-shrink-0 text-indigo-300 flex items-center" style="padding:8px;margin:-8px"><span class="material-icons" style="font-size:18px">calendar_month</span></button>
       </div>
-      <div class="space-y-2">
-        ${billChips}
-      </div>
-    </div>
-  `;
+      <div class="flex flex-col gap-1.5 ${remindersExpanded ? "overflow-y-auto" : ""}" ${remindersExpanded ? 'style="max-height:55vh"' : ""}>${rows}</div>
+      ${more}`);
 }
 
 // Full monthly calendar modal
@@ -278,7 +300,7 @@ export function renderCalendarModal(k) {
       <div class="flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-900/40">
         <div class="flex items-center gap-2 min-w-0">
           <span class="w-1.5 h-1.5 rounded-full ${b.paid ? 'bg-slate-600' : 'bg-rose-400'}"></span>
-          <span class="text-xs font-bold ${b.paid ? 'text-slate-500 line-through' : 'text-slate-200'} truncate">${escapeHtml(b.name)}</span>
+          <span class="text-xs font-bold ${b.paid ? 'text-slate-500 line-through' : 'text-slate-200'} truncate keep-case">${escapeHtml(b.name)}${b.parentName ? ` <span class="font-semibold text-slate-500">· ${escapeHtml(b.parentName)}</span>` : ""}</span>
         </div>
         <span class="text-xs font-black ${b.paid ? 'text-slate-500 line-through' : 'text-rose-400'}">${peso(b.amount)}</span>
       </div>

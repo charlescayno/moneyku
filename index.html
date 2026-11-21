@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title>Charles | Money</title>
+    <title>The Lord's Money</title>
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#0f172a" />
     <script>
@@ -41,7 +41,8 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20261116_gear" />
+    <link rel="stylesheet" href="style.css?v=20261121_nav" />
+    <link rel="stylesheet" href="theme.css?v=20261122_quick" />
   </head>
   <body
     class="bg-slate-900 text-slate-100 font-sans select-none"
@@ -153,50 +154,13 @@
           <p
             class="text-indigo-400 text-[10px] font-black tracking-[0.4em] uppercase mt-1"
           >
-            <span id="current-year-display">2026</span>
+            <span id="current-year-display">2026</span><span id="sync-status" data-action="syncNow" title="Tap to sync now" role="status" aria-live="polite" style="cursor:pointer;margin-left:10px;letter-spacing:0;text-transform:none;font-weight:700;color:#94a3b8"></span>
           </p>
         </div>
         <div class="app-header-tools flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-          <button
-            type="button"
-            data-action="toggleDensityMode"
-            id="density-toggle-btn"
-            title="Toggle Density Mode (Compact / Comfortable)"
-            aria-label="Toggle density mode"
-            class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-xl sm:rounded-2xl transition-transform shadow-lg"
-          >
-            <span class="material-icons text-indigo-400 text-xl sm:text-2xl" id="density-icon">view_compact</span>
-          </button>
-          <button type="button" id="undo-btn" data-action="histUndo" disabled title="Nothing to undo" aria-label="Undo" class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-xl sm:rounded-2xl transition-transform shadow-lg opacity-40"><span class="material-icons text-slate-300" style="font-size:20px">undo</span></button>
-          <button type="button" data-action="openHistory" title="History" aria-label="History" class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-xl sm:rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-300" style="font-size:20px">history</span></button>
-          <button type="button" data-action="openSearch" title="Search" aria-label="Search" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-400">search</span></button>
-          <button type="button" data-action="openSettings" title="Settings" aria-label="Settings" class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-xl sm:rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-300" style="font-size:20px">settings</span></button>
-          <button
-            type="button"
-            data-action="openItemModal" data-arg0="charlie" data-arg1="expenses"
-            title="Add Expense"
-            aria-label="Add expense"
-            class="app-header-add w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl transition-transform shadow-lg shadow-indigo-900/40"
-          >
-            <span class="material-icons text-white">add</span>
-          </button>
-          <button
-            type="button"
-            data-action="openMore"
-            title="Intelligence & Overview"
-            aria-label="Open overview"
-            class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"
-          >
-            <span class="material-icons text-indigo-400">insights</span>
-          </button>
-          <button
-            type="button"
-            data-action="toggleMonthPicker"
-            aria-label="Choose month"
-            class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg md:hidden"
-          >
-            <span class="material-icons text-indigo-400">calendar_month</span>
-          </button>
+          <button type="button" id="fab-add" data-action="openAddSheet" title="Add" aria-label="Add income or expense" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl" style="background:#6366f1;box-shadow:0 6px 14px -4px rgba(79,70,229,.55)"><span class="material-icons text-white">add</span></button>
+          <button type="button" id="btn-overview" data-action="openMore" title="Overview" aria-label="Overview" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-indigo-300">insights</span></button>
+          <button type="button" data-action="openHeaderMenu" title="More" aria-label="More" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-300">more_horiz</span></button>
         </div>
       </header>
 
@@ -207,14 +171,14 @@
           id="budget-view"
           class="flex flex-col"
         >
-          <!-- Month strip -->
-          <div
-            id="month-strip"
-            class="flex items-center gap-2 overflow-x-auto px-5 sm:px-6 md:px-8 pt-6 pb-3 no-scrollbar flex-shrink-0"
-          >
-            <!-- month chips injected -->
+          <!-- Person tiles (projected per person), above the month navigation -->
+          <div id="person-tiles" class="px-5 sm:px-6 md:px-8 pt-4 flex-shrink-0 empty:hidden"></div>
+          <!-- Month nav bar -->
+          <div id="month-nav" class="flex items-center gap-2 px-5 sm:px-6 md:px-8 pt-5 pb-3 flex-shrink-0">
+            <button id="mn-prev" data-action="stepMonth" data-arg0="-1" aria-label="Previous month" class="w-11 h-11 rounded-xl bg-slate-800/70 text-slate-200 flex items-center justify-center disabled:opacity-30"><span class="material-icons">chevron_left</span></button>
+            <button id="mn-label" data-action="toggleMonthPicker" aria-label="Pick month" class="flex-1 h-11 rounded-xl bg-slate-800/70 text-slate-100 text-sm font-black uppercase tracking-wider flex items-center justify-center gap-1">Month<span class="material-icons" style="font-size:18px">arrow_drop_down</span></button>
+            <button id="mn-next" data-action="stepMonth" data-arg0="1" aria-label="Next month" class="w-11 h-11 rounded-xl bg-slate-800/70 text-slate-200 flex items-center justify-center disabled:opacity-30"><span class="material-icons">chevron_right</span></button>
           </div>
-
           <div id="month-banner" class="px-5 sm:px-6 md:px-8 pb-2 empty:hidden flex-shrink-0"></div>
 
           <div class="px-5 sm:px-6 md:px-8 pb-4 stagger-in flex flex-col flex-shrink-0" id="budget-body">
@@ -234,17 +198,7 @@
       </main>
     </div>
 
-    <!-- ADD BUTTON (floating) -->
-    <button type="button" id="fab-add" class="fab-add" data-action="qlAddChooser" aria-label="Add income or expense" title="Add">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
 
-    <!-- MOBILE TAB BAR -->
-    <nav id="tabbar" aria-label="Sections" class="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-slate-900/95 border-t border-white/10 flex" style="padding-bottom:env(safe-area-inset-bottom)">
-      <button type="button" data-tab="home" data-action="tabGo" data-arg0="home" class="flex-1 h-[3.25rem] flex flex-col items-center justify-center gap-0.5 text-slate-500"><span class="material-icons" style="font-size:20px">home</span><span class="text-[9px] font-bold">Home</span></button>
-      <button type="button" data-tab="accounts" data-action="tabGo" data-arg0="accounts" class="flex-1 h-[3.25rem] flex flex-col items-center justify-center gap-0.5 text-slate-500"><span class="material-icons" style="font-size:20px">account_balance_wallet</span><span class="text-[9px] font-bold">Accounts</span></button>
-      <button type="button" data-tab="overview" data-action="tabGo" data-arg0="overview" class="flex-1 h-[3.25rem] flex flex-col items-center justify-center gap-0.5 text-slate-500"><span class="material-icons" style="font-size:20px">insights</span><span class="text-[9px] font-bold">Overview</span></button>
-    </nav>
     <!-- QUICK LOG SHEET -->
     <div id="ql-overlay" class="fixed inset-0 z-[58] bg-black/60 opacity-0 pointer-events-none transition-opacity duration-200 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div id="ql-sheet" class="bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4 border border-white/5 shadow-2xl max-h-[85vh] flex flex-col translate-y-full transition-transform duration-300">
@@ -264,11 +218,11 @@
       >
         <div class="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
           <h3 class="text-lg font-black uppercase tracking-wide text-white">Overview</h3>
-          <div class="flex items-center gap-2">
-            <button type="button" aria-label="Sign out" title="Sign out" data-action="signOut" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
+          <div class="flex items-center gap-4">
+            <button type="button" aria-label="Sign out" title="Sign out" data-action="signOut" class="w-11 h-11 flex items-center justify-center bg-slate-800 rounded-xl">
               <span class="material-icons text-slate-400">logout</span>
             </button>
-            <button type="button" aria-label="Close overview" data-action="closeMore" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl">
+            <button type="button" aria-label="Close overview" data-action="closeMore" class="w-11 h-11 flex items-center justify-center bg-slate-800 rounded-xl">
               <span class="material-icons text-slate-400">close</span>
             </button>
           </div>
@@ -374,7 +328,7 @@
         <p id="confirm-sub" class="text-sm text-slate-400 text-center">
           This removes it from every month.
         </p>
-        <div id="confirm-buttons" class="space-y-2 pt-2">
+        <div id="confirm-buttons" class="space-y-5 pt-2">
           <button
             id="confirm-action-btn"
             class="w-full py-4 font-black text-white bg-rose-600 rounded-2xl transition-transform shadow-lg shadow-rose-900/30"
@@ -394,9 +348,12 @@
     <!-- TOAST -->
     <div
       id="toast"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       class="fixed top-6 left-1/2 -translate-x-1/2 z-[80] px-5 py-3 bg-slate-800 border border-white/10 rounded-2xl shadow-2xl flex items-center gap-3 opacity-0 -translate-y-4 pointer-events-none transition-all duration-500"
     >
-      <span id="toast-icon" class="material-icons text-emerald-400 text-lg">check_circle</span>
+      <span id="toast-icon" aria-hidden="true" class="material-icons text-emerald-400 text-lg">check_circle</span>
       <span id="toast-text" class="text-sm font-bold text-white">Done!</span>
       <button
         id="toast-action"

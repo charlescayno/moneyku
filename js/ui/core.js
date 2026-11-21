@@ -33,8 +33,10 @@ export function toast(msg, type = "ok", opts = {}) {
   }
 
   t.classList.add("show");
+  try { navigator.vibrate?.(type === "error" ? [30, 40, 30] : 10); } catch { /* not supported */ }
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), opts.duration || 2000);
+  const hasUndo = !!(opts.actionLabel && typeof opts.onAction === "function");
+  toastTimer = setTimeout(() => t.classList.remove("show"), Math.max(opts.duration || 2400, hasUndo ? 5500 : 0));
 }
 
 // =============================
@@ -257,4 +259,25 @@ window.addEventListener('offline', () => {
 if (!navigator.onLine) {
   const ind = document.getElementById('offline-indicator');
   if(ind) ind.classList.remove('hidden');
+}
+
+// Inline form error: red outline + message under the field, focus it, clear on next typing.
+// Falls back to a toast if the field is not on screen.
+export function fieldError(id, msg) {
+  const el = $(id);
+  if (!el) return toast(msg, "error");
+  el.parentElement?.querySelector(".field-error")?.remove();
+  el.classList.add("field-invalid");
+  el.setAttribute("aria-invalid", "true");
+  const p = document.createElement("p");
+  p.className = "field-error";
+  p.setAttribute("role", "alert");
+  p.textContent = msg;
+  el.insertAdjacentElement("afterend", p);
+  el.focus();
+  el.addEventListener("input", () => {
+    el.classList.remove("field-invalid");
+    el.removeAttribute("aria-invalid");
+    p.remove();
+  }, { once: true });
 }

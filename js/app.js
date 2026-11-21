@@ -3,11 +3,14 @@
 // =============================
 
 import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
-import { openSearch, srOpen, qlAddChooser, qlSpendPick, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip, initExtras } from "./extras.js";
+import { openChildMenu, childMenuEdit, childMenuReorder, childMenuDelete } from './ui/childmenu.js';
+import { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, clearSimulation, openSimCash, simCashSave } from "./simulated.js";
+import { openAddSheet, addSheetTab } from "./ui/addsheet.js";
+import { openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
 import { initHistory, openHistory, histUndo, histRedo, histRestore } from "./ui/historyui.js";
 import { rebaseHistory } from "./history.js";
-import { migrateGroceryPerMonday } from "./migrations.js";
+import { migrateGroceryPerMonday, migrateRemovePcItems, migrateRenameFamilyExpense, migrateAddHouseholdExpense } from "./migrations.js";
 import { autoDeduct } from "./payfrom.js";
 import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo } from "./ui/cardui.js";
 
@@ -21,8 +24,9 @@ import {
   normalize,
   emptyData,
   getLocalCachedData,
-  getPendingEchoes,
-  decrementPendingEchoes,
+  getLastSaved,
+  markSync,
+  dataHash,
   watchAuth,
   signInWithGoogle,
   finishRedirectSignIn,
@@ -57,12 +61,19 @@ import {
   openMore,
   closeMore,
   toggleMonthPicker,
+  stepMonth,
+  goToday,
+  jumpYear,
   selectMonth,
   openItemModal,
   openChildModal,
   openAccountModal,
   openTransferModal,
   setAccountsView,
+  setOutlookWho,
+  toggleOutlookOpt,
+  openOutlook,
+  openOutlookMonth,
   openInvestmentModal,
   closeModal,
   saveModal,
@@ -84,10 +95,18 @@ import {
   qlConfirm,
   initQuickLog,
   toggleProjected,
+  togglePersonIncluded,
+  focusPerson,
+  toggleExplain,
+  next5Shift,
+  next5Reset,
   toggleInvestments,
   toggleExpenseSort,
+  toggleSimPerson,
+  resetSimIncome,
   toggleArrange,
   reorderChildren,
+  reorderItems,
   prevOverviewPage,
   nextOverviewPage,
   jumpOverviewYear,
@@ -100,6 +119,7 @@ import {
 
 import {
   openCalendarModal,
+  toggleReminders,
   closeCalendarModal,
 } from "./calendar.js";
 
@@ -147,11 +167,19 @@ window.openMore = openMore;
 window.closeMore = closeMore;
 window.toggleMonthPicker = toggleMonthPicker;
 window.selectMonth = selectMonth;
+window.stepMonth = stepMonth;
+window.goToday = goToday;
+window.syncNow = syncNow;
+window.jumpYear = jumpYear;
 window.openItemModal = openItemModal;
 window.openChildModal = openChildModal;
 window.openAccountModal = openAccountModal;
 window.openTransferModal = openTransferModal;
 window.setAccountsView = setAccountsView;
+window.setOutlookWho = setOutlookWho;
+window.toggleOutlookOpt = toggleOutlookOpt;
+window.openOutlook = openOutlook;
+window.openOutlookMonth = openOutlookMonth;
 window.openInvestmentModal = openInvestmentModal;
 window.closeModal = closeModal;
 window.saveModal = saveModal;
@@ -174,15 +202,28 @@ window.qlConfirm = qlConfirm;
 initQuickLog();
 import { initArrangeDrag } from "./arrange.js";
 window.toggleProjected = toggleProjected;
+window.togglePersonIncluded = togglePersonIncluded;
+window.focusPerson = focusPerson;
+window.toggleExplain = toggleExplain;
+window.next5Shift = next5Shift;
+window.next5Reset = next5Reset;
 window.toggleInvestments = toggleInvestments;
 window.toggleExpenseSort = toggleExpenseSort;
+window.toggleSimPerson = toggleSimPerson;
+window.resetSimIncome = resetSimIncome;
 window.toggleArrange = toggleArrange;
 window.reorderChildren = reorderChildren;
+window.reorderItems = reorderItems;
 window.prevOverviewPage = prevOverviewPage;
 window.nextOverviewPage = nextOverviewPage;
 window.jumpOverviewYear = jumpOverviewYear;
 window.exportData = exportData;
 window.openCalendarModal = openCalendarModal;
+window.toggleReminders = toggleReminders;
+window.openChildMenu = openChildMenu;
+window.childMenuEdit = childMenuEdit;
+window.childMenuReorder = childMenuReorder;
+window.childMenuDelete = childMenuDelete;
 window.closeCalendarModal = closeCalendarModal;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;
@@ -190,7 +231,8 @@ window.tabGo = tabGo;
 initHistory();
 Object.assign(window, { openHistory, histUndo, histRedo, histRestore });
 Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo });
-Object.assign(window, { dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, addNew, duplicateItem, copyLastMonth, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
+Object.assign(window, { openAddSheet, addSheetTab });
+Object.assign(window, { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, clearSimulation, openSimCash, simCashSave, dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
 initExtras();
 initTabs();
 window.fetchInvestmentRates = fetchInvestmentRates;
@@ -211,7 +253,7 @@ function whenIntroDone(fn) {
   const quick =
     sessionStorage.getItem("moneyku_intro_seen") === "1" ||
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const wait = Math.max(0, (quick ? 250 : 1600) - (performance.now() - bootStart));
+  const wait = Math.max(0, (quick ? 0 : 0) - (performance.now() - bootStart));
   setTimeout(fn, wait);
 }
 
@@ -234,7 +276,7 @@ const sameData = (a, b) => JSON.stringify(stable(a)) === JSON.stringify(stable(b
  * Returns the local data to keep (and upload), or null to use the cloud data.
  */
 function resolveLocalConflict(cached, remote) {
-  if (!cached) return null;
+  if (!cached) { localStorage.setItem("moneyku_sync_v2", "1"); return null; }
   const legacy = localStorage.getItem("moneyku_sync_v2") !== "1"; // first run of the sign-in version
   const dirty = localStorage.getItem("moneyku_dirty") === "1";
   localStorage.setItem("moneyku_sync_v2", "1");
@@ -243,13 +285,15 @@ function resolveLocalConflict(cached, remote) {
     localStorage.removeItem("moneyku_dirty");
     return null;
   }
+  // Edits were made offline and the cloud has not changed since this device last synced: nothing to argue about, upload them
+  if (dirty && !legacy && localStorage.getItem("moneyku_base") === dataHash(remote)) return cached;
   try {
     localStorage.setItem("moneyku_backup_local", JSON.stringify({ savedAt: new Date().toISOString(), data: cached }));
   } catch (e) { /* storage full: continue */ }
   const keepLocal = window.confirm(
-    "This device has data that differs from the cloud (changes made while syncing was blocked).\n\n" +
-    "OK = keep this device's data and upload it to the cloud\n" +
-    "Cancel = use the cloud data (a backup of this device's data is kept)"
+    "Your changes on this phone have not reached the cloud, and the cloud was also changed from another device.\n\n" +
+    "OK = keep this phone\u0027s version and upload it\n" +
+    "Cancel = use the cloud version (this phone\u0027s version is saved as a backup)"
   );
   return keepLocal ? cached : null;
 }
@@ -282,18 +326,22 @@ function startDataSync(user) {
     dbRef,
     (snap) => {
       if (session !== syncSession) return;
-      if (!firstLoad && getPendingEchoes() > 0) {
-        decrementPendingEchoes();
-        return;
-      }
+      if (localStorage.getItem("moneyku_dirty") !== "1") markSync("synced"); // a local echo of a not-yet-confirmed save does not count
       const val = snap.val();
       let nextData = val ? normalize(val) : emptyData();
+      // Our own save coming back is ignored; anything different is another device's edit and must be applied.
+      // (A counter of pending saves used to do this, but it drifted and swallowed other devices' edits.)
+      if (!firstLoad) {
+        const mine = getLastSaved();
+        if (mine && sameData(nextData, normalize(JSON.parse(JSON.stringify(mine))))) return;
+      }
 
       let uploadLocal = false;
       if (firstLoad) {
         const keep = resolveLocalConflict(cached, nextData);
         if (keep) { nextData = keep; uploadLocal = true; }
       }
+      if (!uploadLocal) { try { localStorage.setItem("moneyku_base", dataHash(nextData)); } catch (e) { /* ignore */ } }
       setAppData(nextData);
       rebaseHistory(nextData);
 
@@ -304,10 +352,10 @@ function startDataSync(user) {
         console.warn("Storage error", err);
       }
 
-      const migrated = migrateGroceryPerMonday(getAppData());
+      const migrated = migrateGroceryPerMonday(getAppData()) | migrateRemovePcItems(getAppData()) | migrateRenameFamilyExpense(getAppData()) | migrateAddHouseholdExpense(getAppData());
       if (uploadLocal) {
         syncSet(getAppData());
-        toast("Uploaded this device's data to the cloud");
+        toast("Your offline changes were uploaded");
       } else if (reconcileAutoPaid(autoDeduct) || migrated) {
         syncSet(getAppData());
         rebaseHistory(getAppData()); // automatic, so not something Undo should reverse
@@ -384,6 +432,7 @@ function boot() {
   initGestures();
   initEventListeners();
   initArrangeDrag();  window.__moneykuBooted = true;
+  { const hdr = document.querySelector("header.app-header"); const setH = () => document.documentElement.style.setProperty("--hdr-h", (hdr ? Math.floor(hdr.getBoundingClientRect().height) - 1 : 0) + "px"); if (hdr) { setH(); if (window.ResizeObserver) new ResizeObserver(setH).observe(hdr); window.addEventListener("resize", setH); } }
 
   // Background live ticker: updates rates periodically (only while signed in)
   setInterval(() => {

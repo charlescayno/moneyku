@@ -2,15 +2,16 @@
 // Extras: search, add chooser, duplicate, copy last month, settings (text size, CSV),
 // offline badge, double-tap guard, first-run tip
 // =============================
-import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso } from "./utils.js";
+import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso, PM_LABELS } from "./utils.js";
 import { exportData } from "./ui/actions.js";
-import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, runningFundsAt, setAppData, timeline } from "./state.js";
+import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, outlookRows, runningFundsAt, getSimView, setAppData, timeline, includedWho } from "./state.js";
 import { normalize, syncSet } from "./firebase.js";
 import { addItemData } from "./itemOps.js";
 import { CARD_METHOD, charges, statement } from "./card.js";
 import { catInfo, categoryOf } from "./categories.js";
 import { toast } from "./ui/core.js";
 import { renderAll } from "./ui/layout.js";
+import { canUndo, undoLabel } from "./history.js";
 import { closeModal, openChildModal, openItemModal } from "./ui/modals.js";
 import { qlClose, showSheet } from "./ui/quicklog.js";
 
@@ -75,19 +76,59 @@ export function srOpen(who, kind, id, parentId) {
 // ---------- 4. Add chooser ----------
 export function qlAddChooser() {
   const b = (cls, kind, label) => `<button type="button" data-action="addNew" data-arg0="${kind}" class="flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-1 ${cls}"><span class="material-icons" style="font-size:16px">add</span>${label}</button>`;
-  showSheet("Add", `<p class="text-sm text-slate-300">What do you want to add?</p>`,
+  showSheet("Add", "",
     b("text-emerald-300 bg-emerald-500/15 border border-emerald-500/25", "income", "Income") +
-    b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "Bill") +
-    `<button type="button" data-action="qlSpendPick" class="flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-1 text-sky-300 bg-sky-500/15 border border-sky-500/25"><span class="material-icons" style="font-size:16px">payments</span>Spend</button>`);
+    b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "Expense"));
+}
+
+/** Pie (donut) chart of one person's expenses for the month being viewed. `mode` picks what the slices are. */
+const PIE_MODES = [["item", "Expense"], ["cat", "Category"], ["type", "Type"], ["pay", "Pay via"], ["paid", "Status"]];
+export function openExpenseChart(who, mode = "item") {
+  const k = getSelectedKey();
+  if (!PIE_MODES.some(([id]) => id === mode)) mode = "item";
+  const items = getItems(who, "expenses").filter((it) => itemActiveIn(it, k)).map((it) => ({ it, v: itemTotal(it, k) })).filter((r) => r.v > 0.005);
+  const palette = ["#f43f5e", "#f59e0b", "#10b981", "#6366f1", "#06b6d4", "#d946ef", "#84cc16", "#f97316"];
+  // Collapse the items into slices { name, v, color? } according to the chosen view
+  const group = (keyOf, nameOf, colorOf) => {
+    const m = new Map();
+    for (const r of items) { const key = keyOf(r.it); const g = m.get(key) || { name: nameOf(key, r.it), v: 0, color: colorOf ? colorOf(key) : null }; g.v += r.v; m.set(key, g); }
+    return [...m.values()];
+  };
+  let rows;
+  if (mode === "cat") rows = group((it) => categoryOf(it), (id) => catInfo(id).label, (id) => catInfo(id).color);
+  else if (mode === "type") rows = group((it) => (!it.recurring ? "One-time" : it.end ? "Installment" : "Recurring"), (key) => key);
+  else if (mode === "pay") rows = group((it) => it.paymentMethod && it.paymentMethod !== "cash" && it.paymentMethod !== "none" ? it.paymentMethod : "cash", (key) => (key === "cash" ? "Cash / other" : PM_LABELS[key] || (String(key).startsWith("cc_") ? "Credit card" : key)));
+  else if (mode === "paid") rows = group((it) => (isPaid(it.id, k) ? "paid" : "unpaid"), (key) => (key === "paid" ? "Paid" : "Still to pay"), (key) => (key === "paid" ? "#10b981" : "#f43f5e"));
+  else rows = items.map((r) => ({ name: r.it.name, v: r.v }));
+  rows.sort((a, b) => b.v - a.v);
+  const total = rows.reduce((s, r) => s + r.v, 0);
+  const tabs = `<div class="flex flex-wrap gap-1.5 mb-3">${PIE_MODES.map(([id, label]) => `<button type="button" data-action="openExpenseChart" data-arg0="${who}" data-arg1="${id}" aria-pressed="${id === mode}" class="text-[11px] font-bold px-2.5 rounded-full ${id === mode ? "bg-indigo-600 text-white" : "bg-white/5 text-slate-400"}" style="min-height:32px">${label}</button>`).join("")}</div>`;
+  if (!total) { showSheet(`Expenses in ${monthShort(k)}`, `${tabs}<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`, CLOSE_BTN); return; }
+  const MAX = 7;
+  const slices = rows.length > MAX + 1 ? [...rows.slice(0, MAX), { name: "Other", v: rows.slice(MAX).reduce((s, r) => s + r.v, 0) }] : rows;
+  const col = (s, i) => s.color || palette[i % palette.length];
+  const R = 80, C = 100, r2 = 48;
+  let ang = -Math.PI / 2;
+  const pt = (a, r) => `${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`;
+  const paths = slices.map((s, i) => {
+    const frac = s.v / total;
+    if (frac > 0.9999) return `<circle cx="${C}" cy="${C}" r="${(R + r2) / 2}" fill="none" stroke="${col(s, i)}" stroke-width="${R - r2}"/>`;
+    const a0 = ang, a1 = ang + frac * Math.PI * 2; ang = a1;
+    const big = frac > 0.5 ? 1 : 0;
+    return `<path d="M${pt(a0, R)} A${R} ${R} 0 ${big} 1 ${pt(a1, R)} L${pt(a1, r2)} A${r2} ${r2} 0 ${big} 0 ${pt(a0, r2)} Z" fill="${col(s, i)}" stroke="#0f172a" stroke-width="1.5"/>`;
+  }).join("");
+  const legend = slices.map((s, i) => `<div class="flex items-center gap-2 py-1"><span class="flex-shrink-0 rounded-full" style="width:10px;height:10px;background:${col(s, i)}"></span><span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-200 keep-case">${escapeHtml(s.name)}</span><span class="text-[11px] font-bold text-slate-500 flex-shrink-0">${Math.round((s.v / total) * 100)}%</span><span class="text-[12px] font-black text-white flex-shrink-0 tabular-nums" style="min-width:4.5rem;text-align:right">${peso(s.v)}</span></div>`).join("");
+  const svg = `<svg viewBox="0 0 200 200" class="block mx-auto" style="width:200px;height:200px" role="img" aria-label="Expenses pie chart">${paths}<text x="${C}" y="${C - 2}" text-anchor="middle" font-size="10" font-weight="700" fill="#94a3b8">TOTAL</text><text x="${C}" y="${C + 14}" text-anchor="middle" font-size="14" font-weight="900" fill="#fff">${peso(total)}</text></svg>`;
+  showSheet(`Expenses in ${monthShort(k)}`, `${tabs}${svg}<div class="mt-2">${legend}</div>`, CLOSE_BTN);
 }
 
 /** Quick spend: pick the bill/budget this month, then log the amount in its spending section. */
 export function qlSpendPick() {
   const k = getSelectedKey();
   const list = getItems("charlie", "expenses").filter((it) => itemActiveIn(it, k) && !(it.paymentMethod === CARD_METHOD));
-  const rows = list.map((it) => `<button type="button" data-action="srOpen" data-arg0="charlie" data-arg1="expenses" data-arg2="${it.id}" data-arg3="" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/50 text-left"><span class="text-sm font-bold text-slate-100 truncate">${escapeHtml(it.name)}</span><span class="text-xs font-black text-slate-400 flex-shrink-0">${peso(itemTotal(it, k))}</span></button>`).join("");
+  const rows = list.map((it) => `<button type="button" data-action="srOpen" data-arg0="charlie" data-arg1="expenses" data-arg2="${it.id}" data-arg3="" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/50 text-left"><span class="text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(it.name)}</span><span class="text-xs font-black text-slate-400 flex-shrink-0">${peso(itemTotal(it, k))}</span></button>`).join("");
   showSheet(`Spend in ${monthShort(k)}`, `<p class="text-[11px] text-slate-400 mb-1">Pick where the money goes, then add the amount under "Spending".</p>${rows || `<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`}`, CLOSE_BTN);
-}export function addNew(kind) { qlClose(); setTimeout(() => openItemModal("charlie", kind), 120); }
+}export function addNew(kind) { const w = includedWho(); const who = getSimView() ? "simulated" : w.length === 1 ? w[0] : "charlie"; qlClose(); setTimeout(() => openItemModal(who, kind), 120); }
 
 // ---------- 3. Duplicate / copy last month ----------
 const cloneItem = (it, patch = {}) => {
@@ -118,13 +159,58 @@ export function lastMonthOneTimes() {
   return out;
 }
 
-export async function copyLastMonth() {
-  const k = getSelectedKey();
+// Pick which of last month's one-time items to copy into this month (all ticked to start)
+export function openCopyPicker() {
   const todo = lastMonthOneTimes();
   if (!todo.length) return toast("Nothing to copy", "error");
-  await applyWithUndo((d) => { todo.forEach(({ kind, it }) => d.items.charlie[kind].push(cloneItem(it, { start: k }))); }, `Copied ${todo.length} item${todo.length === 1 ? "" : "s"}`);
+  const rows = todo.map(({ kind, it }) => `<button type="button" data-action="copyToggle" data-arg0="${it.id}" data-copy="${it.id}" data-on="true" class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-slate-900/50 text-left">
+      <span class="material-icons text-emerald-300 copy-box" style="font-size:20px">check_circle</span>
+      <span class="flex-1 min-w-0 text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(it.name)}</span>
+      <span class="text-xs font-black flex-shrink-0 ${kind === "income" ? "text-emerald-400" : "text-rose-400"}">${peso(it.amount)}</span></button>`).join("");
+  showSheet(`Copy from ${monthShort(addMonths(getSelectedKey(), -1))}`,
+    `<div class="flex justify-end pb-1"><button type="button" id="copy-all" data-action="copyAll" class="text-[11px] font-bold text-indigo-300 px-2 py-1 rounded-lg bg-white/5">Deselect all</button></div><div class="space-y-1">${rows}</div>`,
+    `<button type="button" data-action="qlClose" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Cancel</button>
+     <button type="button" id="copy-go" data-action="copyLastMonth" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-indigo-600">Copy ${todo.length}</button>`);
 }
 
+// Redraw the circles, the Copy count and the select-all label from each row's data-on
+function copySync() {
+  const rows = [...document.querySelectorAll("[data-copy]")];
+  rows.forEach((el) => {
+    const on = el.dataset.on === "true";
+    const box = el.querySelector(".copy-box");
+    if (box) { box.textContent = on ? "check_circle" : "radio_button_unchecked"; box.className = `material-icons copy-box ${on ? "text-emerald-300" : "text-slate-500"}`; }
+  });
+  const n = rows.filter((el) => el.dataset.on === "true").length;
+  const go = document.getElementById("copy-go");
+  if (go) { go.textContent = n ? `Copy ${n}` : "Copy"; go.style.opacity = n ? "1" : ".5"; }
+  const all = document.getElementById("copy-all");
+  if (all) all.textContent = n === rows.length ? "Deselect all" : "Select all";
+}
+
+export function copyToggle(id) {
+  const el = document.querySelector(`[data-copy="${id}"]`);
+  if (!el) return;
+  el.dataset.on = String(el.dataset.on !== "true");
+  copySync();
+}
+
+/** Select everything, or deselect everything when all are already selected. */
+export function copyAll() {
+  const rows = [...document.querySelectorAll("[data-copy]")];
+  const allOn = rows.every((el) => el.dataset.on === "true");
+  rows.forEach((el) => { el.dataset.on = String(!allOn); });
+  copySync();
+}
+/** Copies the ticked items from the picker into this month. */
+export async function copyLastMonth() {
+  const k = getSelectedKey();
+  const ids = new Set([...document.querySelectorAll('[data-copy][data-on="true"]')].map((e) => e.dataset.copy));
+  const todo = lastMonthOneTimes().filter(({ it }) => ids.has(it.id));
+  if (!todo.length) return toast("Tick at least one item", "error");
+  qlClose();
+  await applyWithUndo((d) => { todo.forEach(({ kind, it }) => d.items.charlie[kind].push(cloneItem(it, { start: k }))); }, `Copied ${todo.length} item${todo.length === 1 ? "" : "s"}`);
+}
 // ---------- Settings (text size, exports, key) ----------
 export function applyTextSize() {
   const large = lsGet("moneyku_text") === "large";
@@ -145,9 +231,7 @@ export function openSettings() {
      ${row("openExport", "ios_share", "Export data (CSV / backup)&hellip;")}
      ${row("exportData", "download", "Full backup (JSON)")}
      ${row("openRestore", "settings_backup_restore", "Restore from a backup")}
-     ${row("importCardAsk", "credit_card", "Import BPI Platinum charges (Oct 15 - Nov 13)")}
-     <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 pt-2">Quick log</p>
-     ${row("qlOpenKey", "key", "Gemini API key")}`, CLOSE_BTN);
+     ${row("importCardAsk", "credit_card", "Import BPI Platinum charges (Oct 15 - Nov 13)")}`, CLOSE_BTN);
 }
 
 /** Months chosen in the Export sheet (From / To). Falls back to the month being viewed. */
@@ -208,7 +292,7 @@ export function openExport() {
     </div>
     <div class="space-y-1.5">
       ${row("exportMonthCsv", "table_view", "Selected months", "Income and expenses for the months above (CSV)")}
-      ${row("exportOutlookCsv", "insights", "12-month outlook", "Per-month income, spending, net and balance. One month selected = 12 months from it (CSV)")}
+      ${row("exportOutlookCsv", "insights", "12-month outlook", "Per-month inflow, outflow, net and balance for everyone, Charles and Ynah. One month selected = 12 months from it (CSV)")}
       ${row("exportItemsCsv", "list_alt", "All income &amp; expenses", "Every item with dates, amounts and category (CSV)")}
       ${row("exportCardCsv", "credit_card", "BPI Platinum charges", "Statements due in the months above, with their charges (CSV)")}
       ${row("exportData", "backup", "Full backup", "Everything, to restore later (JSON)")}
@@ -220,12 +304,12 @@ export function exportOutlookCsv() {
   const { from, to, keys } = exportRange();
   const list = [];
   if (from === to) { for (let i = 0; i < 13; i++) list.push(addMonths(from, i)); } else list.push(...keys);
-  const rows = [["Month", "Income", "Expenses", "Net", "Projected balance"]];
-  for (const m of list) {
-    if (!timeline().includes(m)) continue;
-    const t = monthTotals(m);
-    const inc = t.income + t.dI, out = t.expenses + t.dE;
-    rows.push([m, inc.toFixed(2), out.toFixed(2), (inc - out).toFixed(2), runningFundsAt(m).toFixed(2)]);
+  // Inflow/Outflow = what is still to come that month, so Net is the change in the projected balance
+  const rows = [["Month", "Inflow", "Outflow", "Net", "Projected balance (all)", "Charles inflow", "Charles outflow", "Charles net", "Charles balance", "Ynah inflow", "Ynah outflow", "Ynah net", "Ynah balance"]];
+  const f = (n) => n.toFixed(2);
+  for (const r of outlookRows(list.filter((m) => timeline().includes(m)))) {
+    const { all, charlie: c, partner: p } = r;
+    rows.push([r.m, f(all.inc), f(all.out), f(all.net), f(all.bal), f(c.inc), f(c.out), f(c.net), f(c.bal), f(p.inc), f(p.out), f(p.net), f(p.bal)]);
   }
   downloadCsv(`moneyku_outlook_${from}${from === to ? "" : "_to_" + to}.csv`, rows);
 }
@@ -399,7 +483,7 @@ export function tipCardHtml() {
   return `<div id="tip-card" class="flex items-start gap-2 bg-indigo-500/10 border border-indigo-500/25 rounded-xl px-3 py-2">
     <span class="material-icons text-indigo-300" style="font-size:16px;margin-top:1px">swipe</span>
     <p class="flex-1 text-[11px] text-indigo-100 leading-snug"><b>Tips:</b> swipe a row right to mark it paid, left to edit. Tap the + button to add an item.</p>
-    <button type="button" data-action="dismissTip" class="text-[11px] font-bold text-indigo-300 flex-shrink-0">Got it</button></div>`;
+    <button type="button" data-action="dismissTip" class="text-[11px] font-bold text-indigo-300 flex-shrink-0" style="padding:10px 8px;margin:-10px -4px -10px 0">Got it</button></div>`;
 }
 export function dismissTip() { lsSet("moneyku_tip_seen", "1"); document.getElementById("tip-card")?.remove(); document.querySelectorAll(".nudge-hint").forEach((e) => e.classList.remove("nudge-hint")); }
 
@@ -425,4 +509,31 @@ export function initExtras() {
     if (now - lastDel < 900) { e.stopPropagation(); e.preventDefault(); }
     lastDel = now;
   }, true);
+}
+
+// ---------- Header "more" menu: the less-used buttons live here ----------
+export function openHeaderMenu() {
+  const row = (action, icon, label, sub = "", off = false) => `<button type="button" data-action="headerMenuGo" data-arg0="${action}" ${off ? "disabled" : ""} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-900/50 text-left ${off ? "opacity-40" : ""}"><span class="material-icons text-slate-300" style="font-size:20px">${icon}</span><span class="flex-1 min-w-0"><span class="block text-sm font-bold text-slate-100">${label}</span>${sub ? `<span class="block text-[11px] text-slate-500 truncate">${escapeHtml(sub)}</span>` : ""}</span></button>`;
+  const u = canUndo();
+  showSheet("More",
+    `<div class="space-y-1.5">
+      ${row("syncNow", "sync", "Sync now", "Send this phone's changes and refresh")}
+      ${row("openSearch", "search", "Search")}
+      ${row("openAddSheet", "add", "Add income or expense")}
+      ${row("histUndo", "undo", "Undo", u ? undoLabel() : "Nothing to undo", !u)}
+      ${row("openHistory", "history", "History")}
+      ${row("openMore", "insights", "Overview")}
+      ${row("toggleMonthPicker", "calendar_month", "Jump to month")}
+      ${row("openSettings", "settings", "Settings")}
+    </div>`, CLOSE_BTN);
+}
+export async function syncNow() {
+  const d = getAppData(); if (!d) return;
+  if (!navigator.onLine) { toast("Offline: your changes are saved on this phone and will sync when you are back online", "error"); return; }
+  toast("Syncing…", "ok", { duration: 1500 });
+  try { await syncSet(d); renderAll(); toast("Synced", "ok", { duration: 2000 }); } catch (e) { toast("Sync failed, will retry", "error"); }
+}
+export function headerMenuGo(action) {
+  qlClose();
+  setTimeout(() => { if (typeof window[action] === "function") window[action](); }, 120);
 }

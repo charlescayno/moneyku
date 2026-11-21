@@ -1,10 +1,10 @@
 // =============================
 // Insights: due soon, category budgets, month-over-month
 // =============================
-import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
-import { accountsTotal, amountIn, getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline } from "./state.js";
+import { $, OWNERS, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, keyParts, monthShort, parseMathAmount, peso } from "./utils.js";
+import { accountsTotal, amountIn, getActiveEdit, setAppData, getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, setActiveEdit, timeline, includedWho } from "./state.js";
 import { syncSet } from "./firebase.js";
-import { childAmt } from "./state.js";
+import { childAmt, dueKids } from "./state.js";
 import { SPEND_CATS, catInfo, categoryOf } from "./categories.js";
 import { closeModal, openModalShell } from "./ui/modals.js";
 import { toast } from "./ui/core.js";
@@ -36,7 +36,8 @@ const cardShell = (key, border, icon, grad, title, sub, right, body) => `<detail
 </details>`;
 
 // ---------- 5. Due soon / overdue ----------
-export function dueSoonCardHtml() {
+export function dueSoonCardHtml(owner = "charlie") {
+  const isP = owner === "partner";
   const k = getSelectedKey();
   if (k !== currentKey()) return "";
   const now = new Date();
@@ -46,17 +47,34 @@ export function dueSoonCardHtml() {
   const nextK = addMonths(k, 1);
   const rows = [];
   const unpaid = (it, key) => { const kids = getKids(it, key); return kids.length ? !kids.every((c) => isPaid(c.id, key)) : !isPaid(it.id, key); };
-  for (const who of ["charlie", "debt"]) {
+  for (const who of isP ? ["partner", "pdebt"] : ["charlie", "debt"]) {
     for (const it of getItems(who, "expenses")) {
+      if (it.excluded) continue;
       const dd = dueDayFor(it);
-      if (dd == null) continue;
-      if (itemActiveIn(it, k) && unpaid(it, k)) {
-        const diff = Math.min(dd, dim) - today;
-        if (diff <= 7) rows.push({ who, it, diff, amt: itemTotal(it, k) });
+      // Sub-expenses with their own due day are listed on their own; the group row then covers only the rest
+      const own = (key) => dueKids(it, key);
+      const rest = (key) => getKids(it, key).filter((c) => dueDayFor(c) == null);
+      const groupAmt = (key) => itemTotal(it, key) - own(key).reduce((s, c) => s + childAmt(c, key), 0);
+      const groupUnpaid = (key) => (own(key).length ? rest(key).some((c) => !isPaid(c.id, key)) : unpaid(it, key));
+      const groupHas = (key) => !own(key).length || rest(key).length > 0;
+      if (dd != null) {
+        if (itemActiveIn(it, k) && groupUnpaid(k) && groupHas(k)) {
+          const diff = Math.min(dd, dim) - today;
+          if (diff <= 7) rows.push({ who, it, diff, amt: groupAmt(k) });
+        }
+        if (itemActiveIn(it, nextK) && groupUnpaid(nextK) && groupHas(nextK)) {
+          const diff = dim - today + dd;
+          if (diff <= 7 && diff > 0) rows.push({ who, it, diff, amt: groupAmt(nextK), next: true });
+        }
       }
-      if (itemActiveIn(it, nextK) && unpaid(it, nextK)) {
-        const diff = dim - today + dd;
-        if (diff <= 7 && diff > 0) rows.push({ who, it, diff, amt: itemTotal(it, nextK), next: true });
+      for (const [key, isNext] of [[k, false], [nextK, true]]) {
+        if (!itemActiveIn(it, key)) continue;
+        for (const c of own(key)) {
+          if (isPaid(c.id, key)) continue;
+          const cd = dueDayFor(c);
+          const diff = isNext ? dim - today + cd : Math.min(cd, dim) - today;
+          if (isNext ? (diff <= 7 && diff > 0) : diff <= 7) rows.push({ who, it, child: c, diff, amt: childAmt(c, key), ...(isNext ? { next: true } : {}) });
+        }
       }
     }
   }
@@ -66,13 +84,21 @@ export function dueSoonCardHtml() {
   const overdue = rows.filter((r) => r.diff < 0).length;
   const label = (r) => r.diff < 0 ? `${-r.diff}d overdue` : r.diff === 0 ? "Today" : r.diff === 1 ? "Tomorrow" : `in ${r.diff}d`;
   const chip = (r) => r.diff < 0 ? "bg-rose-500/20 text-rose-300" : r.diff <= 1 ? "bg-amber-500/20 text-amber-300" : "bg-slate-700/60 text-slate-300";
-  const body = rows.slice(0, 6).map((r) => `<div data-action="openItemModal" data-arg0="${r.who}" data-arg1="expenses" data-arg2="${r.it.id}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40 cursor-pointer">
+  const body = rows.slice(0, 6).map((r) => {
+    // A sub-expense row opens the sub-expense and is marked paid on its own; it is named with its group
+    const c = r.child;
+    const open = c ? `data-action="openChildModal" data-arg0="${r.who}" data-arg1="${r.it.id}" data-arg2="${c.id}"` : `data-action="openItemModal" data-arg0="${r.who}" data-arg1="expenses" data-arg2="${r.it.id}"`;
+    const nm = c ? `${escapeHtml(c.name)} <span class="font-semibold text-slate-500">· ${escapeHtml(r.it.name)}</span>` : escapeHtml(r.it.name);
+    const nmPlain = escapeHtml(c ? c.name : r.it.name);
+    const mark = c ? `data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses"` : `data-action="dueMarkPaid" data-arg0="${r.it.id}"`;
+    return `<div ${open} class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40 cursor-pointer">
       <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${chip(r)} flex-shrink-0">${label(r)}</span>
-      <p class="text-xs font-bold text-slate-100 truncate flex-1">${escapeHtml(r.it.name)}</p>
+      <p class="text-xs font-bold text-slate-100 truncate flex-1">${nm}</p>
       <p class="text-xs font-black text-white flex-shrink-0">${peso(r.amt)}</p>
-      ${r.next ? "" : `<button type="button" data-action="dueMarkPaid" data-arg0="${r.it.id}" title="Mark paid" aria-label="Mark ${escapeHtml(r.it.name)} paid" class="w-7 h-7 rounded-lg border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-400"><span class="material-icons" style="font-size:16px">check</span></button>`}</div>`).join("") + (rows.length > 6 ? `<p class="text-[10px] text-slate-500 text-center">+${rows.length - 6} more</p>` : "");
-  return cardShell("due", overdue ? "border-rose-500/30" : "border-amber-500/25", "notifications_active", overdue ? "from-rose-500 to-red-600" : "from-amber-500 to-orange-600",
-    "Today", `${overdue ? `${overdue} overdue · ` : ""}${rows.length - overdue} due in the next 7 days`, `<p class="text-sm font-black text-white">${peso(total)}</p>`, body);
+      ${r.next ? "" : `<button type="button" ${mark} title="Mark paid" aria-label="Mark ${nmPlain} paid" class="w-7 h-7 rounded-lg border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-400"><span class="material-icons" style="font-size:16px">check</span></button>`}</div>`;
+  }).join("") + (rows.length > 6 ? `<p class="text-[10px] text-slate-500 text-center">+${rows.length - 6} more</p>` : "");
+  return cardShell(isP ? "due-p" : "due", overdue ? "border-rose-500/30" : "border-amber-500/25", "notifications_active", overdue ? "from-rose-500 to-red-600" : "from-amber-500 to-orange-600",
+    isP ? `Today · ${OWNERS.partner.label}` : "Today", `${overdue ? `${overdue} overdue · ` : ""}${rows.length - overdue} due in the next 7 days`, `<p class="text-sm font-black text-white">${peso(total)}</p>`, body);
 }
 
 // ---------- 9. Category budgets ----------
@@ -218,13 +244,34 @@ export function cardOwed() {
   return cardOwedNow(); // { total, byMonth, any } from the card statements
 }
 
-export function realMoney() {
+// Per person: Charles (default) has the BPI Platinum card; the partner has only her own accounts.
+export function realMoney(who = "charlie") {
   const k = getSelectedKey();
   const t = monthTotals(k);
-  const cash = accountsTotal();
+  if (who === "simulated") {
+    // Sandbox: its own starting cash and its own month, same formula as Ynah's (no card owed)
+    const cash = accountsTotal("simulated");
+    const owed = { total: 0, byMonth: {}, any: false };
+    return { cash, owed, real: cash, afterAll: cash + t.sToReceive - t.sToPay, toReceive: t.sToReceive, toPay: t.sToPay };
+  }
+  if (who === "partner") {
+    const cash = accountsTotal("partner");
+    const owed = { total: 0, byMonth: {}, any: false };
+    return { cash, owed, real: cash, afterAll: cash + t.pToReceive - t.pToPay, toReceive: t.pToReceive, toPay: t.pToPay };
+  }
+  const cash = accountsTotal("charlie");
   const owed = cardOwed();
   const real = cash - owed.total;
   // bills still to pay this month, minus the card part that is already subtracted above
-  const afterAll = real + t.toReceive - (t.toPay - (owed.byMonth[k] || 0));
-  return { cash, owed, real, afterAll, toReceive: t.toReceive };
+  const toPay = t.toPay - (owed.byMonth[k] || 0);
+  const afterAll = real + t.toReceive - toPay;
+  return { cash, owed, real, afterAll, toReceive: t.toReceive, toPay };
+}
+
+/** Real money of both people added together. */
+export function householdRealMoney() {
+  const ws = includedWho();
+  const rs = ws.map((w) => realMoney(w));
+  const sum = (k) => rs.reduce((s, r) => s + r[k], 0);
+  return { real: sum("real"), afterAll: sum("afterAll"), cash: sum("cash") };
 }

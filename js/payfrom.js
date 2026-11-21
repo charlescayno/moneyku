@@ -5,7 +5,7 @@
 // Expenses paid by Maribank / GCash / BPI Debit skip the chooser: the matching account
 // is charged straight away (autoAccountFor) and reversed from the same record.
 // =============================
-import { acctType, childFinal, getAppData, getSpendList, isPaid, itemFinal } from "./state.js";
+import { acctOwner, acctType, childFinal, getAppData, getSpendList, isPaid, itemFinal } from "./state.js";
 import { isCardItem } from "./card.js";
 import { ACCOUNT_PAYMENT_METHODS, BANK_DOMAINS, bankIconFor, escapeHtml, peso } from "./utils.js";
 
@@ -14,19 +14,19 @@ const r2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 const LAST_KEY = "moneyku_pay_acct";
 
 /** Accounts that hold real money (credit cards are not paid from here). */
-export function payableAccounts() {
-  return (getAppData()?.accounts || []).filter((a) => acctType(a) !== "credit");
+export function payableAccounts(who = "charlie") {
+  return (getAppData()?.accounts || []).filter((a) => acctType(a) !== "credit" && acctOwner(a) === who).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true }));
 }
 
 /** Find an expense leaf (an item without sub-items, or a sub-item) by id. */
 function findExpenseLeaf(id) {
   const d = getAppData();
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const kind of ["expenses", "income"]) {
       for (const it of d?.items?.[who]?.[kind] || []) {
-        if (it.id === id) return { item: it, child: null, income: kind === "income" };
+        if (it.id === id) return { who, item: it, child: null, income: kind === "income" };
         for (const c of Array.isArray(it.children) ? it.children : []) {
-          if (c && c.id === id) return { item: it, child: c, income: kind === "income" };
+          if (c && c.id === id) return { who, item: it, child: c, income: kind === "income" };
         }
       }
     }
@@ -38,6 +38,8 @@ function findExpenseLeaf(id) {
 export function amountDue(id, k) {
   const f = findExpenseLeaf(id);
   if (!f) return null;
+  // The simulation never moves real money: nothing to charge, ask or refund
+  if (f.who === "simulated") return null;
   // Card purchases are paid when the card bill is paid, not from an account here
   if (!f.income && isCardItem(f.item)) return null;
   const amt = f.child ? childFinal(f.child, k) : itemFinal(f.item, k);
@@ -47,10 +49,10 @@ export function amountDue(id, k) {
 }
 
 /** The account a payment method points at (Maribank, GCash, BPI Debit Card), matched by name; null for cash/cards/no match. */
-export function accountForMethod(pm) {
+export function accountForMethod(pm, who = "charlie") {
   const m = ACCOUNT_PAYMENT_METHODS.find((x) => x.id === pm);
   if (!m) return null;
-  return payableAccounts().find((a) => m.account.test((a.name || "").trim())) || null;
+  return payableAccounts(who).find((a) => m.account.test((a.name || "").trim())) || null;
 }
 
 function paymentMethodOf(id) {
@@ -64,9 +66,12 @@ function paymentMethodOf(id) {
  */
 export function autoAccountFor(id) {
   const f = findExpenseLeaf(id);
-  if (!f || f.income) return null;
-  return accountForMethod(f.item.paymentMethod);
+  if (!f || f.income || f.who === "simulated") return null;
+  return accountForMethod(f.item.paymentMethod, ownerOfId(id));
 }
+
+/** Whose budget an item belongs to: "partner" or "charlie" (debt items use Charles' accounts). */
+export function ownerOfId(id) { const w = findExpenseLeaf(id)?.who; return w === "partner" || w === "pdebt" ? "partner" : "charlie"; }
 
 export function isIncomeId(id) { return !!findExpenseLeaf(id)?.income; }
 
@@ -120,12 +125,13 @@ export async function choosePayment(k, ids, label) {
     if (acct) auto.push({ ...x, acctId: acct.id }); else manual.push(x);
   }
   let acctId = null, income = false, picked = [];
-  if (manual.length && payableAccounts().length) {
+  const owner = manual.length ? ownerOfId(manual[0].id) : "charlie";
+  if (manual.length && payableAccounts(owner).length) {
     income = isIncomeId(manual[0].id);
     const total = manual.reduce((s, x) => s + x.amt, 0);
     const methods = new Set(manual.map((x) => paymentMethodOf(x.id)));
-    const preferred = methods.size === 1 ? accountForMethod([...methods][0]) : null;
-    const choice = await pickAccount(auto.length ? `${label} (${manual.length} not on an account)` : label, total, income, preferred);
+    const preferred = methods.size === 1 ? accountForMethod([...methods][0], owner) : null;
+    const choice = await pickAccount(auto.length ? `${label} (${manual.length} not on an account)` : label, total, income, preferred, owner);
     if (choice === null) return null;
     acctId = choice;
     picked = manual;
@@ -181,10 +187,10 @@ export function accountName(acctId) {
 // ---------- the chooser ----------
 let open = false;
 
-function pickAccount(label, total, income, preferred = null) {
+function pickAccount(label, total, income, preferred = null, owner = "charlie") {
   if (open) return Promise.resolve(null);
   open = true;
-  const accts = payableAccounts();
+  const accts = payableAccounts(owner);
   let last = null;
   try { last = localStorage.getItem(LAST_KEY); } catch { /* ignore */ }
   const pre = preferred || accts.find((a) => a.id === last) || accts[0];
@@ -204,7 +210,7 @@ function pickAccount(label, total, income, preferred = null) {
       const after = (Number(a.amount) || 0) + (income ? total : -total);
       return `<button type="button" data-acct="${escapeHtml(a.id)}" class="w-full flex items-center gap-3 p-3 rounded-xl border ${a === pre ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-900/60"} text-left">
         <span class="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600">${icon}</span>
-        <span class="flex-1 min-w-0"><span class="block text-sm font-bold text-white truncate">${escapeHtml(a.name)}</span>
+        <span class="flex-1 min-w-0"><span class="block text-sm font-bold text-white truncate keep-case">${escapeHtml(a.name)}</span>
           <span class="block text-[11px] font-bold text-slate-400">${peso(a.amount)} <span class="text-slate-500">&rarr;</span> <span class="${after < 0 ? "text-rose-400" : "text-slate-200"}">${peso(after)}</span></span></span>
       </button>`;
     };

@@ -407,9 +407,10 @@ html { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.3) transparent;
     border-radius: 1.25rem !important;
   }
 
-  /* Month picker full screen on desktop too */
-  #month-picker {
-    display: none !important;
+  /* Month picker works on desktop too (the month bar label opens it); keep content centered */
+  #month-picker-grid {
+    max-width: 640px;
+    margin-inline: auto;
   }
 }
 
@@ -1109,7 +1110,8 @@ body { font-variant-numeric: tabular-nums; }
 
 /* 5. Colour only for meaning: one accent for card header tiles, neutral card borders */
 .glass-card > summary .w-7.h-7.bg-gradient-to-br {
-  background-image: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  background-image: none !important;
+  background-color: #6366f1 !important;
 }
 .glass-card { border-color: rgba(148, 163, 184, 0.14) !important; }
 details[data-persist="due"].glass-card.border-rose-500\/30 { border-color: rgba(244, 63, 94, 0.4) !important; }
@@ -1370,14 +1372,117 @@ html.app-ready.kb-open .fab-add {
 /* Room under the last card so the floating add button (and the mobile tab bar) never cover it */
 .budget-pad { padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px)); }
 
-/* Phones: 8 header buttons must fit on one row, so make them a little smaller */
+/* Phones: 8 header buttons must fit on one row. They share the row (44px tall, up to 44px wide, narrower when needed) */
 @media (max-width: 400px) {
   header.app-header .app-header-tools button,
-  body[data-density="compact"] header.app-header .app-header-tools button { width: 2.25rem !important; height: 2.25rem !important; min-width: 2rem; border-radius: 0.75rem !important; }
+  body[data-density="compact"] header.app-header .app-header-tools button { width: auto !important; height: 2.75rem !important; flex: 1 1 0; min-width: 0; max-width: 2.75rem; border-radius: 0.75rem !important; }
   header.app-header .app-header-tools button.app-header-add,
-  body[data-density="compact"] header.app-header .app-header-tools button.app-header-add { width: 2.6rem !important; height: 2.6rem !important; min-width: 2.25rem; }
+  body[data-density="compact"] header.app-header .app-header-tools button.app-header-add { width: auto !important; height: 2.75rem !important; min-width: 0; max-width: 2.75rem; }
+}
+/* Very narrow phones (320px): let header buttons shrink slightly instead of overflowing */
+@media (max-width: 340px) {
+  header.app-header .app-header-tools button,
+  body[data-density="compact"] header.app-header .app-header-tools button { min-width: 0; }
 }
 /* iOS zooms the page when a focused field is under 16px. Pinch-zoom is allowed now (accessibility), so keep fields at 16px there. */
 @supports (-webkit-touch-callout: none) {
   input, select, textarea { font-size: 16px !important; }
 }
+
+/* Ynah's accent colour */
+.text-ynah{color:#DFC5FE}
+.border-ynah{border-color:rgba(223,197,254,.45)}
+.ynah-grad{--tw-gradient-from:#DFC5FE;--tw-gradient-to:#DFC5FE;--tw-gradient-stops:#DFC5FE,#DFC5FE}
+.ynah-grad .text-white,.ynah-grad .text-white\/60,.ynah-grad .text-white\/40{color:#3b1f63}
+.ynah-grad .text-emerald-400{color:#047857}
+.ynah-grad .text-rose-400{color:#be123c}
+
+#modal-body .spend-add input[type="date"] { padding: 0.55rem 0.75rem !important; min-height: 2.6rem; }
+
+details[data-persist="proj-details"][open] > summary .material-icons { transform: rotate(90deg); }
+details[data-persist="outlook-more"][open] > summary .material-icons { transform: rotate(90deg); }
+
+/* No branded intro: the splash is just a plain dark cover until the app is ready */
+#intro-content, #intro-particles { display: none !important; }
+
+/* Month navigation stays visible under the header while scrolling */
+#month-nav { position: sticky; top: var(--hdr-h, 0px); z-index: 30; background: #0f172a; }
+
+
+/* Phones: title and the More button share one row (the old wrapped layout was made for 8 buttons) */
+@media (max-width: 639px) {
+  header.app-header { flex-wrap: nowrap; align-items: center; row-gap: 0; }
+  header.app-header .app-header-title { flex: 1 1 0; }
+  header.app-header .app-header-tools { flex: 0 0 auto; width: auto; }
+}
+
+@media (max-width: 639px) {
+  header.app-header .app-header-tools button { flex: 0 0 auto !important; width: 2.75rem !important; min-width: 2.75rem !important; max-width: none !important; }
+}
+
+
+/* Phones: compact top area (less wasted space) */
+@media (max-width: 639px) {
+  header.app-header { padding-top: 0.625rem; padding-bottom: 0.5rem; }
+  header.app-header .app-header-title { display: flex; align-items: baseline; gap: 0.5rem; }
+  header.app-header .app-header-title p { margin-top: 0; }
+  #person-tiles { padding-top: 0.5rem; }
+  #month-nav { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  #month-nav button { height: 2.75rem; } /* 44px tap target */
+}
+
+
+/* No bottom bar or floating button any more: just a little room under the last card */
+.budget-pad { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
+
+
+/* The explain breakdown is opened from the (i) in the card header; closed it takes no room */
+details[data-persist=proj-details]:not([open]) { margin-top: -0.75rem; }
+
+
+/* Debt tracker header chevron (outer details cannot use the group variant, it would rotate the inner ones) */
+details[open] > summary > div > .dt-chev { transform: rotate(90deg); }
+details > summary > div > .dt-chev { transition: transform .15s; }
+
+/* Type rule: headings and small labels are in CAPITALS (.sec-title, Tailwind .uppercase); everything else keeps normal case. */
+input::placeholder, textarea::placeholder { text-transform: none; }
+
+/* Fewer boxes and borders: cards separate by surface and spacing, not outlines */
+.glass-card { border-color: transparent !important; }
+details[data-persist="due"].glass-card.border-rose-500\/30 { border-color: rgba(244, 63, 94, 0.4) !important; }
+details[data-persist="due"].glass-card.border-amber-500\/25 { border-color: rgba(245, 158, 11, 0.4) !important; }
+.item-row + .item-row { border-top: 0; }
+.item-row span.border, .item-row span[class*="border-"] { border-color: transparent !important; background: transparent !important; padding-left: 0 !important; padding-right: 0 !important; }
+.item-row .due-chip { background: transparent !important; border-color: transparent !important; padding-left: 0 !important; padding-right: 0 !important; }
+.paid-check:not(.is-paid) { border-color: rgba(148, 163, 184, 0.35); }
+details > summary.bg-indigo-900\/10, details > summary[class*="bg-indigo-900"] { background: transparent !important; }
+#month-nav button:not(#mn-today) { background: transparent !important; }
+.app-header-tools button:not(#fab-add) { background: transparent !important; box-shadow: none !important; }
+.sec-divider { border-top: 1px solid rgba(148, 163, 184, 0.12) !important; }.child-list [data-child] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* Section titles (Income, Expenses, Debt, Accounts, card headings) show in CAPITALS */
+.sec-title, summary h3, details > summary > div > h3, header h3 { text-transform: uppercase !important; letter-spacing: .06em; }
+
+/* Touch targets: every tappable thing is at least ~44px tall. Small icons keep their look and get an invisible larger hit area. */
+button[data-action="setAccountsView"], button[data-action="openAccountModal"]:not([class*="flex-1"]), button[data-action="cardSettingsOpen"],
+button[data-action="toggleField"], button#toast-action, button[data-action="openItemModal"][data-arg1] { position: relative; }
+button[data-action="setAccountsView"]::after, button[data-action="cardSettingsOpen"]::after, button[data-action="toggleField"]::after, button#toast-action::after,
+button[data-action="openAccountModal"]:not([class*="flex-1"])::after { content: ""; position: absolute; inset: -11px -6px; }
+summary { min-height: 44px; }
+summary button[data-action="openItemModal"], summary button[data-action="copyLastMonth"] { min-height: 44px !important; min-width: 44px; display: inline-flex; align-items: center; justify-content: flex-end; padding: 0 6px; margin: -8px -6px; }
+button[data-action="toggleProjected"], button[data-action="toggleExpenseSort"], button[data-action="openTransferModal"], button[data-action="cardPayOpen"],
+button[data-action="cardStatementOpen"], button[data-action="openCopyPicker"], button[data-action="openAccountModal"][class*="flex-1"] { min-height: 44px; }
+#sim-tile, #sum-projected { min-height: 44px; }
+button[data-action="openItemModal"] { min-height: 44px !important; }
+
+/* Feedback: checkbox pops when ticked, bigger Undo, paid-from note on the row */
+@keyframes pc-pop { 0% { transform: scale(.7); } 55% { transform: scale(1.22); } 100% { transform: scale(1); } }
+.paid-check.is-paid { animation: pc-pop .32s ease-out; }
+#toast { padding: 10px 12px 10px 16px; font-size: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+#toast-action { min-height: 44px; min-width: 64px; padding: 0 16px; border-radius: 12px; background: rgba(99, 102, 241, .25); color: #c7d2fe; font-weight: 800; font-size: 14px; }
+#toast-action:active { background: rgba(99, 102, 241, .45); }
+.paid-note { font-size: 10px; font-weight: 700; color: #34d399; opacity: .85; margin-top: 2px; }
+
+/* One red for everything negative or overdue */
+.text-rose-300, .text-rose-400, .text-rose-500 { color: #fb7185 !important; }
+.item-row .child-amt { font-variant-numeric: tabular-nums; }

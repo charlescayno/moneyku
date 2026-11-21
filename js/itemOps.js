@@ -48,6 +48,8 @@ export function applyItemAmount(appData, list, it, amount, scope, k, opts = {}) 
 
 /** Create a new income/expense item and add it to the right list. Returns the item. */
 export function addItemData(appData, { who = "charlie", kind, name, amount, start, recurring = true, end = null, dueDay = null, paymentMethod = "cash", txDay = null, cutoffDay = null, txDate = null, category = "" }) {
+  appData.items[who] = appData.items[who] || {};
+  appData.items[who][kind] = appData.items[who][kind] || [];
   const list = appData.items[who][kind];
   const item = { id: generateId(), name, amount, start, end: recurring ? end : null, recurring, dueDay, paymentMethod, txDay, cutoffDay };
   if (txDate) item.txDate = txDate;
@@ -58,7 +60,7 @@ export function addItemData(appData, { who = "charlie", kind, name, amount, star
 
 /** Find an item by id across both people and both kinds. */
 export function findItemAnywhere(appData, id) {
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const kind of ["income", "expenses"]) {
       const list = appData.items?.[who]?.[kind] || [];
       const item = list.find((x) => x.id === id);
@@ -105,7 +107,7 @@ export function startFreshAt(appData, startKey) {
   let items = 0, months = 0;
   const before = (m) => cmpKey(m, startKey) < 0;
   const over = (it) => (it.recurring ? !!it.end && before(it.end) : !!it.start && before(it.start));
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt"]) {
     for (const kind of ["income", "expenses"]) {
       const list = appData.items?.[who]?.[kind];
       if (!Array.isArray(list)) continue;

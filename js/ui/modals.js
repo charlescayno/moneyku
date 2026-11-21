@@ -1,12 +1,14 @@
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, PH_ACCOUNT_OPTIONS, CREDIT_CARD_METHODS, ACCOUNT_PAYMENT_METHODS, $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { cardSettings } from "../card.js";
 import { childAmt } from "../state.js";
-import { acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { countWeekday } from "../utils.js";
+import { acctOwner, acctType, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
 import { toast } from './core.js';
 import { saveChildAndAddAnother, saveModal, spendSectionHtml, toggleField } from './components.js';
 import { renderAll } from './layout.js';
+import { addTabsHtml, ownerName } from './addsheet.js';
 
 // =============================
 // Modals — Inputs & Forms
@@ -100,13 +102,15 @@ export function openModalShell() {
 
 export function closeModal() {
   $("modal-overlay").classList.remove("open");
+  $("save-btn")?.classList.remove("as-save");
   setActiveEdit(null);
 }
 
-export function openItemModal(who, kind, id, presetDay) {
+export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   const list = getItems(who, kind);
   const it = id ? list.find((x) => x.id === id) : null;
   const isNew = !it;
+  const as = !!sheetOpts.addSheet && isNew; // opened from the "+" add sheet: compact layout, extras under More options
   const o = OWNERS[who];
   const selectedKey = getSelectedKey();
   setActiveEdit({ kind: "item", who, type: kind, id });
@@ -119,37 +123,71 @@ export function openItemModal(who, kind, id, presetDay) {
   const settledNow = it ? isPaid(it.id, selectedKey) : false;
 
   let title = isNew ? `Add ${kind === "income" ? "Income" : "Expense"}` : "Edit";
-  if (who === "debt" && isNew) {
+  if ((who === "debt" || who === "pdebt") && isNew) {
     title = kind === "income" ? "Add Person (They owe me)" : "Add Person (I owe them)";
   }
-  $("modal-title").textContent = title;
-  $("modal-title").className = `text-lg font-black uppercase tracking-tight ${o.text}`;
+  $("modal-title").textContent = as ? (kind === "income" ? "add income" : "add expense") : title;
+  $("modal-title").className = as ? "as-title" : `text-lg font-black uppercase tracking-tight ${o.text}`;
 
   const kids = it ? getKids(it, selectedKey) : [];
-  let body = "";
+  let body = as ? addTabsHtml(kind === "income" ? "income" : "bill") : "";
   let more = "";
-  body += inputBlock(kind === "income" ? "Source" : (who === "debt" ? "Name" : "Name"), "f-name", name, "text", 'placeholder="e.g. Rent"');
-  if (kids.length) {
+  if (as && who !== "simulated" && who !== "debt" && who !== "pdebt") {
+    body += `<div class="space-y-1"><label class="as-label">whose is this?</label>
+      <div id="f-who" data-val="${who}" class="as-owners grid grid-cols-2 gap-2.5">${["charlie", "partner"].map((w) => `<button type="button" data-action="pickOwner" data-arg0="${w}" aria-pressed="${w === who}" class="as-owner${w === who ? " on" : ""}"><img src="assets/avatar-${ownerName(w).toLowerCase()}.jpg" alt="" class="as-avatar">${escapeHtml(ownerName(w).toLowerCase())}</button>`).join("")}</div></div>`;
+  } else if (isNew && who !== "simulated") { // the simulation is its own account: nothing to pick
+    // Which person's account the new item belongs to
+    const debtSide = who === "debt" || who === "pdebt";
+    const opts = debtSide
+      ? [["debt", `${OWNERS.charlie.label} debt tracker`], ["pdebt", `${OWNERS.partner.label} debt tracker`]]
+      : [["charlie", OWNERS.charlie.label], ["partner", OWNERS.partner.label]];
+    body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Whose account</label>
+      <div id="f-who" data-val="${who}" class="grid grid-cols-2 gap-2">${opts.map(([w, label]) => `<button type="button" data-action="pickOwner" data-arg0="${w}" class="py-3 rounded-xl font-bold text-xs ${w === who ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${escapeHtml(label)}</button>`).join("")}</div></div>`;
+  }
+  if (as) {
+    body += `<div class="grid grid-cols-2 gap-2.5">
+      <div class="space-y-1"><label class="as-label" for="f-name">what is it?</label><input type="text" id="f-name" class="as-input" placeholder="${kind === "income" ? "e.g. salary" : "e.g. rent"}" autocomplete="off" /></div>
+      <div class="space-y-1" id="f-amount-wrap"><label class="as-label" for="f-amount">how much? (₱)</label><input type="text" id="f-amount" class="as-input" inputmode="text" placeholder="0" /></div>
+    </div>`;
+  } else body += inputBlock(kind === "income" ? "Source" : (who === "debt" ? "Name" : "Name"), "f-name", name, "text", 'placeholder="e.g. Rent"');
+  if (as) { /* name and amount are already in the two-column row above */ } else if (kids.length) {
     body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Amount (₱)</label>
       <div class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-slate-300">${peso(itemTotal(it, selectedKey))} <span class="text-[11px] font-bold text-slate-500">· sum of ${kids.length} sub-expenses</span></div></div>`;
   } else {
     body += `<div id="f-amount-wrap">${inputBlock("Amount (₱)", "f-amount", amount, "text", 'inputmode="text" placeholder="0"')}</div>`;
-    if (isNew && kind === "expenses") {
-      body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
+  }
+  if (isNew && !kids.length && kind === "expenses") {
+    {
+      const groupHtml = `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
         <div><p class="text-sm font-bold text-white">Group with sub-expenses</p><p id="f-group-hint" class="hidden text-[10px] text-violet-300">Amount = sum of sub-expenses. You'll add them next.</p><p class="text-[10px] text-slate-500">e.g. Family Expense with several items</p></div>
         <button type="button" id="f-group" data-on="false" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors bg-slate-700 relative flex-shrink-0">
           <span class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all"></span>
         </button>
       </div>`;
+      if (as) more += groupHtml; else body += groupHtml;
     }
   }
 
+  // Spending log sits up front (not under "More options") so adding spending is one tap away
+  if (!isNew && !kids.length && kind === "expenses" && who !== "simulated") body += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
+
   body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
-    <div><p class="text-sm font-bold text-white">Recurring</p><p class="text-[10px] text-slate-500">Repeats every month</p></div>
+    <div><p class="text-sm font-bold text-white">${as ? "recurring" : "Recurring"}</p><p class="text-[10px] text-slate-500">${as ? "repeats on a schedule" : "Repeats every month"}</p></div>
     <button type="button" id="f-recurring" data-on="${recurring}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${recurring ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
       <span class="absolute top-1 ${recurring ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span>
     </button>
   </div>`;
+
+  if (kind === "expenses") {
+    const incl = !(it && it.excluded);
+    const inclHtml = `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
+    <div><p class="text-sm font-bold text-white">Include in computation</p><p class="text-[10px] text-slate-500">Off = shown in the list but left out of totals &amp; projections</p></div>
+    <button type="button" id="f-include" data-on="${incl}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${incl ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
+      <span class="absolute top-1 ${incl ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span>
+    </button>
+  </div>`;
+    if (as) more += inclHtml; else body += inclHtml;
+  }
 
   let lastPm = "cash";
   try { lastPm = localStorage.getItem("moneyku_last_pm") || "cash"; } catch { /* ignore */ }
@@ -162,7 +200,7 @@ export function openItemModal(who, kind, id, presetDay) {
   const cutoffDayVal = it ? (it.cutoffDay || 14) : 14;
 
   if (kind === "expenses") {
-    body += `<div class="space-y-0.5">
+    const pmHtml = `<div class="space-y-0.5">
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Payment Method / Category</label>
       <select id="f-paymethod" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">
         <option value="cash" ${payMethod === "cash" ? "selected" : ""}>Cash / Bank / E-Wallet</option>
@@ -170,6 +208,7 @@ export function openItemModal(who, kind, id, presetDay) {
         ${CREDIT_CARD_METHODS.map((c) => `<option value="${c.id}" ${payMethod === c.id ? "selected" : ""}>💳 ${escapeHtml(c.label)}</option>`).join("")}
       </select>
     </div>`;
+    if (as) more += pmHtml; else body += pmHtml;
 
     const txDateVal = it ? (it.txDate || "") : "";
 
@@ -196,11 +235,22 @@ export function openItemModal(who, kind, id, presetDay) {
     </div>`;
   }
 
-  more += `<div class="grid grid-cols-2 gap-2.5"><div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Starts</label>
-    <select id="f-start" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">${monthSelect("f-start", start, false)}</select></div>`;
-
-  more += `<div class="space-y-0.5" id="f-end-wrap"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Runs until</label>
-    <select id="f-end" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">${monthSelect("f-end", end, true, start)}</select></div></div>`;
+  const endHtml = `<div class="space-y-0.5" id="f-end-wrap"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Runs until</label>
+    <select id="f-end" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">${monthSelect("f-end", end, true, start)}</select></div>`;
+  const pd = parseInt(presetDay, 10);
+  const ddVal = it ? (dueDayFor(it) ?? "") : (pd >= 1 && pd <= 31 ? pd : "");
+  if (as) {
+    body += `<div class="grid grid-cols-2 gap-2.5 as-row-end">
+      <div class="space-y-1"><label class="as-label" for="f-start">starting</label>
+        <select id="f-start" class="as-input">${monthSelect("f-start", start, false)}</select></div>
+      <div class="space-y-1"><label class="as-label" for="f-dueday">mark paid on day (1-31, optional)</label>
+        <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="as-input" /></div>
+    </div>`;
+    more += endHtml;
+  } else {
+    more += `<div class="grid grid-cols-2 gap-2.5"><div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Starts</label>
+    <select id="f-start" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">${monthSelect("f-start", start, false)}</select></div>${endHtml}</div>`;
+  }
 
   if (kind === "expenses") {
     const curCat = it ? (it.category || "") : "";
@@ -210,15 +260,10 @@ export function openItemModal(who, kind, id, presetDay) {
         ${SPEND_CATS.map((c) => `<option value="${c.id}" ${curCat === c.id ? "selected" : ""}>${c.label}</option>`).join("")}
       </select></div>`;
   }
-  const pd = parseInt(presetDay, 10);
-  const ddVal = it ? (dueDayFor(it) ?? "") : (pd >= 1 && pd <= 31 ? pd : "");
-  more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Auto-completes on day <span class="text-slate-600">(1-31, optional)</span></label>
+  if (!as) more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Auto-completes on day <span class="text-slate-600">(1-31, optional)</span></label>
     <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" /></div>`;
 
   if (!isNew && !kids.length) {
-    if (kind === "expenses") {
-      more += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
-    }
     const verb = kind === "income" ? "Received" : "Paid";
     let hint = kind === "income" ? "Mark this month's income received" : "Mark this month settled";
     if (kind === "expenses") {
@@ -240,7 +285,7 @@ export function openItemModal(who, kind, id, presetDay) {
     more += `<button type="button" data-action="duplicateItem" data-arg0="${who}" data-arg1="${kind}" data-arg2="${id}" class="w-full py-2.5 bg-slate-900 rounded-xl font-bold text-slate-300 text-sm flex items-center justify-center gap-2"><span class="material-icons" style="font-size:18px">content_copy</span>Duplicate</button>`;
   }
   if (more) {
-    const openMoreByDefault = payMethod === "bpi_platinum" || (isNew && pd >= 1);
+    const openMoreByDefault = !as && (payMethod === "bpi_platinum" || (isNew && pd >= 1));
     body += `<details id="f-more" ${openMoreByDefault ? "open" : ""} class="group">
       <summary class="flex items-center justify-between cursor-pointer select-none text-xs font-bold text-slate-400 py-1 px-1 list-none">
         <span>More options</span><span class="material-icons text-base transition-transform group-open:rotate-180">expand_more</span>
@@ -255,6 +300,7 @@ export function openItemModal(who, kind, id, presetDay) {
   else { delBtn.classList.remove("hidden"); delBtn.onclick = () => confirmDelete(); }
 
   openModalShell();
+  $("save-btn").classList.toggle("as-save", as);
   if (kind === "expenses") updateBpiCcMonth(!!it);
 
   setTimeout(() => $("f-name")?.focus(), 50);
@@ -270,9 +316,19 @@ export function openChildModal(who, parentId, childId) {
   $("modal-title").textContent = isNew ? "Add Sub-expense" : "Edit Sub-expense";
   $("modal-title").className = "text-lg font-black uppercase tracking-tight text-violet-300";
   const settledNow = c ? isPaid(c.id, selectedKey) : false;
-  let body = `<p class="text-[11px] text-slate-500 mb-1">Under <span class="font-bold text-slate-300">${escapeHtml(parent.name)}</span></p>`;
+  let body = inputBlock("Group name (header)", "f-parent", parent.name, "text", 'placeholder="Group name"');
   body += inputBlock("Name", "f-name", c ? c.name : "", "text", 'placeholder="e.g. Electricity"');
   body += inputBlock("Estimate (₱)", "f-amount", c ? childAmt(c, selectedKey) : "", "text", 'inputmode="text" placeholder="0"');
+  body += inputBlock("Due day of the month (1-31, optional)", "f-child-dueday", c ? (dueDayFor(c) ?? "") : "", "number", 'min="1" max="31" inputmode="numeric" placeholder="e.g. 15"');
+  const mons = countWeekday(selectedKey, 1);
+  body += `<div id="grocery-box" class="${/grocer/i.test(c ? c.name : "") ? "" : "hidden"} bg-slate-900 rounded-xl px-3.5 py-3 flex flex-col gap-2.5">
+    <p class="text-[11px] font-bold text-slate-400">Mondays in ${monthShort(selectedKey)}: <span id="grocery-mondays" class="text-white font-black text-sm">${mons}</span></p>
+    <div class="grid grid-cols-2 gap-3">
+      ${inputBlock("Number of people", "f-people", c && c.people ? c.people : "", "number", 'min="1" inputmode="numeric" placeholder="e.g. 9"')}
+      ${inputBlock("Budget per person per Monday (₱)", "f-perperson", c && c.perPerson ? c.perPerson : 1000, "number", 'min="0" inputmode="numeric" placeholder="1000"')}
+    </div>
+    <p id="grocery-calc" class="text-[11px] text-slate-500"></p>
+  </div>`;
   if (!isNew) {
     body += `<div id="spend-section">${spendSectionHtml(c)}</div>`;
     body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
@@ -287,6 +343,7 @@ export function openChildModal(who, parentId, childId) {
   if (isNew) delBtn.classList.add("hidden");
   else { delBtn.classList.remove("hidden"); delBtn.onclick = () => confirmDelete(); }
   openModalShell();
+  groceryRefresh(false);
 }
 
 export function openInvestmentModal() {
@@ -325,11 +382,11 @@ export function openInvestmentModal() {
   openModalShell();
 }
 
-export function openAccountModal(id) {
+export function openAccountModal(id, who) {
   const appData = getAppData();
   const a = id ? (appData?.accounts || []).find((x) => x.id === id) : null;
   const isNew = !a;
-  setActiveEdit({ kind: "account", id });
+  setActiveEdit({ kind: "account", id, owner: a ? acctOwner(a) : (who === "partner" ? "partner" : "charlie") });
   $("modal-title").textContent = isNew ? "Add Account" : "Edit Account";
   $("modal-title").className = "text-lg font-black uppercase tracking-tight text-emerald-400";
 
@@ -348,8 +405,8 @@ export function openAccountModal(id) {
   openModalShell();
 }
 
-export function openTransferModal() {
-  const accts = getAppData()?.accounts || [];
+export function openTransferModal(who) {
+  const accts = (getAppData()?.accounts || []).filter((a) => acctOwner(a) === (who === "partner" ? "partner" : "charlie")).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true }));
   if (accts.length < 2) return toast("Add at least 2 accounts to transfer", "error");
   setActiveEdit({ kind: "transfer" });
   $("modal-title").textContent = "Transfer";
@@ -372,9 +429,13 @@ export function openTransferModal() {
   openModalShell();
 }
 export function pickOwner(btn, w) {
-  const wrap = $("f-owner");
+  const wrap = btn.parentElement;
   if (!wrap) return;
   wrap.dataset.val = w;
+  if (wrap.classList.contains("as-owners")) {
+    [...wrap.children].forEach((c) => { c.classList.toggle("on", c === btn); c.setAttribute("aria-pressed", String(c === btn)); });
+    return;
+  }
   [...wrap.children].forEach((c) => {
     const on = c === btn;
     c.className = `py-3 rounded-xl font-bold text-xs ${on ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}`;
@@ -500,3 +561,26 @@ export async function doDelete(scope = "all") {
     },
   });
 }
+
+// Grocery-style sub-expense: the people / per-person box shows when the name contains "grocer";
+// budget per person x Mondays x people fills the estimate. Also shows the Mondays in the selected month.
+function groceryRefresh(fill) {
+  const box = $("grocery-box");
+  if (!box) return;
+  const on = /grocer/i.test($("f-name")?.value || "");
+  box.classList.toggle("hidden", !on);
+  if (!on) return;
+  const people = parseInt($("f-people")?.value, 10);
+  const per = parseMathAmount($("f-perperson")?.value);
+  const mons = countWeekday(getSelectedKey(), 1);
+  const calc = $("grocery-calc");
+  if (people >= 1 && per > 0) {
+    const total = per * (mons || 1) * people;
+    if (fill && $("f-amount")) $("f-amount").value = String(total);
+    if (calc) calc.textContent = `${peso(per)} per person × ${mons} Mondays × ${people} people = ${peso(total)}`;
+  } else if (calc) calc.textContent = "Enter the number of people to set the estimate (budget per person × Mondays × people).";
+}
+document.addEventListener("input", (e) => {
+  const id = e.target && e.target.id;
+  if (id === "f-name" || id === "f-people" || id === "f-perperson") groceryRefresh(id !== "f-name");
+});

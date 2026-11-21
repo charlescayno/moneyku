@@ -1,9 +1,10 @@
 import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
 import { applyChildOrder } from '../itemOps.js';
 import { choosePayment, applyPayment, refundPayment, recordPayment, paidMessage, nameOf } from '../payfrom.js';
-import { toggleArranging, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { refreshReminders } from '../calendar.js';
+import { setSimIncomeScale, toggleArranging, getSimPersonSort, setSimPersonSort, getExpenseSort, setExpenseSort, accountsTotal, allInstallments, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, householdProjectedAt, includedWho, setWhoIncluded, getSimView, setSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
-import { openMore, selectMonth, statsGridHtml } from './components.js';
+import { openMore, parentSummaryText, selectMonth, statsGridHtml } from './components.js';
 import { renderAll, renderBudget } from './layout.js';
 import { cardSummaryHtml } from './cardui.js';
 import { toast } from './core.js';
@@ -19,27 +20,18 @@ export function updateHeader() {
 }
 
 export function renderMonthStrip() {
-  const strip = $("month-strip");
-  if (!strip) return;
-  const nowK = currentKey();
-  const selectedKey = getSelectedKey();
-  strip.innerHTML = timeline().map((k) => {
-    const active = k === selectedKey;
-    const isNow = k === nowK;
-    const cls = active
-      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/40 ring-2 ring-indigo-400/60"
-      : "bg-slate-800/60 text-slate-400";
-    const year = keyParts(k).y;
-    return `<button data-action="selectMonth" data-arg0="${k}" data-k="${k}"
-      class="month-chip ${isNow ? "is-now" : ""} flex-shrink-0 relative px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wide transition-colors ${cls}">
-      ${isNow ? '<span class="now-banner">Now</span>' : ""}
-      <div class="flex flex-col items-center">
-        <span>${monthShort(k)}</span>
-        <span class="text-[9px] opacity-60 tracking-[0.1em] mt-0.5">${year}</span>
-      </div>
-    </button>`;
-  }).join("");
+  renderMonthNav();
   renderMonthBanner();
+}
+
+export function renderMonthNav() {
+  const label = $("mn-label");
+  if (!label) return;
+  const tl = timeline();
+  const k = getSelectedKey();
+  label.firstChild.textContent = `${monthName(k)} ${keyParts(k).y}`;
+  $("mn-prev").disabled = !tl.length || k <= tl[0];
+  $("mn-next").disabled = !tl.length || k >= tl[tl.length - 1];
 }
 
 export function scrollChipIntoView() {
@@ -50,25 +42,15 @@ export function scrollChipIntoView() {
   if (btn && strip) strip.scrollTo({ left: btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2, behavior: "smooth" });
 }
 
+// A "Back to today" pill on its own row under the month bar (not squeezed in next to the arrows).
+// Only shown when another month is on screen; the arrows never move because it is not in their row.
 export function renderMonthBanner() {
   const el = $("month-banner");
   if (!el) return;
-  const nowK = currentKey();
-  const selectedKey = getSelectedKey();
-  if (selectedKey === nowK) { 
-    el.innerHTML = ""; 
-    el.classList.add("hidden"); 
-    return; 
-  }
-  el.classList.remove("hidden");
-  const label = `${monthName(selectedKey)} ${keyParts(selectedKey).y}`;
-  const jump = timeline().includes(nowK)
-    ? `<button data-action="selectMonth" data-arg0="${nowK}" class="text-[11px] font-black uppercase tracking-wider text-white bg-indigo-500/80 hover:bg-indigo-500 rounded-lg px-3 py-1.5 flex items-center gap-1.5 shadow-lg shadow-indigo-900/30 transition-colors"><span class="material-icons" style="font-size:15px">undo</span>Back to ${monthShort(nowK)}</button>`
-    : "";
-  el.innerHTML = `<div class="flex items-center justify-between gap-2 py-2 pl-4 pr-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-    <span class="text-[11px] font-black uppercase tracking-wider text-amber-400">Viewing ${label}</span>
-    ${jump}
-  </div>`;
+  const k = getSelectedKey(), nowK = currentKey(), tl = timeline();
+  const away = k !== nowK && tl.includes(nowK);
+  el.innerHTML = away ? `<button type="button" id="mn-today" data-action="goToday" class="mn-today-pill"><span class="material-icons" aria-hidden="true">${cmpKey(k, nowK) > 0 ? "arrow_back" : "arrow_forward"}</span>back to today</button>` : "";
+  el.classList.toggle("hidden", !away);
 }
 
 // =============================
@@ -81,10 +63,11 @@ export async function togglePaidQuick(event, id, kind) {
   const busyKey = `${getSelectedKey()}|${id}`;
   if (paidBusy.has(busyKey)) return;
   paidBusy.add(busyKey);
-  try { await togglePaidQuickRun(event, id, kind); } finally { paidBusy.delete(busyKey); }
+  const release = () => paidBusy.delete(busyKey);
+  try { await togglePaidQuickRun(event, id, kind, release); } finally { release(); }
 }
 
-async function togglePaidQuickRun(event, id, kind) {
+async function togglePaidQuickRun(event, id, kind, release = () => {}) {
   const btn = event.target ? event.target.closest("[data-action]") : event;
   const selectedKey = getSelectedKey();
   let appData = getAppData();
@@ -121,7 +104,9 @@ async function togglePaidQuickRun(event, id, kind) {
   }
   refreshRealized();
   if (navigator.vibrate) navigator.vibrate(12);
-  if (moved) renderAll(); // account balances changed
+  if (moved || btn.closest("#reminders")) renderAll(); // account balances changed, or paid from the reminders (redraw the list rows too)
+  // The change is done locally; do not keep this item locked while the cloud write waits (offline it can wait forever)
+  release();
   await syncSet(appData);
   const msg = nowSettled
     ? (paidNow[0] ? paidMessage(plan, paidNow) : kind === "income" ? "Marked received" : "Marked paid")
@@ -192,7 +177,7 @@ export async function togglePaidGroup(event, idsStr, k, kind) {
 
 export function updateParentBadge(childId) {
   let parent = null;
-  for (const who of ["charlie", "debt"]) {
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     for (const it of getItems(who, "expenses")) {
       if (getKids(it).some((c) => c.id === childId)) { parent = it; break; }
     }
@@ -205,6 +190,8 @@ export function updateParentBadge(childId) {
   const selectedKey = getSelectedKey();
   const paidCount = kids.filter((c) => isPaid(c.id, selectedKey)).length;
   const allPaid = kids.length > 0 && paidCount === kids.length;
+  const sumEl = details.querySelector(".parent-sumtext");
+  if (sumEl) sumEl.textContent = parentSummaryText(parent, selectedKey);
   const countEl = details.querySelector(".parent-paid-count");
   if (countEl) countEl.textContent = paidCount;
   const bar = details.querySelector(".parent-bar");
@@ -247,29 +234,51 @@ export function flashLabel(anchorEl, text) {
 export function applyPaidVisual(btn, settled) {
   const row = btn.closest(".item-row");
   const name = row ? row.querySelector(".item-name") : null;
+  const icon = btn.querySelector(".check-icon");
   if (settled) {
+    // Sub-expense rows start with an invisible tick and a transparent box: make both visible (and remember to restore on undo)
+    if (icon && icon.classList.contains("text-transparent")) {
+      btn.dataset.bare = "1";
+      btn.classList.remove("bg-transparent", "border-slate-700");
+      icon.classList.remove("text-transparent", "opacity-0");
+      icon.classList.add("text-white", "opacity-100");
+    }
     btn.classList.add("is-paid", "bg-emerald-500", "border-emerald-500");
     btn.classList.remove("border-slate-600");
     if (row) row.classList.add("opacity-60");
-    if (name) name.classList.add("line-through");
+    if (name) { name.classList.add("line-through"); if (name.classList.contains("text-slate-200")) name.classList.replace("text-slate-200", "text-slate-500"); }
     btn.classList.remove("paid-burst"); void btn.offsetWidth; btn.classList.add("paid-burst");
     if (row) { row.classList.remove("row-sweep"); void row.offsetWidth; row.classList.add("row-sweep"); setTimeout(() => row.classList.remove("row-sweep"), 750); }
   } else {
     btn.classList.remove("is-paid", "bg-emerald-500", "border-emerald-500");
+    if (btn.dataset.bare === "1" && icon) {
+      delete btn.dataset.bare;
+      btn.classList.add("bg-transparent", "border-slate-700");
+      icon.classList.remove("text-white", "opacity-100");
+      icon.classList.add("text-transparent", "opacity-0");
+    }
     btn.classList.add("border-slate-600");
     if (row) row.classList.remove("opacity-60");
-    if (name) name.classList.remove("line-through");
+    if (name) { name.classList.remove("line-through"); if (name.classList.contains("text-slate-500")) name.classList.replace("text-slate-500", "text-slate-200"); }
   }
 }
 
 export function refreshRealized() {
+  if (getSimView()) { renderBudget(); return; } // the simulated hero has its own numbers: redraw it
   const selectedKey = getSelectedKey();
   const t = monthTotals(selectedKey);
   const proj = $("sum-projected");
   const hideProjected = getHideProjected();
-  if (proj) proj.textContent = hideProjected ? '••••••' : peso(runningFundsAt(selectedKey));
+  if (proj) proj.textContent = hideProjected ? '••••••' : (() => { const n = householdProjectedAt(selectedKey); return n < 0 ? '-' + peso(-n) : peso(n); })();
+  const sgn = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  const pc = $("sum-projected-c"), pp = $("sum-projected-p");
+  if (pc) pc.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "charlie"));
+  if (pp) pp.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "partner"));
+  const pa = $("sum-projected-all");
+  if (pa) pa.textContent = hideProjected ? "••••" : sgn(runningFundsAt(selectedKey, "charlie") + runningFundsAt(selectedKey, "partner"));
   const stats = $("sum-stats");
   if (stats) stats.innerHTML = statsGridHtml(t);
+  refreshReminders(); // a bill marked paid leaves the reminders
   const cardSlot = $("card-summary-slot");
   if (cardSlot) cardSlot.innerHTML = cardSummaryHtml();
 }
@@ -277,6 +286,30 @@ export function refreshRealized() {
 // =============================
 // Window Action Helpers
 // =============================
+export function togglePersonIncluded(who) {
+  setSimView(false); // picking a person leaves the simulation
+  setWhoIncluded(who, !includedWho().includes(who)); // untick the last one and the other is ticked for you
+  renderBudget();
+}
+
+/** Tapping a person's tile shows only that person; tapping them again (when alone) shows everyone. */
+export function focusPerson(who) {
+  setSimView(false); // picking a person (or Together) leaves the simulation
+  if (who === "all") { setWhoIncluded("charlie", true); setWhoIncluded("partner", true); renderBudget(); return; }
+  const inc = includedWho();
+  const alone = inc.length === 1 && inc[0] === who;
+  const other = who === "charlie" ? "partner" : "charlie";
+  setWhoIncluded(who, true);
+  setWhoIncluded(other, alone);
+  renderBudget();
+}
+
+/** The (i) icon in the projected card header opens or closes the "explain the numbers" breakdown. */
+export function toggleExplain() {
+  const d = document.querySelector("#budget-body details[data-persist=proj-details]");
+  if (d) d.open = !d.open;
+}
+
 export function toggleProjected() {
   setHideProjected(!getHideProjected());
   renderBudget();
@@ -296,6 +329,40 @@ export async function reorderChildren(who, parentId, orderIds) {
   const changed = applyChildOrder(parent, shown, orderIds);
   renderBudget();
   if (changed) await syncSet(appData);
+}
+
+// Save the order produced by dragging income / expense rows. `orderIds` are the rows of one list (same category) in the new order.
+export async function reorderItems(who, kind, orderIds) {
+  const appData = getAppData();
+  if (!appData) return;
+  const items = getItems(who, kind);
+  let changed = false;
+  orderIds.forEach((id, i) => {
+    const it = items.find((x) => x.id === id);
+    if (it && it.ord !== i + 1) { it.ord = i + 1; changed = true; }
+  });
+  renderBudget();
+  if (changed) await syncSet(appData);
+}
+
+export function resetSimIncome() { setSimIncomeScale(100); renderBudget(); }
+
+// Slider: the label follows the finger; the numbers and projection refresh when it is released
+document.addEventListener("input", (e) => {
+  if (e.target?.id !== "sim-inc-slider") return;
+  const p = Number(e.target.value);
+  const lab = document.getElementById("sim-inc-pct");
+  if (lab) lab.textContent = p + "%";
+});
+document.addEventListener("change", (e) => {
+  if (e.target?.id !== "sim-inc-slider") return;
+  setSimIncomeScale(e.target.value);
+  renderBudget();
+});
+
+export function toggleSimPerson() {
+  setSimPersonSort(!getSimPersonSort());
+  renderBudget();
 }
 
 export function toggleExpenseSort() {
@@ -362,7 +429,7 @@ export function exportData() {
 // Density Mode Helpers
 // =============================
 export function getDensityMode() {
-  return localStorage.getItem("moneyku_density") || "comfortable";
+  return "comfortable"; // the Compact view was removed; always Comfortable
 }
 
 export function applyDensityMode(mode) {

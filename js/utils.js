@@ -15,6 +15,9 @@ export const MONTHS_SHORT = [
 // owner meta
 export const OWNERS = {
   charlie: { label: "Charles'", who: "charlie", accent: "blue", text: "text-blue-400", ring: "border-blue-500/20", grad: "from-blue-500 to-indigo-600" },
+  partner: { label: "Ynah's", who: "partner", accent: "teal", text: "text-ynah", ring: "border-ynah", grad: "ynah-grad" },
+  pdebt: { label: "Ynah's Debt Tracker", who: "pdebt", accent: "ynah", text: "text-ynah", ring: "border-ynah", grad: "ynah-grad" },
+  simulated: { label: "Simulated", who: "simulated", accent: "amber", text: "text-amber-300", ring: "border-amber-400/30", grad: "from-amber-500 to-orange-600" },
   debt: { label: "Debt Tracker", who: "debt", accent: "rose", text: "text-rose-400", ring: "border-rose-500/20", grad: "from-rose-500 to-pink-600" },
 };
 
@@ -114,6 +117,12 @@ export function peso(n) {
   return `₱${formatMoney(n)}`; 
 }
 
+/** Whole pesos for list rows (cents stay in the details screens). */
+export function pesoRow(n) {
+  const v = Math.round(Number(n) || 0);
+  return `${v < 0 ? "-" : ""}₱${Math.abs(v).toLocaleString("en-PH")}`;
+}
+
 export function signedPeso(n) {
   const s = n > 0.005 ? "+" : n < -0.005 ? "-" : "";
   return `${s}₱${formatMoney(Math.abs(n))}`;
@@ -174,6 +183,23 @@ export function addMonths(k, n) {
   const { y, m } = keyParts(k); 
   const d = new Date(y, m + n, 1); 
   return mkKey(d.getFullYear(), d.getMonth()); 
+}
+
+/** Move `delta` months within timeline `tl` (sorted keys), clamped at both ends. */
+export function stepKey(tl, k, delta) {
+  if (!tl.length) return k;
+  let i = tl.indexOf(k);
+  if (i < 0) i = Math.max(0, tl.findIndex((x) => x >= k));
+  if (i < 0) i = tl.length - 1;
+  return tl[Math.min(tl.length - 1, Math.max(0, i + delta))];
+}
+
+/** Same month in the year `dir` (+1/-1) away; clamped to the nearest key in the timeline. */
+export function yearStepKey(tl, k, dir) {
+  if (!tl.length) return k;
+  const want = addMonths(k, 12 * dir);
+  if (tl.includes(want)) return want;
+  return dir > 0 ? tl[tl.length - 1] : tl[0];
 }
 
 export function cmpKey(a, b) { 
@@ -276,4 +302,13 @@ export function categoryIcon(name) {
   if (/salary|income|pay\b|sahod/.test(n)) return "payments";
   if (/pet|dog|cat|kobe|dudu/.test(n)) return "pets";
   return null;
+}
+
+/** How many of a weekday (0=Sun, 1=Mon ...) fall in the month "YYYY-MM". */
+export function countWeekday(key, dow = 1) {
+  const { y, m } = keyParts(key);
+  const n = new Date(y, m + 1, 0).getDate();
+  let c = 0;
+  for (let d = 1; d <= n; d++) if (new Date(y, m, d).getDay() === dow) c++;
+  return c;
 }

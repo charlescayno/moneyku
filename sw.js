@@ -1,4 +1,5 @@
-const CACHE_NAME = 'moneyku-cache-v91';
+const CACHE_NAME = 'moneyku-cache-v253';
+const FONT_CSS = 'https://fonts.googleapis.com/icon?family=Material+Icons';
 const urlsToCache = [
   './',
   './index.html',
@@ -6,9 +7,13 @@ const urlsToCache = [
   './assets/icon-192.png',
   './assets/icon-512.png',
   './assets/money-icon.png',
+  './assets/bpi-logo.png',
   './assets/avatar-charlie.jpg',
   './assets/avatar-karla.jpg',
+  './assets/avatar-ynah.jpg',
+  './assets/avatar-charles.jpg',
   './style.css',
+  './theme.css',
   './tailwind.css',
   './js/app.js',
   './js/utils.js',
@@ -23,8 +28,9 @@ const urlsToCache = [
   './js/extras.js',
   './js/gemini.js',
   './js/itemOps.js', './js/migrations.js',
-  './js/arrange.js', './js/payfrom.js', './js/scope.js', './js/card.js', './js/history.js', './js/ui/historyui.js', './js/ui/cardui.js',
-  './js/ui/quicklog.js',
+  './js/arrange.js', './js/payfrom.js', './js/scope.js', './js/card.js',
+  './js/ui/next5.js', './js/simulated.js', './js/ui/childmenu.js', './js/history.js', './js/ui/historyui.js', './js/ui/cardui.js',
+  './js/ui/quicklog.js', './js/ui/addsheet.js',
   './js/ui/index.js',
   './js/ui/core.js',
   './js/ui/components.js',
@@ -46,6 +52,10 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME).then(cache =>
       // Cache each file independently so one 404 doesn't abort the whole install
       Promise.all(urlsToCache.map(url => cache.add(url).catch(err => console.warn('SW cache skip:', url, err))))
+        // The icon font file itself (named inside the font CSS) must be cached too, or every icon is blank offline
+        .then(() => cache.match(FONT_CSS))
+        .then(res => (res ? res.text() : ''))
+        .then(css => Promise.all([...css.matchAll(/url\(([^)]+)\)/g)].map(m => cache.add(m[1].replace(/["']/g, '')).catch(() => {}))))
     )
   );
 });
@@ -65,24 +75,28 @@ self.addEventListener('fetch', event => {
   // Only intercept GET requests
   if (event.request.method !== 'GET') return;
 
+  const sameOrigin = new URL(event.request.url).origin === self.location.origin;
+  const network = fetch(event.request, sameOrigin ? { cache: 'no-cache' } : undefined)
+    .then(response => {
+      // Save good responses (and opaque CDN ones) for offline use; never cache errors
+      if (response && (response.ok || response.type === 'opaque')) {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+      }
+      return response;
+    });
+  // Offline: exact match, then ignore ?v= cache-busters, then the app shell for page loads
+  const fromCache = async () =>
+    (await caches.match(event.request)) ||
+    (await caches.match(event.request, { ignoreSearch: true })) ||
+    (event.request.mode === 'navigate' ? await caches.match('./index.html') : undefined);
+  // Network first so updates arrive, but on a weak connection the app must not wait: after 4 seconds use the saved copy
+  // (the request keeps going and refreshes the cache for next time).
+  const timeout = new Promise(resolve => setTimeout(() => resolve(null), 4000));
   event.respondWith(
-    fetch(event.request, new URL(event.request.url).origin === self.location.origin ? { cache: 'no-cache' } : undefined)
-      .then(response => {
-        // Save good responses (and opaque CDN ones) for offline use; never cache errors
-        if (response && (response.ok || response.type === 'opaque')) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
-        }
-        return response;
-      })
-      .catch(async () => {
-        // Offline: exact match, then ignore ?v= cache-busters, then the app shell for page loads
-        return (
-          (await caches.match(event.request)) ||
-          (await caches.match(event.request, { ignoreSearch: true })) ||
-          (event.request.mode === 'navigate' ? await caches.match('./index.html') : undefined) ||
-          Response.error()
-        );
-      })
+    Promise.race([network.catch(() => null), timeout]).then(async res => {
+      if (res) return res;
+      return (await fromCache()) || network.catch(() => Response.error());
+    })
   );
 });

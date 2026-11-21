@@ -108,6 +108,37 @@ export function isPermissionDenied(err) {
 // =============================
 // Sync & State Normalization
 // =============================
+// ---- Sync status shown in the header: saving / synced (with time) / not synced yet ----
+const sync = { status: "saving", at: null, since: Date.now() };
+function ago(t) {
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  return h < 24 ? `${h} h ago` : new Date(t).toLocaleDateString();
+}
+export function renderSyncStatus() {
+  const el = $("sync-status");
+  if (!el) return;
+  let status = sync.status;
+  if (status === "saving" && (!navigator.onLine || Date.now() - sync.since > 4000)) status = "unsynced";
+  const dot = (c) => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-right:5px;vertical-align:1px"></span>`;
+  if (status === "synced" && !navigator.onLine) { el.innerHTML = dot("#94a3b8") + "Offline · last synced " + ago(sync.at); el.style.color = "#94a3b8"; }
+  else if (status === "synced") { el.innerHTML = dot("#34d399") + "Synced " + ago(sync.at); el.style.color = "#94a3b8"; }
+  else if (status === "saving") { el.innerHTML = dot("#fbbf24") + "Saving…"; el.style.color = "#fbbf24"; }
+  else { el.innerHTML = dot("#f87171") + (navigator.onLine ? "Not synced yet (saved on this phone)" : "Offline: saved on this phone"); el.style.color = "#fca5a5"; }
+}
+export function markSync(status) {
+  sync.status = status;
+  if (status === "synced") sync.at = Date.now();
+  if (status === "saving") { sync.since = Date.now(); const t2 = setTimeout(renderSyncStatus, 4200); if (t2 && t2.unref) t2.unref(); }
+  renderSyncStatus();
+}
+if (typeof window !== "undefined") {
+  const tick = setInterval(renderSyncStatus, 15000); if (tick && tick.unref) tick.unref(); // never keeps a test process alive
+  window.addEventListener("online", renderSyncStatus);
+  window.addEventListener("offline", renderSyncStatus);
+}
 export function showSync() { 
   const b = $("sync-bar"); 
   if (b) b.style.opacity = "1"; 
@@ -128,10 +159,42 @@ export function getPendingEchoes() {
   return pendingEchoes;
 }
 
+// What this device last saved. A live update equal to it is our own echo (ignored); anything else is another device's edit.
+let lastSaved = null;
+export function getLastSaved() { return lastSaved; }
+
+// Remember when each account balance last changed (any edit, transfer or payment) so the app can say
+// when a balance may be out of date. Accounts without a date yet are "unknown" until they change.
+function stampAccountDates(appData) {
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  for (const a of appData?.accounts || []) {
+    if (!a) continue;
+    const amt = Number(a.amount) || 0;
+    if (a.lastAmt == null) a.lastAmt = amt;
+    else if (a.lastAmt !== amt) { a.lastAmt = amt; a.updated = today; }
+  }
+}
+
+/** Stable fingerprint of the data, used to tell whether the cloud changed since this device last synced. */
+function stableValue(v) {
+  if (Array.isArray(v)) return v.map(stableValue);
+  if (v && typeof v === "object") { const o = {}; for (const k of Object.keys(v).sort()) o[k] = stableValue(v[k]); return o; }
+  return v;
+}
+export function dataHash(d) {
+  const s = JSON.stringify(stableValue(d));
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return `${h}:${s.length}`;
+}
+
 export async function syncSet(appData, onFail) {
+  try { stampAccountDates(appData); } catch (err) { console.warn("Account dates:", err); }
   try { recordChange(appData); } catch (err) { console.warn("History:", err); }
   pendingEchoes++;
-  showSync();
+  try { lastSaved = JSON.parse(JSON.stringify(appData)); } catch (err) { lastSaved = null; }
+  showSync(); markSync("saving");
   // Save local copy immediately for instant offline durability
   try {
     localStorage.setItem('moneyku_offline', JSON.stringify(appData));
@@ -141,17 +204,27 @@ export async function syncSet(appData, onFail) {
     console.warn("Could not save to localStorage:", err);
   }
 
-  try { 
-    await set(dbRef, appData); 
-    try { localStorage.removeItem('moneyku_dirty'); } catch (err) { /* ignore */ }
-  } catch (e) { 
-    try { localStorage.setItem('moneyku_dirty', '1'); } catch (err) { /* ignore */ }
-    pendingEchoes = Math.max(0, pendingEchoes - 1); 
-    console.error("Firebase sync error:", e); 
-    if (typeof onFail === "function") onFail(e);
-  } finally { 
-    setTimeout(hideSync, 400); 
-  }
+  // Offline, Firebase's set() never resolves until the server acks. Don't make the UI wait for it:
+  // the local copy is already saved and the SDK keeps the write queued and sends it on reconnect.
+  let snapshotForBase = appData;
+  try { snapshotForBase = JSON.parse(JSON.stringify(appData)); } catch (err) { /* use live object */ }
+  const write = (async () => {
+    try {
+      await set(dbRef, snapshotForBase);
+      markSync("synced");
+      try { localStorage.setItem("moneyku_base", dataHash(normalize(JSON.parse(JSON.stringify(snapshotForBase))))); } catch (err) { /* ignore */ }
+      try { localStorage.removeItem('moneyku_dirty'); } catch (err) { /* ignore */ }
+    } catch (e) {
+      try { localStorage.setItem('moneyku_dirty', '1'); } catch (err) { /* ignore */ }
+      pendingEchoes = Math.max(0, pendingEchoes - 1);
+      markSync("unsynced");
+      console.error("Firebase sync error:", e);
+      if (typeof onFail === "function") onFail(e);
+    } finally {
+      setTimeout(hideSync, 400);
+    }
+  })();
+  await Promise.race([write, new Promise((r) => setTimeout(r, 1000))]);
 }
 
 export function normalize(d) {
@@ -159,7 +232,9 @@ export function normalize(d) {
   d.accounts = Array.isArray(d.accounts) ? d.accounts : (d.accounts ? Object.values(d.accounts) : []);
   d.startMonth = d.startMonth || currentKey();
   d.items = d.items || {};
-  for (const who of ["charlie", "debt"]) {
+  // "simulated" is the independent what-if sandbox; a missing key just means an empty one
+  d.simCash = Number.isFinite(Number(d.simCash)) ? Number(d.simCash) : 0;
+  for (const who of ["charlie", "debt", "partner", "pdebt", "simulated"]) {
     d.items[who] = d.items[who] || {};
     for (const kind of ["income", "expenses"]) {
       const v = d.items[who][kind];

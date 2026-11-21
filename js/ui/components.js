@@ -1,16 +1,20 @@
+import { monthPaid } from '../state.js';
 import { accountForMethod, accountName, autoDeduct, paidMessage, payableAccounts, refundPayment } from "../payfrom.js";
 import { chooseScope } from "../scope.js";
 import { isCardItem } from "../card.js";
 import { cardSectionHtml } from "./cardui.js";
 import { childAmt } from "../state.js";
-import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, signedPeso } from '../utils.js';
+import { $, BANK_DOMAINS, BANK_LABELS, BRAND_DOMAINS, CATEGORY_LABELS, HORIZON, MONTHS, MONTHS_SHORT, OWNERS, PM_LABELS, ACCOUNT_PAYMENT_METHODS, isAccountMethod, addMonths, bankIconFor, brandIconFor, categoryIcon, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, iconFor, keyParts, mkKey, monthName, monthShort, monthsInclusive, ordinal, parseDueDay, parseMathAmount, peso, pesoRow, signedPeso } from '../utils.js';
+import { stepKey } from '../utils.js';
 import { DEFAULT_SHARES, DEFAULT_PENDING_SHARES, sharesOf, fmtShares } from '../utils.js';
-import { isArranging, getExpenseSort, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, runningFundsAt, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
+import { isArranging, getSimIncomeScale, getSimPersonSort, getExpenseSort, acctOwner, acctType, accountsTotal, allInstallments, allRecurring, amountIn, childFinal, clampSelected, currentMoneyAt, findItemById, findItemOrChildById, getActiveEdit, getAppData, getHideInvestments, getHideProjected, householdTotals, getItems, getKids, getOverviewPage, getSelectedKey, getSpendList, hasOverride, isPaid, itemActiveIn, itemAmts, itemCategory, itemFinal, itemTotal, monthTotals, monthsPaidCount, outlookRows, outlookKeys, includedWho, includedTotals, flowItems, staleBalanceDays, runningFundsAt, displayKids, projectedByMonth, getSimView, setActiveEdit, setAppData, setHideInvestments, setHideProjected, setOverviewPage, setSelectedKey, sortItems, spentIn, timeline } from '../state.js';
 import { syncSet } from '../firebase.js';
 import { addItemData, applyItemAmount } from '../itemOps.js';
-import { budgetAlert, budgetBefore } from '../insights.js';
+import { budgetAlert, budgetBefore, householdRealMoney, realMoney } from '../insights.js';
+import { showSheet } from './quicklog.js';
 import { lastMonthOneTimes } from '../extras.js';
-import { toast } from './core.js';
+import { toast, fieldError } from './core.js';
+import { saveQuickSpend } from './addsheet.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
 import { jumpOverviewYear, nextOverviewPage, prevOverviewPage, renderMonthStrip, scrollChipIntoView, toggleInvestments, togglePaidGroup, togglePaidQuick, updateHeader } from './actions.js';
 import { renderAll, renderBudget } from './layout.js';
@@ -45,6 +49,21 @@ export function rowIconHtml(name, sz, kind = "expenses", noBg = false) {
   return `<div class="rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-500" style="font-size:${Math.round(sz * 0.62)}px">${iconName}</span></div>`;
 }
 
+/** The due day typed in the sub-expense form (1-31), or null when empty or invalid. */
+function childDueDayInput() {
+  const el = $("f-child-dueday");
+  if (!el || el.value === "") return null;
+  const d = parseInt(el.value, 10);
+  return d >= 1 && d <= 31 ? d : null;
+}
+
+/** Grocery-style sub-expense: optional number of people and budget per person typed in the form (both saved together). */
+function childPeopleInput() {
+  const p = parseInt($("f-people")?.value, 10);
+  const pp = parseMathAmount($("f-perperson")?.value);
+  return p >= 1 && pp > 0 ? { people: p, perPerson: pp } : null;
+}
+
 export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null) {
   const paid = isPaid(c.id, k);
   const est = childAmt(c, k);
@@ -54,34 +73,50 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null)
   const pct = est > 0 ? Math.min(100, Math.round((spent / est) * 100)) : (spent > 0 ? 100 : 0);
   const remaining = est - spent;
   const rightMain = paid ? childFinal(c, k) : est;
-  
+  // Due badge: muted, and coloured only for urgency (overdue = rose, due today / this week = amber)
+  const cdd = dueDayFor(c);
+  const cds = cdd != null && kind === "expenses" ? dueStatus(c, k) : null;
+  const dueCls = cds?.state === "overdue" ? "text-rose-400" : cds?.state === "week" ? "text-amber-300" : "text-slate-500";
+  const dueTitle = cds?.state === "overdue" ? "Overdue" : cds?.state === "week" ? (cds.days === 0 ? "Due today" : `Due in ${cds.days}d`) : "Due day";
+  const dueTag = cdd != null && !paid
+    ? `<span class="child-due text-[11px] font-bold ${dueCls} flex-shrink-0 whitespace-nowrap" title="${dueTitle}">${ordinal(cdd)}</span>`
+    : "";
+
   const spendLine = (hasSpend && !paid)
-    ? `<div class="child-spendline flex items-center gap-2 mt-1">
+    ? `<div class="child-spendline flex items-center gap-2 mt-0.5">
         <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden max-w-[100px]"><div class="h-full ${over ? "bg-rose-500" : "bg-emerald-400"} rounded-full" style="width:${pct}%"></div></div>
-        <span class="text-[10px] font-bold ${over ? "text-rose-400" : "text-emerald-400"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
+        <span class="text-[10px] font-bold ${over ? "text-rose-400" : "text-slate-500"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
       </div>`
     : "";
-    
+
   if (arr) {
-    return `<div data-child="${c.id}" class="arr-row flex items-center gap-3 py-1.5 px-6 bg-[#1c2136]">
-    ${rowIconHtml(c.name, 20, kind, true)}
-    <div class="flex-1 min-w-0"><span class="item-name block text-sm font-bold text-slate-200 truncate">${escapeHtml(c.name)}</span></div>
+    return `<div data-child="${c.id}" class="arr-row flex items-center gap-2 py-1 pl-3 pr-1 bg-[#1c2136]">
+    <div class="flex-1 min-w-0"><span class="item-name block text-sm font-bold text-slate-200 truncate keep-case">${escapeHtml(c.name)}</span></div>
     <span class="text-xs font-bold text-slate-500 flex-shrink-0">${peso(rightMain)}</span>
-    <div data-drag-handle role="button" aria-label="Drag to reorder ${escapeHtml(c.name)}" title="Drag to reorder" class="arr-handle w-11 h-11 -mr-2 rounded-xl flex items-center justify-center flex-shrink-0 text-indigo-300 bg-indigo-500/15" style="touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none"><span class="material-icons" style="font-size:22px;pointer-events:none">drag_handle</span></div>
+    <div data-drag-handle role="button" aria-label="Drag to reorder ${escapeHtml(c.name)}" title="Drag to reorder" class="arr-handle w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-indigo-300 bg-indigo-500/15" style="touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none"><span class="material-icons" style="font-size:22px;pointer-events:none">drag_handle</span></div>
   </div>`;
   }
 
-  return `<div data-child="${c.id}" data-action="openChildModal" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" class="item-row flex items-center gap-4 py-2.5 px-6 cursor-pointer hover:bg-white/5 transition-colors">
-    <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark paid" class="paid-check ${paid ? "is-paid bg-emerald-500/20 border-emerald-500" : "bg-transparent border-slate-700"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-colors">
+  // One compact line: check, name, due badge, amount, ⋯ menu (edit / reorder / delete live in the menu)
+  return `<div data-child="${c.id}" data-action="openChildModal" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" class="item-row flex items-center gap-2 pl-3 pr-1 cursor-pointer hover:bg-white/5 transition-colors" style="min-height:40px">
+    <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="${kind === "income" ? "Mark received" : "Mark paid"}" class="paid-check ${paid ? "is-paid bg-emerald-500/20 border-emerald-500" : "bg-transparent border-slate-700"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-colors">
       <span class="material-icons check-icon ${paid ? "text-emerald-400 opacity-100" : "text-transparent opacity-0"} transition-opacity" style="font-size:14px">check</span>
     </button>
-    ${rowIconHtml(c.name, 20, kind, true)}
-    <div class="flex-1 min-w-0">
+    <div class="flex-1 min-w-0 py-1">
       <span class="item-name block text-sm font-bold ${paid ? "text-slate-500 line-through" : "text-slate-200"} truncate">${escapeHtml(c.name)}</span>
       ${spendLine}
     </div>
-    <span class="child-amt text-sm font-black ${paid ? "text-slate-600 line-through" : "text-slate-300"} flex-shrink-0">${peso(rightMain)}</span>
+    ${dueTag}
+    <span class="child-amt text-sm font-black ${paid ? "text-slate-600 line-through" : rightMain < 0 ? "text-rose-400" : "text-slate-300"} flex-shrink-0 tabular-nums text-right" style="min-width:4.5rem">${pesoRow(rightMain)}</span>
+    <button type="button" data-action="openChildMenu" data-arg0="${who}" data-arg1="${parentId}" data-arg2="${c.id}" aria-label="More actions for ${escapeHtml(c.name)}" class="child-menu-btn w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-slate-500"><span class="material-icons" style="font-size:18px">more_horiz</span></button>
   </div>`;
+}
+
+/** "5 items · ₱4,200 · next: PLDT 15th" (plain text; escape before putting it in HTML). */
+export function parentSummaryText(it, k) {
+  const kids = getKids(it, k);
+  const nxt = displayKids(kids, k).find((c) => !isPaid(c.id, k) && dueDayFor(c) != null);
+  return `${kids.length} item${kids.length === 1 ? "" : "s"} · ${peso(itemTotal(it, k))}${nxt ? ` · next: ${nxt.name} ${ordinal(dueDayFor(nxt))}` : ""}`;
 }
 
 export function parentRowHtml(it, k, kind, who, opts = {}) {
@@ -93,37 +128,45 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
   const icon = opts.hideIcon ? null : iconFor(it.name);
   const iconInner = icon
     ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[icon] || ''}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
-    : `<span class="material-icons text-white" style="font-size:24px">home_work</span>`;
+    : `<span class="material-icons text-white" style="font-size:22px">home_work</span>`;
   const iconBg = icon ? "bg-slate-800" : "bg-gradient-to-br from-fuchsia-500 to-purple-600";
   const arrange = isArranging(it.id) && kids.length > 1;
-  const childRows = kids.map((c, i) => childRowHtml(it.id, c, k, who, kind, arrange ? { i, n: kids.length } : null)).join("");
+  // Display order: by due day, undated last, paid at the end. Arrange mode shows the stored order so dragging edits that order.
+  const shownKids = arrange ? kids : displayKids(kids, k);
+  const childRows = shownKids.map((c, i) => childRowHtml(it.id, c, k, who, kind, arrange ? { i, n: kids.length } : null)).join("");
   const kidsIds = kids.map(c => c.id).join(",");
-  
-  return `<details data-persist="parent-${it.id}" class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden my-3 shadow-xl" data-parent="${it.id}" data-who="${who}">
-    <summary class="parent-summary flex items-center gap-4 p-5 cursor-pointer list-none ${allPaid ? "opacity-70" : ""}">
-      <div class="acct-icon w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 shadow-lg">${iconInner}</div>
+  const long = kids.length > 12 && !arrange; // a long list scrolls inside the card instead of pushing the page down
+  const link = "py-2 px-1 text-[11px] font-bold flex items-center gap-0.5 transition-colors";
+
+  return `<details data-persist="parent-${it.id}" class="item-parent group bg-[#1c2136] rounded-[1.25rem] border border-slate-700/60 overflow-hidden" style="margin:8px 0" data-parent="${it.id}" data-who="${who}">
+    <summary class="parent-summary flex items-center cursor-pointer list-none ${allPaid || it.excluded ? "opacity-70" : ""}" style="gap:12px;padding:12px 14px">
+      <div class="acct-icon rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0" style="width:44px;height:44px">${iconInner}</div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1.5">
-          <p class="item-name text-lg font-black text-white truncate ${allPaid ? "line-through" : ""}">${escapeHtml(it.name)}</p>
+          <p class="item-name font-black text-white truncate ${allPaid ? "line-through" : ""}" style="font-size:15px">${escapeHtml(it.name)}</p>
+          ${it.excluded ? `<span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 flex-shrink-0">Not counted</span>` : ""}
+          ${simSourceHtml(it, who)}
           <span class="parent-caret material-icons text-slate-500 transition-transform duration-300 group-open:-rotate-180" style="font-size:20px">expand_more</span>
         </div>
-        <div class="flex items-center gap-3 mt-1.5">
-          <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden max-w-[120px]"><div class="parent-bar h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded-full transition-all duration-300" style="width:${pct}%"></div></div>
-          <span class="text-[10px] font-black text-purple-300 uppercase tracking-widest"><span class="parent-paid-count">${paidCount}</span>/${kids.length} paid</span>
+        <div class="flex items-center gap-2 mt-1.5 min-w-0">
+          <div class="w-10 h-1.5 bg-slate-800 rounded-full overflow-hidden flex-shrink-0"><div class="parent-bar h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded-full transition-all duration-300" style="width:${pct}%"></div></div>
+          <span class="parent-sumtext text-[11px] font-bold text-slate-400 truncate">${escapeHtml(parentSummaryText(it, k))}</span>
         </div>
       </div>
       <div class="flex flex-col items-end gap-1 flex-shrink-0">
-        <p class="text-lg font-black text-white">${peso(total)}</p>
+        <p class="font-black ${total < 0 ? "text-rose-400" : "text-white"} tabular-nums text-right" style="font-size:15px;min-width:4.5rem">${pesoRow(total)}</p>
         <button data-action="togglePaidGroup" data-arg0="${kidsIds}" data-arg1="${k}" data-arg2="${kind}" title="${kind === 'income' ? 'Mark all received' : 'Mark all paid'}" class="text-slate-500 hover:text-purple-400 transition-colors flex items-center gap-1 ${allPaid ? "text-purple-500" : ""}">
           <span class="material-icons" style="font-size:16px">${allPaid ? "done_all" : "checklist"}</span>
         </button>
       </div>
     </summary>
-    <div class="pb-4 pt-1 space-y-0 relative">
-      <div class="child-list" data-who="${who}" data-parent="${it.id}">${childRows}</div>
-      <div class="px-6 mt-3 flex items-center gap-2">
-        ${arrange ? "" : `<button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>`}
-        ${kids.length > 1 ? `<button data-action="toggleArrange" data-arg0="${it.id}" aria-pressed="${arrange}" class="${arrange ? "flex-1 bg-indigo-600 text-white" : "text-slate-500 hover:text-white"} py-2.5 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"><span class="material-icons" style="font-size:16px">${arrange ? "check" : "swap_vert"}</span>${arrange ? "Done" : "Arrange"}</button>` : ""}
+    <div class="pb-2 pt-0 relative">
+      <div class="child-list ml-5 border-l border-slate-700/60 ${long ? "overflow-y-auto" : ""}" ${long ? 'style="max-height:60vh"' : ""} data-who="${who}" data-parent="${it.id}">${childRows}</div>
+      <div class="px-5 mt-1 flex items-center gap-2">
+        ${arrange ? "" : `<button data-action="openChildModal" data-arg0="${who}" data-arg1="${it.id}" class="${link} text-indigo-300"><span class="material-icons" style="font-size:16px">add</span>Add sub-expense</button>`}
+        <span class="flex-1"></span>
+        ${arrange ? "" : `<button data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}" class="${link} text-slate-500 hover:text-white">Edit group</button>`}
+        ${kids.length > 1 ? `<button data-action="toggleArrange" data-arg0="${it.id}" aria-pressed="${arrange}" class="${arrange ? "bg-indigo-600 text-white px-3 rounded-xl text-xs font-bold flex items-center gap-1" : link + " text-slate-500 hover:text-white"}" style="min-height:32px">${arrange ? `<span class="material-icons" style="font-size:16px">check</span>Done` : "Arrange"}</button>` : ""}
       </div>
     </div>
   </details>`;
@@ -142,6 +185,23 @@ export function dueStatus(it, k) {
   if (diff < 0) return { state: "overdue", days: -diff };
   if (diff <= 7) return { state: "week", days: diff };
   return { state: "later", days: diff };
+}
+
+/** Small avatar showing whose budget a simulated item was copied from (nothing for items made inside the simulation). */
+export function simSourceHtml(it, who) {
+  if (who !== "simulated" || (it.copiedFromWho !== "charlie" && it.copiedFromWho !== "partner")) return "";
+  const n = it.copiedFromWho === "partner" ? "Ynah" : "Charles";
+  return `<img src="assets/avatar-${n.toLowerCase()}.jpg" alt="${n}" title="Copied from ${n}" class="sim-src w-5 h-5 rounded-full object-cover flex-shrink-0 border border-white/20">`;
+}
+
+/** "Paid from Cash" / "Received into Maribank" under a settled row, so the result of a tap is visible on the row itself. */
+function paidNoteHtml(it, k, kind, settled) {
+  if (!settled) return "";
+  const rec = getAppData()?.paidFrom?.[k]?.[it.id];
+  if (!rec || !rec.a) return "";
+  const name = accountName(rec.a);
+  if (!name) return "";
+  return `<p class="paid-note">${kind === "income" ? "Received into" : "Paid from"} ${escapeHtml(name)}</p>`;
 }
 
 export function itemRowHtml(it, k, kind, who, opts = {}) {
@@ -163,31 +223,31 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
       </div>`
     : "";
 
-  const iconHtml = opts.hideIcon ? "" : rowIconHtml(it.name, 28, kind);
+  const iconHtml = opts.hideIcon || kind === "income" ? "" : rowIconHtml(it.name, 28, kind);
   const installment = it.recurring && it.end;
   const dd = dueDayFor(it);
   const tags = [];
   if (!opts.hidePaymentTag) {
     if (it.paymentMethod === "bpi_platinum") {
-      tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
+      tags.push(`<span class="text-[11px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
     } else if (isAccountMethod(it.paymentMethod)) {
       const m = ACCOUNT_PAYMENT_METHODS.find((x) => x.id === it.paymentMethod);
-      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">${m.icon} ${escapeHtml(m.short)}</span>`);
+      tags.push(`<span class="text-[11px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">${m.icon} ${escapeHtml(m.short)}</span>`);
     } else if (it.paymentMethod && it.paymentMethod.startsWith("cc_")) {
-      tags.push(`<span class="text-[9px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 ${escapeHtml(PM_LABELS[it.paymentMethod] || "Credit Card")}</span>`);
+      tags.push(`<span class="text-[11px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 ${escapeHtml(PM_LABELS[it.paymentMethod] || "Credit Card")}</span>`);
     }
   }
   
   if (it.txDate) {
-    tags.push(`<span class="text-[9px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event</span>${it.txDate}</span>`);
+    tags.push(`<span class="text-[11px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event</span>${it.txDate}</span>`);
   }
   
   const ds = kind === "expenses" ? dueStatus(it, k) : null;
-  if (ds && ds.state === "overdue") tags.unshift(`<span class="due-chip due-overdue text-[9px] font-black text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/40 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">error_outline</span>Overdue${ds.days ? ` ${ds.days}d` : ""}</span>`);
-  else if (ds && ds.state === "week") tags.unshift(`<span class="due-chip due-soon text-[9px] font-black text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">schedule</span>${ds.days === 0 ? "Due today" : `Due in ${ds.days}d`}</span>`);
-  if (installment) tags.push(`<span class="text-[9px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
-  else if (it.recurring && dd != null) tags.push(`<span class="text-[9px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
-  else if (it.recurring) tags.push(`<span class="text-[9px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
+  if (ds && ds.state === "overdue") tags.unshift(`<span class="due-chip due-overdue text-[11px] font-black text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/40 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">error_outline</span>Overdue${ds.days ? ` ${ds.days}d` : ""}</span>`);
+  else if (ds && ds.state === "week") tags.unshift(`<span class="due-chip due-soon text-[11px] font-black text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">schedule</span>${ds.days === 0 ? "Due today" : `Due in ${ds.days}d`}</span>`);
+  if (installment) tags.push(`<span class="text-[11px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
+  else if (it.recurring && dd != null) tags.push(`<span class="text-[11px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
+  else if (it.recurring) tags.push(`<span class="text-[11px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
   
   let progress = "";
   if (installment) {
@@ -197,9 +257,35 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     const toPay = Math.max(0, total - paidM) * (Number(it.amount) || 0);
     progress = `<div class="flex items-center gap-2 mt-1.5 max-w-full">
       <div class="flex-1 min-w-[24px] max-w-[110px] h-1 bg-slate-800 rounded-full overflow-hidden"><div class="inst-bar-fill h-full bg-gradient-to-r ${OWNERS[who].grad} rounded-full" style="width:${pct}%"></div></div>
-      <span class="inst-bar-count text-[9px] font-bold text-slate-500 flex-shrink-0">${paidM}/${total}</span>
-      <span class="inst-bar-rem text-[9px] font-semibold text-slate-500 whitespace-nowrap">${toPay > 0 ? `· ${peso(toPay)} to pay in full` : "· fully paid"}</span>
+      <span class="inst-bar-count text-[11px] font-bold text-slate-500 flex-shrink-0">${paidM}/${total}</span>
+      <span class="inst-bar-rem text-[11px] font-semibold text-slate-500 whitespace-nowrap">${toPay > 0 ? `· ${peso(toPay)} to pay in full` : "· fully paid"}</span>
     </div>`;
+  }
+  if (kind === "expenses" || kind === "income") {
+    // Clean one-line row (expenses and income share it): round check, name + small due badge, amount. Details live in the edit modal (tap the row).
+    const badge = [];
+    if (ds && ds.state === "overdue") badge.push(`<span class="due-chip due-overdue text-rose-300 font-black whitespace-nowrap">${dd != null ? `${ordinal(dd)} · ` : ""}overdue${ds.days ? ` ${ds.days}d` : ""}</span>`);
+    else if (ds && ds.state === "week") badge.push(`<span class="due-chip due-soon text-amber-300 font-black whitespace-nowrap">${dd != null ? `${ordinal(dd)} · ` : ""}${ds.days === 0 ? "due today" : `in ${ds.days}d`}</span>`);
+    else if (installment) badge.push(`<span class="text-amber-400/80 font-bold whitespace-nowrap">→ ${monthShort(it.end)}</span>`);
+    else if (it.recurring && dd != null) badge.push(`<span class="text-sky-300 font-bold whitespace-nowrap">${ordinal(dd)}</span>`);
+    return `<div data-item="${it.id}" data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
+    class="item-row flex items-center gap-2 pl-1.5 pr-2 rounded-xl transition-colors cursor-pointer" style="min-height:48px;border-top:0">
+    <button data-action="togglePaidQuick" data-arg0="${it.id}" data-arg1="${kind}" title="${kind === "income" ? "Mark received" : "Mark paid"}" aria-label="Mark ${escapeHtml(it.name)} ${kind === "income" ? "received" : "paid"}" class="paid-check ${settled ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border">
+      <span class="material-icons check-icon text-white" style="font-size:16px">check</span>
+    </button>
+    ${iconHtml}
+    <div class="flex-1 min-w-0 py-1.5">
+      <p class="item-name text-sm font-bold ${settled ? "text-slate-400" : "text-slate-200"} truncate">${escapeHtml(it.name)}</p>
+      ${paidNoteHtml(it, k, kind, settled)}
+      ${spendLine}
+      ${progress}
+    </div>
+    ${simSourceHtml(it, who)}
+    <div class="flex flex-col items-end flex-shrink-0 py-1" style="min-width:4.5rem">
+      <p class="child-amt text-sm font-black ${amt < 0 ? "text-rose-400" : kind === "income" ? "text-emerald-400" : settled ? "text-slate-400" : "text-white"} tabular-nums text-right">${pesoRow(amt)}</p>
+      ${badge.length && !settled ? `<p class="text-[11px] leading-tight mt-0.5 whitespace-nowrap">${badge.join("")}</p>` : ""}
+    </div>
+  </div>`;
   }
   return `<div data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
     class="item-row flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors cursor-pointer ${settled ? "opacity-60" : ""}">
@@ -213,14 +299,15 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
       ${tags.length ? `<div class="flex gap-2 mt-0.5">${tags.join("")}</div>` : ""}
       ${progress}
     </div>
-    <p class="text-sm font-black ${kind === "income" ? "text-emerald-400" : "text-white"} flex-shrink-0">${peso(amt)}</p>
+    ${simSourceHtml(it, who)}
+    <p class="text-sm font-black ${amt < 0 ? "text-rose-400" : kind === "income" ? "text-emerald-400" : "text-white"} flex-shrink-0 tabular-nums text-right" style="min-width:4.5rem">${pesoRow(amt)}</p>
   </div>`;
 }
 
 export function categoryGroupedHtml(items, k, kind, who) {
   if (!items.length) return "";
   const sorted = sortItems(items, kind);
-  const showHeaders = new Set(sorted.map(itemCategory)).size > 1;
+  const showHeaders = new Set(sorted.map(itemCategory)).size > 1 && who !== "debt" && who !== "pdebt";
   
   const buckets = {};
   for (const it of sorted) {
@@ -234,8 +321,12 @@ export function categoryGroupedHtml(items, k, kind, who) {
     const list = buckets[c];
     const subtotal = list.reduce((s, it) => s + amountIn(it, k), 0);
     const rowsHtml = list.map(it => itemRowHtml(it, k, kind, who)).join("");
+    const dragList = (inner) => (kind === "expenses" || kind === "income") && who !== "simulated" && list.length > 1 ? `<div class="space-y-0.5 top-list" data-who="${who}" data-kind="${kind}" data-cat="${c}">${inner}</div>` : inner;
     
-    if (showHeaders) {
+    if (showHeaders && (kind === "expenses" || kind === "income")) {
+      // Clean style: small muted lowercase subheading with a muted subtotal (empty groups never get here)
+      html += `<div class="cat-group" style="margin-top:10px"><div class="flex justify-between items-baseline" style="padding:8px 8px 3px;${html ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold text-slate-400">${CATEGORY_LABELS[c]}</p><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(subtotal)}</p></div>${dragList(rowsHtml)}</div>`;
+    } else if (showHeaders) {
       html += `<details open class="group mb-1">
         <summary class="flex justify-between items-center px-3 pt-2 pb-1 cursor-pointer list-none select-none hover:bg-slate-800/30 rounded-lg outline-none -ml-2 -mr-2 mb-0.5">
           <div class="flex items-center gap-1.5 ml-2">
@@ -249,7 +340,7 @@ export function categoryGroupedHtml(items, k, kind, who) {
         </div>
       </details>`;
     } else {
-      html += rowsHtml;
+      html += dragList(rowsHtml);
     }
   }
   return html;
@@ -298,7 +389,20 @@ const dueHeader = (label, cls, icon, n) => `<p class="due-group flex items-cente
 
 /** Expenses of the current/past months: Overdue and This week come first, everything else is Later. */
 export function groupedRowsHtml(items, k, kind, who) {
-  if (kind !== "expenses" || who === "debt" || !items.length) return groupedRowsInner(items, k, kind, who);
+  // Simulated expenses can be grouped by whose budget they were copied from
+  if (who === "simulated" && (kind === "expenses" || kind === "income") && items.length && getSimPersonSort()) {
+    const parts = [["charlie", "Charles"], ["partner", "Ynah"], ["", "Simulated only"]].map(([key, label]) => ({ key, label, list: items.filter((it) => (it.copiedFromWho === "charlie" || it.copiedFromWho === "partner" ? it.copiedFromWho : "") === key) })).filter((p) => p.list.length);
+    return parts.map((p) => {
+      const sub = p.list.reduce((s, it) => s + amountIn(it, k), 0);
+      const av = p.key ? `<img src="assets/avatar-${p.label.toLowerCase()}.jpg" alt="" class="w-4 h-4 rounded-full object-cover border border-white/20">` : "";
+      return `<div class="sim-person-group mb-1" data-who="${p.key}"><div class="flex justify-between items-center px-2 pt-2 pb-0.5"><p class="flex items-center gap-1.5 text-[11px] font-black text-slate-400 ${p.key ? "keep-case" : ""}">${av}${p.label}</p><p class="text-[11px] font-bold tabular-nums ${kind === "income" ? "text-emerald-400" : "text-slate-400"}">${peso(sub)}</p></div>${groupedRowsByDue(p.list, k, kind, who)}</div>`;
+    }).join("");
+  }
+  return groupedRowsByDue(items, k, kind, who);
+}
+
+function groupedRowsByDue(items, k, kind, who) {
+  if (kind !== "expenses" || who === "debt" || who === "pdebt" || !items.length) return groupedRowsInner(items, k, kind, who);
   const over = [], week = [], later = [];
   for (const it of items) {
     const ds = getKids(it, k).length ? null : dueStatus(it, k);
@@ -314,6 +418,9 @@ export function groupedRowsHtml(items, k, kind, who) {
 }
 
 function groupedRowsInner(items, k, kind, who) {
+  if (!items.length) {
+    return `<div class="empty-state flex items-center justify-center gap-2 px-3 py-4 text-center"><p class="text-[11px] font-bold text-slate-500">${kind === "income" ? "No income yet" : "No expenses yet"}</p><button type="button" data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" class="text-[11px] font-bold ${(OWNERS[who] || OWNERS.charlie).text} flex items-center" style="min-height:32px"><span class="material-icons" style="font-size:14px">add</span>Add</button></div>`;
+  }
   if (!items.length) {
     const isInc = kind === "income";
     return `<div class="empty-state flex flex-col items-center gap-1 px-3 py-4 text-center">
@@ -365,58 +472,58 @@ function groupedRowsInner(items, k, kind, who) {
   return html;
 }
 
-export function debtTrackerCardHtml() {
+export function debtTrackerCardHtml(who = "debt") {
+  const isP = who === "pdebt";
   const k = getSelectedKey();
   const t = monthTotals(k);
-  const debtIncome = getItems("debt", "income").filter((it) => itemActiveIn(it, k));
-  const debtExpenses = getItems("debt", "expenses").filter((it) => itemActiveIn(it, k));
-  const debtIncTot = t.dI;
-  const debtExpTot = t.dE;
-  const debtIncHtml = groupedRowsHtml(debtIncome, k, "income", "debt");
-  const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", "debt");
-  const dO = OWNERS.debt;
+  const debtIncome = getItems(who, "income").filter((it) => itemActiveIn(it, k));
+  const debtExpenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k));
+  const debtIncTot = isP ? t.pdI : t.dI;
+  const debtExpTot = isP ? t.pdE : t.dE;
+  const debtIncHtml = groupedRowsHtml(debtIncome, k, "income", who);
+  const debtExpHtml = groupedRowsHtml(debtExpenses, k, "expenses", who);
+  const dO = OWNERS[who];
+
+  const hdrStyle = (rgb) => `padding:7px 8px`;
+  const lbl = (txt) => `<p class="sec-title font-bold text-slate-400 truncate" style="font-size:11px">${txt}</p>`;
+  const chev = `<span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>`;
 
   return `
-    <details open data-persist="debts" class="glass-card rounded-xl border border-rose-500/20 overflow-hidden w-full flex-shrink-0">
-      <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-            <span class="material-icons text-white" style="font-size:14px">handshake</span>
-          </div>
-          <div>
-            <h4 class="text-xs font-black uppercase tracking-wider text-white">Debt Tracker</h4>
-            <p class="text-[8px] text-slate-400">Owed to me &amp; owe others</p>
+    <details open data-persist="debts${isP ? "-p" : ""}" class="w-full flex-shrink-0">
+      <summary class="flex items-center justify-between cursor-pointer list-none select-none" style="${hdrStyle("99,102,241")}">
+        <div class="flex items-center gap-1">
+          <span class="material-icons text-slate-500 dt-chev" style="font-size:12px">chevron_right</span>
+          <div class="flex items-baseline gap-1.5">
+            ${lbl((isP ? OWNERS.partner.label + " " : "") + "Debt Tracker")}
           </div>
         </div>
-        <div class="text-right">
-          <p class="text-[10px] font-black text-rose-400">${peso(debtIncTot)} <span class="text-slate-500 font-normal">/</span> ${peso(debtExpTot)}</p>
-        </div>
+        <p class="font-bold" style="font-size:14px"><span class="text-emerald-400">${peso(debtIncTot)}</span> <span class="text-slate-500 font-normal">/</span> <span class="text-rose-400">${peso(debtExpTot)}</span></p>
       </summary>
-      <div class="p-2.5 pt-1 space-y-2 bg-slate-950/40 border-t border-white/[0.04]">
-        <details open class="group">
-          <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+      <div style="margin-top:6px">
+        <details open class="group" style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.16);border-radius:10px;padding:2px 6px 6px">
+          <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("16,185,129")}">
             <div class="flex items-center gap-1">
-              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
+              ${chev}
               <div class="flex items-baseline gap-1.5">
-                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">Owed To Me</p>
-                <span class="text-[11px] font-bold text-emerald-400">${peso(debtIncTot)}</span>
+                ${lbl("Owed To Me")}
+                <span class="font-bold text-emerald-400" style="font-size:14px">${peso(debtIncTot)}</span>
               </div>
             </div>
-            <button data-action="openItemModal" data-arg0="debt" data-arg1="income" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
+            <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold text-emerald-300 flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button>
           </summary>
           <div class="space-y-0.5 mt-1">${debtIncHtml}</div>
         </details>
-        <div class="border-t border-white/[0.04] pt-1.5">
-          <details open class="group">
-            <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+        <div style="margin-top:8px">
+          <details open class="group" style="background:rgba(244,63,94,.06);border:1px solid rgba(244,63,94,.16);border-radius:10px;padding:2px 6px 6px">
+            <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("244,63,94")}">
               <div class="flex items-center gap-1">
-                <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
+                ${chev}
                 <div class="flex items-baseline gap-1.5">
-                  <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">I Owe</p>
-                  <span class="text-[11px] font-bold text-rose-400">${peso(debtExpTot)}</span>
+                  ${lbl("I Owe")}
+                  <span class="font-bold text-rose-400" style="font-size:14px">${peso(debtExpTot)}</span>
                 </div>
               </div>
-              <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="text-[10px] font-bold ${dO.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
+              <div class="flex items-center gap-2">${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold text-rose-300 flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
             </summary>
             <div class="space-y-0.5 mt-1">${debtExpHtml}</div>
           </details>
@@ -425,9 +532,79 @@ export function debtTrackerCardHtml() {
     </details>`;
 }
 
-export function expenseSortBtnHtml() {
+export function simIncomeSliderHtml(who) {
+  if (who !== "simulated") return "";
+  const s = getSimIncomeScale();
+  return `<div class="mt-1.5 rounded-lg bg-black/20 px-3 py-2.5 flex flex-col gap-1.5">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-[11px] font-bold text-slate-400">what if income is <span id="sim-inc-pct" class="font-black ${s === 100 ? "text-white" : s > 100 ? "text-emerald-300" : "text-amber-300"}">${s}%</span> of entered</p>
+      ${s === 100 ? "" : `<button type="button" data-action="resetSimIncome" class="text-[10px] font-bold text-indigo-300 px-2 rounded-md bg-white/5" style="min-height:28px">reset</button>`}
+    </div>
+    <input id="sim-inc-slider" type="range" min="50" max="150" step="5" value="${s}" aria-label="Estimate income as a percent of the entered amounts" style="width:100%;height:28px;accent-color:#fbbf24">
+    <div class="flex justify-between text-[9px] font-bold text-slate-500"><span>50%</span><span>100%</span><span>150%</span></div>
+  </div>`;
+}
+
+export function simPersonBtnHtml(who) {
+  if (who !== "simulated") return "";
+  const pOn = getSimPersonSort();
+  return `<button data-action="toggleSimPerson" title="Group by person" aria-label="Group by person" aria-pressed="${pOn}" class="text-[10px] font-bold ${pOn ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">people</span>person</button>`;
+}
+
+export function expenseSortBtnHtml(who) {
   const on = getExpenseSort() === "name";
-  return `<button data-action="toggleExpenseSort" title="${on ? "Sorted A-Z (tap for default order)" : "Sort A-Z"}" aria-label="Sort expenses by name" aria-pressed="${on}" class="text-[10px] font-bold ${on ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">sort_by_alpha</span>A-Z</button>`;
+  const personBtn = simPersonBtnHtml(who);
+
+  return `${personBtn}<button data-action="toggleExpenseSort" title="${on ? "Sorted A-Z (tap for default order)" : "Sort A-Z"}" aria-label="Sort expenses by name" aria-pressed="${on}" class="text-[10px] font-bold ${on ? "text-indigo-300 bg-indigo-500/20" : "text-slate-500"} px-1.5 py-0.5 rounded-md flex items-center gap-0.5 transition-colors"><span class="material-icons" style="font-size:12px">sort_by_alpha</span>A-Z</button>`;
+}
+
+const spSigned = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+// Real money value plus a one-line explanation for one person
+function realFields(who) {
+  const r = realMoney(who);
+  const realNote = who === "partner"
+    ? "cash & bank only (no card owed)"
+    : r.owed.total > 0 ? `cash ${peso(r.cash)} − BPI Platinum owed ${peso(r.owed.total)}` : "cash & bank (no card owed)";
+  return { realMoney: r.real, realNote };
+}
+// A label/value row; `sub` rows are indented "of which" lines
+const subRow = (label, val, cls, sub = false) => `<div class="flex items-center justify-between ${sub ? "pl-4 text-[10px]" : "text-[11px]"}"><span class="${sub ? "text-slate-500" : "font-bold text-slate-300"}">${label}</span><span class="font-black ${cls}">${val}</span></div>`;
+const subHead = (label, cls) => `<p class="text-[9px] font-black uppercase tracking-[0.15em] ${cls} pt-1.5 pb-0.5">${label}</p>`;
+
+// Household total: one compact table, a column per person plus the combined total
+export function householdCardHtml() {
+  const k = getSelectedKey();
+  const h = householdTotals(k);
+  const hide = getHideProjected();
+  const sp = spSigned;
+  const c = { ...h.charlie, realMoney: realFields("charlie").realMoney };
+  const p = { ...h.partner, realMoney: realFields("partner").realMoney };
+  const a = { ...h, realMoney: householdRealMoney().real };
+  const money = (n, tone) => `<span class="font-black ${tone}">${sp(n)}</span>`;
+  const row = (label, f, tone = () => "text-slate-100", strong = false) => `<div class="grid grid-cols-[3.4rem_1fr_1fr_1fr] gap-1 items-center py-1 text-[10px] ${strong ? "border-t border-white/10" : ""}"><span class="font-bold text-slate-400">${label}</span>${[c, p, a].map((v) => `<span class="text-right">${money(f(v), tone(f(v)))}</span>`).join("")}</div>`;
+  const sign = (n) => (n >= 0 ? "text-emerald-400" : "text-rose-400");
+  const white = (n) => (n >= 0 ? "text-white" : "text-rose-400");
+  return `<details open data-persist="household" class="glass-card rounded-xl border border-indigo-500/20 overflow-hidden w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center flex-shrink-0"><span class="material-icons text-white" style="font-size:14px">group</span></div>
+        <div>
+          <h3 class="text-xs font-black text-white uppercase tracking-wide">Household total</h3>
+          <p class="text-[8px] text-slate-400">${monthShort(k)}</p>
+        </div>
+      </div>
+      <p class="text-xs font-black ${sign(h.net)}">${sp(h.net)}</p>
+    </summary>
+    <div class="px-3 pb-3">
+      <div class="grid grid-cols-[3.4rem_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide"><span></span><span class="text-right ${OWNERS.charlie.text} keep-case">${OWNERS.charlie.label}</span><span class="text-right ${OWNERS.partner.text} keep-case">${OWNERS.partner.label}</span><span class="text-right text-indigo-300">All</span></div>
+      ${row("Inflow", (v) => v.income, () => "text-emerald-400")}
+      ${row("Outflow", (v) => v.expenses, () => "text-rose-400")}
+      ${row("Net", (v) => v.net, sign, true)}
+      ${row("Cash", (v) => v.cash, () => "text-slate-100", true)}
+      ${row("Real", (v) => v.realMoney, white)}
+      ${hide ? "" : row("Proj.", (v) => v.projected, white)}
+    </div>
+  </details>`;
 }
 
 export function personSectionHtml(who, includeDebt = true) {
@@ -437,71 +614,77 @@ export function personSectionHtml(who, includeDebt = true) {
   // Card purchases live in their own BPI Platinum section, not in the normal groups
   const expenses = getItems(who, "expenses").filter((it) => itemActiveIn(it, k) && !(who === "charlie" && isCardItem(it)));
   const t = monthTotals(k);
-  const incTot = who === "charlie" ? t.cI : t.dI;
-  const expTot = who === "charlie" ? t.cE : t.dE;
+  const incTot = who === "charlie" ? t.cI : who === "partner" ? t.pI : who === "simulated" ? t.sI : t.dI;
+  const expTot = who === "charlie" ? t.cE : who === "partner" ? t.pE : who === "simulated" ? t.sE : t.dE;
   const net = incTot - expTot;
   const incHtml = groupedRowsHtml(income, k, "income", who);
   const emptyRow = (w, kind) => `<button type="button" data-action="openItemModal" data-arg0="${w}" data-arg1="${kind}" class="w-full py-3 text-[11px] font-bold text-slate-500 border border-dashed border-slate-700 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>No ${kind === "income" ? "income" : "expenses"} this month · add one</button>`;
   const copyN = who === "charlie" ? lastMonthOneTimes().length : 0;
-  const copyBtn = copyN ? `<button type="button" data-action="copyLastMonth" class="w-full mt-1 py-2 text-[11px] font-bold text-indigo-300 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy ${copyN} one-time item${copyN === 1 ? "" : "s"} from last month</button>` : "";
+  const copyBtn = copyN ? `<button type="button" data-action="openCopyPicker" class="w-full mt-1 py-2 text-[11px] font-bold text-indigo-300 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from last month (${copyN})</button>` : "";
   const expHtml = groupedRowsHtml(expenses, k, "expenses", who);
+  // Simulated only: snapshot copies of Charles' or Ynah's items (new ids, nothing shared with the source)
+  const simCopyBar = (kind) => who !== "simulated" ? "" : `<div class="grid grid-cols-2 gap-1.5 mt-1.5">
+    <button type="button" data-action="openSimCopy" data-arg0="charlie" data-arg1="${kind}" class="py-2 text-[11px] font-bold text-blue-300 bg-blue-500/10 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from Charles</button>
+    <button type="button" data-action="openSimCopy" data-arg0="partner" data-arg1="${kind}" class="py-2 text-[11px] font-bold text-ynah bg-white/5 rounded-lg flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">content_copy</span>Copy from Ynah</button>
+  </div>`;
 
   let debtSectionHtml = "";
-  if (who === "charlie" && includeDebt) {
-    debtSectionHtml = `<div class="border-t border-white/[0.08] pt-2 mt-1">${debtTrackerCardHtml()}</div>`;
+  if ((who === "charlie" || who === "partner") && includeDebt) {
+    debtSectionHtml = `<div style="margin-top:10px">${debtTrackerCardHtml(who === "partner" ? "pdebt" : "debt")}</div>`;
   }
 
-  return `<div class="glass-card rounded-xl overflow-hidden border ${o.ring} w-full flex flex-col">
-    <div class="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r ${o.grad} bg-opacity-10 flex-shrink-0">
+  return `<details open data-persist="card-${who}" class="person-card glass-card rounded-xl overflow-hidden border ${o.ring} w-full">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r ${o.grad} bg-opacity-10 cursor-pointer list-none select-none" style="min-height:48px">
       <div class="flex items-center gap-2">
+        <span class="material-icons card-chev text-white/60 flex-shrink-0" style="font-size:18px" aria-hidden="true">chevron_right</span>
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${o.grad} ring-1 ring-white/25 flex-shrink-0 flex items-center justify-center">
-          <span class="text-xs font-black text-white">${o.label.charAt(0)}</span>
+          ${who === "partner" || who === "charlie" ? `<img src="assets/avatar-${who === "partner" ? "ynah" : "charles"}.jpg" alt="${who === "partner" ? "Ynah" : "Charles"}" class="w-full h-full rounded-lg object-cover">` : `<span class="text-xs font-black text-white">${o.label.charAt(0)}</span>`}
         </div>
         <div>
-          <h3 class="text-xs font-black text-white uppercase tracking-wide">${o.label}</h3>
-          ${who === 'debt' ? '' : `<p class="text-[8px] font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
+          <h3 class="font-black text-white uppercase tracking-wide" style="font-size:15px;line-height:1.2">${o.label}</h3>
+          ${who === 'debt' ? '' : `<p class="font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}" style="font-size:12px;line-height:1.3">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
         </div>
       </div>
       ${who === 'debt' ? '' : `
       <div class="text-right">
-        <p class="text-[7px] font-bold uppercase text-white/60">in / out</p>
-        <p class="text-[9px] font-black text-white">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
+        <p class="font-bold uppercase text-white/60" style="font-size:10px;line-height:1.3">in / out</p>
+        <p class="font-black text-white" style="font-size:13px;line-height:1.3">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
       </div>`}
-    </div>
+    </summary>
     <div class="p-2.5 space-y-2 no-scrollbar">
-      <details open data-persist="sec-income" class="group">
-        <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+      <details open data-persist="sec-income${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
+        <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
           <div class="flex items-center gap-1">
             <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
             <div class="flex items-baseline gap-1.5">
-              <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
-              <span class="text-[11px] font-bold text-emerald-400">${peso(incTot)}</span>
+              <p class="sec-title font-bold text-slate-400 truncate" style="font-size:11px">${who === "debt" ? "Money Owed To Me" : "Income"}</p>
+              <span class="font-bold text-emerald-400" style="font-size:14px">${peso(incTot)}</span>
             </div>
           </div>
-          <button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button>
+          <span class="flex items-center gap-2">${simPersonBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></span>
         </summary>
-        <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>
+        <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simIncomeSliderHtml(who)}${simCopyBar("income")}
       </details>
-      <div class="border-t border-white/[0.04] pt-2">
-        <details open data-persist="sec-expenses" class="group">
-          <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
-            <div class="flex items-center gap-1">
-              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
-              <div class="flex items-baseline gap-1.5">
-                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
-                <span class="text-[11px] font-bold text-rose-400">${peso(expTot)}</span>
+      <div style="margin-top:10px">
+        <details open data-persist="sec-expenses${who === "partner" ? "-p" : who === "simulated" ? "-s" : ""}" class="group">
+          <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
+            <div class="flex items-center gap-1 min-w-0">
+              <span class="material-icons text-slate-500 transition-transform group-open:rotate-90 flex-shrink-0" style="font-size:12px">chevron_right</span>
+              <div class="flex items-baseline gap-1.5 min-w-0">
+                <p class="sec-title font-bold text-slate-400 truncate" style="font-size:11px">${who === "debt" ? "Money I Owe Others" : "Expenses"}</p>
+                <span class="font-bold text-rose-400" style="font-size:14px">${peso(expTot)}</span>
               </div>
             </div>
-            <div class="flex items-center gap-2">${expenseSortBtnHtml()}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
+            <div class="flex items-center gap-2"><button data-action="openExpenseChart" data-arg0="${who}" class="text-[10px] font-bold text-slate-400 px-1.5 py-0.5 rounded-md flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">pie_chart</span>View</button>${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
           </summary>
-          <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>
+          <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>${simCopyBar("expenses")}
           ${copyBtn}
         </details>
       </div>
-      ${who === "charlie" ? cardSectionHtml(k) : ""}
       ${debtSectionHtml}
+      ${who === "charlie" ? cardSectionHtml(k) : ""}
     </div>
-  </div>`;
+  </details>`;
 }
 
 // =============================
@@ -510,7 +693,8 @@ export function personSectionHtml(who, includeDebt = true) {
 export function acctIconHtml(a) {
   const key = bankIconFor(a.name);
   const domain = key && BANK_DOMAINS[key];
-  const fallback = `<span class="material-icons text-slate-300" style="font-size:18px">account_balance</span>`;
+  const isCash = !key && /cash/i.test(a.name || "");
+  const fallback = `<span class="material-icons text-slate-300" style="font-size:18px">${isCash ? "payments" : "account_balance"}</span>`;
   if (!domain) return fallback;
   // Bank logo (favicon service); falls back to the generic bank icon if it can't load (offline)
   return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=128" alt="${escapeHtml(BANK_LABELS[key] || a.name)}" loading="lazy" class="w-full h-full object-cover bg-white" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
@@ -522,7 +706,8 @@ export function acctRowHtml(a) {
       <div class="w-9 h-9 rounded-xl bg-slate-800/80 border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
         ${acctIconHtml(a)}
       </div>
-      <p class="text-sm font-bold text-slate-100 truncate">${escapeHtml(a.name)}</p>
+      <p class="text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(a.name)}</p>
+      <img src="assets/avatar-${a.owner === "partner" ? "ynah" : "charles"}.jpg" alt="${a.owner === "partner" ? "Ynah" : "Charles"}" class="w-5 h-5 rounded-full object-cover flex-shrink-0">
     </div>
     <div class="flex items-center gap-1.5 flex-shrink-0">
       <p class="text-xs font-black text-white">${peso(a.amount)}</p>
@@ -551,16 +736,16 @@ export function acctGroupHtml(group) {
 
 // ---- Wallet-style account cards ----
 const CARD_THEMES = {
-  bpi:          { bg: "linear-gradient(160deg,#c8283f 0%,#7a1226 100%)", label: "BPI" },
-  maribank:     { bg: "linear-gradient(160deg,#ff8f45 0%,#e4470a 100%)", label: "MariBank" },
-  gcash:        { bg: "linear-gradient(160deg,#3a82ff 0%,#1140b5 100%)", label: "GCash" },
-  metrobank:    { bg: "linear-gradient(160deg,#2f5fb3 0%,#12306b 100%)", label: "Metrobank" },
-  bdo:          { bg: "linear-gradient(160deg,#2a5db0 0%,#0b2a63 100%)", label: "BDO" },
-  unionbank:    { bg: "linear-gradient(160deg,#f59a3c 0%,#c25a0b 100%)", label: "UnionBank" },
-  securitybank: { bg: "linear-gradient(160deg,#35a066 0%,#14532d 100%)", label: "Security Bank" },
-  cash:         { bg: "linear-gradient(160deg,#34343a 0%,#0a0a0c 100%)", label: "Cash" },
-  other:        { bg: "linear-gradient(160deg,#4f5d75 0%,#1e293b 100%)", label: "" },
-  credit:       { bg: "linear-gradient(135deg,#eceff3 0%,#a3abb8 52%,#dfe3e9 100%)", label: "" },
+  bpi:          { bg: "#c8283f", label: "BPI" },
+  maribank:     { bg: "#ff8f45", label: "MariBank" },
+  gcash:        { bg: "#3a82ff", label: "GCash" },
+  metrobank:    { bg: "#2f5fb3", label: "Metrobank" },
+  bdo:          { bg: "#2a5db0", label: "BDO" },
+  unionbank:    { bg: "#f59a3c", label: "UnionBank" },
+  securitybank: { bg: "#35a066", label: "Security Bank" },
+  cash:         { bg: "#34343a", label: "Cash" },
+  other:        { bg: "#4f5d75", label: "" },
+  credit:       { bg: "#eceff3", label: "" },
 };
 
 export function acctCardHtml(a) {
@@ -577,16 +762,15 @@ export function acctCardHtml(a) {
     : `<span class="material-icons" style="font-size:15px;color:${fg}">${isCash ? "payments" : "account_balance"}</span>`;
   const network = /debit|credit|mastercard|platinum|rewards/i.test(a.name || "") || isCredit;
   const chip = (key && !isCash) || isCredit
-    ? `<div class="mt-3 w-7 h-[22px] rounded-[5px] border" style="background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(190,195,205,.55));border-color:rgba(255,255,255,.4)"></div>
+    ? `<div class="mt-3 w-7 h-[22px] rounded-[5px] border" style="background:rgba(255,255,255,.7);border-color:rgba(255,255,255,.4)"></div>
        <span class="material-icons mt-2 block" style="font-size:18px;color:${sub};transform:rotate(90deg);width:18px">contactless</span>`
     : "";
-  return `<button type="button" data-action="openAccountModal" data-arg0="${a.id}" aria-label="Edit ${escapeHtml(a.name)}" class="acct-card relative flex-shrink-0 snap-start text-left rounded-xl overflow-hidden shadow-lg shadow-black/40 active:scale-[0.98] transition-transform" style="width:124px;height:172px;background:${theme.bg};color:${fg};border:1px solid rgba(255,255,255,.12)">
-    <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 45%)"></div>
+  return `<button type="button" data-action="openAccountModal" data-arg0="${a.id}" aria-label="Edit ${escapeHtml(a.name)}" class="acct-card relative flex-shrink-0 snap-start text-left rounded-xl overflow-hidden active:scale-[0.98] transition-transform" style="width:124px;height:172px;background:${theme.bg};color:${fg};border:1px solid rgba(255,255,255,.12)">
     <div class="relative h-full p-2.5 flex flex-col">
       <div class="flex items-center gap-1.5 min-h-[18px]">${logo}${theme.label ? `<span class="text-[11px] font-black tracking-tight truncate">${escapeHtml(theme.label)}</span>` : ""}</div>
       ${chip}
       <div class="mt-auto">
-        <p class="text-[9px] font-semibold leading-tight truncate" style="color:${sub}">${escapeHtml(a.name)}</p>
+        <p class="text-[9px] font-semibold leading-tight truncate keep-case" style="color:${sub}">${escapeHtml(a.name)}</p>
         <p class="text-[13px] font-black leading-tight whitespace-nowrap">${peso(a.amount)}</p>
         <div class="flex justify-end mt-1 h-3">
           ${network ? `<span class="flex flex-shrink-0"><i class="block w-3 h-3 rounded-full" style="background:#eb001b"></i><i class="block w-3 h-3 rounded-full -ml-1.5" style="background:#f79e1b;opacity:.9"></i></span>` : ""}
@@ -608,16 +792,17 @@ function acctCardSection(title, list, total) {
 }
 
 export function getAccountsView() {
-  try { return localStorage.getItem("moneyku_accts_view") === "list" ? "list" : "cards"; } catch (e) { return "cards"; }
+  try { return localStorage.getItem("moneyku_accts_view") === "cards" ? "cards" : "list"; } catch (e) { return "list"; } // list unless card view was picked
 }
 export function setAccountsView(v) {
   try { localStorage.setItem("moneyku_accts_view", v === "list" ? "list" : "cards"); } catch (e) { /* ignore */ }
   renderBudget();
 }
 
-export function accountsCardHtml() {
+export function accountsCardHtml(who = "charlie") {
   const appData = getAppData();
-  const accts = appData?.accounts || [];
+  const accts = (appData?.accounts || []).filter((a) => acctOwner(a) === who)
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true }));
   const view = getAccountsView();
   const groups = [];
   const idx = {};
@@ -635,25 +820,26 @@ export function accountsCardHtml() {
       ? acctCardSection("Cash & Bank", bank, sum(bank)) + acctCardSection("Credit", credit, sum(credit))
       : groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("");
   const tgl = (v, icon, label) => `<button type="button" data-action="setAccountsView" data-arg0="${v}" aria-label="${label}" aria-pressed="${view === v}" class="w-7 h-6 flex items-center justify-center rounded-md ${view === v ? "bg-slate-600/70 text-white" : "text-slate-400"}"><span class="material-icons" style="font-size:15px">${icon}</span></button>`;
-  return `<details open data-persist="accounts" class="glass-card rounded-xl overflow-hidden border border-emerald-500/10 w-full flex-shrink-0">
+  const isP = who === "partner";
+  return `<details data-persist="accounts${isP ? "-p" : ""}" class="glass-card rounded-xl overflow-hidden border ${isP ? "border-ynah" : "border-emerald-500/10"} w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${isP ? "ynah-grad" : "from-indigo-500 to-teal-600"} flex items-center justify-center flex-shrink-0">
           <span class="material-icons text-white" style="font-size:14px">account_balance</span>
         </div>
         <div>
-          <h3 class="text-xs font-black text-white uppercase tracking-wide">Accounts</h3>
-          <p class="text-[8px] text-slate-400">Balances on hand</p>
+          <h3 class="text-xs font-black text-white uppercase tracking-wide">${isP ? OWNERS.partner.label : OWNERS.charlie.label} Accounts</h3>
+          <p class="text-[8px] text-slate-400">Balances on hand${(() => { const d = staleBalanceDays(who); return d != null && d > 7 ? ` · <span class="text-amber-300">oldest update ${d}d ago</span>` : ""; })()}</p>
         </div>
       </div>
-      <p class="text-xs font-black text-emerald-400">${peso(accountsTotal())}</p>
+      <p class="text-xs font-black text-emerald-400">${peso(accountsTotal(who))}</p>
     </summary>
     <div class="p-2.5 pt-0 space-y-1">
       <div class="flex justify-end"><div class="inline-flex gap-0.5 p-0.5 rounded-lg bg-slate-900/70 border border-white/5">${tgl("cards", "view_carousel", "Card view")}${tgl("list", "view_list", "List view")}</div></div>
       ${rows}
       <div class="flex gap-2 mt-1.5">
-        <button data-action="openAccountModal" class="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Add account</button>
-        ${accts.length >= 2 ? `<button data-action="openTransferModal" class="flex-1 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg font-bold text-indigo-300 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">swap_horiz</span>Transfer</button>` : ""}
+        <button data-action="openAccountModal" data-arg0="" data-arg1="${who}" class="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Add account</button>
+        ${accts.length >= 2 ? `<button data-action="openTransferModal" data-arg0="${who}" class="flex-1 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg font-bold text-indigo-300 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">swap_horiz</span>Transfer</button>` : ""}
       </div>
     </div>
   </details>`;
@@ -922,8 +1108,9 @@ export function monthOverviewCardHtml() {
   </details>`;
 }
 
-export function statsGridHtml(t) {
-  const current = currentMoneyAt();
+export function statsGridHtml() {
+  const t = includedTotals(getSelectedKey()); // follows the Charles' / Ynah's tick boxes
+  const current = t.current;
   const savColor = t.savings > 0.005 ? "text-emerald-400" : t.savings < -0.005 ? "text-rose-400" : "text-amber-300";
   const cell = (icon, iconColor, label, valColor, val) =>
     `<div class="bg-black/20 rounded-lg px-2.5 py-1.5">
@@ -934,8 +1121,7 @@ export function statsGridHtml(t) {
       <p class="text-xs font-black ${valColor} mt-0.5 truncate">${val}</p>
     </div>`;
   return (
-    cell("account_balance_wallet", "text-white/70", "Current Money", "text-white", peso(current)) +
-    cell("savings", savColor, "Savings", savColor, signedPeso(t.savings)) +
+    cell("account_balance_wallet", "text-white/70", "Current Money on Hand", "text-white", peso(current)) +
     cell("south_west", "text-emerald-400", "To receive", "text-emerald-400", signedPeso(t.toReceive)) +
     cell("north_east", "text-rose-400", "To pay", "text-rose-400", signedPeso(-t.toPay))
   );
@@ -955,18 +1141,21 @@ export function installmentsCardHtml() {
     const monthsLeft = Math.max(0, total - monthsPaid);
     const monthly = Number(it.amount) || 0;
     const remaining = monthly * monthsLeft;
+    const nowK = currentKey();
+    let dots = ""; for (let i = 0, k = it.start; i < total; i++, k = addMonths(k, 1)) dots += `<span title="${monthShort(k)}" class="inst-dot${monthPaid(it, k) ? " is-paid" : ""}${k === nowK ? " is-now" : ""}"></span>`;
     const pct = total ? Math.round((monthsPaid / total) * 100) : 0;
     grandRemaining += remaining; if (monthsLeft > 0) grandMonthly += monthly;
     const urgency = monthsLeft === 0 ? "text-emerald-400 bg-emerald-500/15" : monthsLeft <= 6 ? "text-rose-400 bg-rose-500/15" : monthsLeft <= 12 ? "text-amber-400 bg-amber-500/15" : "text-slate-400 bg-slate-500/15";
     return `<div data-action="openItemModal" data-arg0="${it.who}" data-arg1="expenses" data-arg2="${it.id}" class="item-row px-2.5 py-1.5 rounded-lg space-y-1 bg-slate-900/30 cursor-pointer">
       <div class="flex items-center justify-between gap-2">
         <div class="min-w-0">
-          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p><span class="text-[8px] font-bold uppercase ${o.text}">${o.label}</span></div>
-          <p class="text-[9px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left · <span class="text-indigo-300">tap to edit</span></p>
+          <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-200 truncate keep-case">${escapeHtml(it.name)}</p><span class="text-[8px] font-bold uppercase ${o.text} keep-case">${o.label}</span></div>
+          <p class="text-[9px] text-slate-500">${monthShort(it.start)} → ${monthShort(it.end)} · ${peso(monthly)}/mo · ${peso(remaining)} left · <b class="text-emerald-300">${monthsPaid}/${total} paid</b> · <span class="text-indigo-300">tap to edit</span></p>
         </div>
         <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${urgency} uppercase flex-shrink-0">${monthsLeft === 0 ? "Done" : monthsLeft + " mo left"}</span>
       </div>
       <div class="h-1.5 bg-slate-900/60 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r ${o.grad} rounded-full" style="width:${pct}%"></div></div>
+      <div class="inst-dots flex flex-wrap gap-[3px]" aria-label="${monthsPaid} of ${total} months paid">${dots}</div>
     </div>`;
   }).join("");
   return `<details open class="glass-card rounded-xl overflow-hidden border border-fuchsia-500/15 w-full flex-shrink-0">
@@ -982,6 +1171,74 @@ export function installmentsCardHtml() {
 }
 
 /** 13-month outlook (this month + 12): income, spending, net and balance per month, with plain-language findings. */
+const OUTLOOK_KEY = "moneyku_outlook_who";
+export function getOutlookWho() {
+  try { const v = localStorage.getItem(OUTLOOK_KEY); return v === "charlie" || v === "partner" ? v : "all"; } catch (e) { return "all"; }
+}
+const OUTLOOK_OPTS_KEY = "moneyku_outlook_opts";
+// "cons" = count only recurring income; "noInst" = leave installments out (what-if)
+export function getOutlookOpts() {
+  try { const o = JSON.parse(localStorage.getItem(OUTLOOK_OPTS_KEY) || "{}"); return { cons: !!o.cons, noInst: !!o.noInst }; } catch (e) { return { cons: false, noInst: false }; }
+}
+function redrawOutlook() {
+  const el = document.querySelector('details[data-persist="outlook"]');
+  if (!el) return;
+  const tmp = document.createElement("div");
+  tmp.innerHTML = yearOutlookCardHtml();
+  const next = tmp.firstElementChild;
+  if (next) { next.open = el.open; el.replaceWith(next); }
+}
+// Switch the outlook between everyone, Charles' and Ynah's and redraw just that card
+export function setOutlookWho(w) {
+  try { localStorage.setItem(OUTLOOK_KEY, w === "charlie" || w === "partner" ? w : "all"); } catch (e) { /* ignore */ }
+  redrawOutlook();
+}
+export function toggleOutlookOpt(name) {
+  const o = getOutlookOpts();
+  if (name === "cons" || name === "noInst") o[name] = !o[name];
+  try { localStorage.setItem(OUTLOOK_OPTS_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ }
+  redrawOutlook();
+}
+// Open Overview straight on the outlook, for a person or everyone (used by the Projected block at the top)
+export function openOutlook(w, opt) {
+  try {
+    localStorage.setItem(OUTLOOK_KEY, w === "charlie" || w === "partner" ? w : "all");
+    if (opt === "cons") localStorage.setItem(OUTLOOK_OPTS_KEY, JSON.stringify({ ...getOutlookOpts(), cons: true }));
+  } catch (e) { /* ignore */ }
+  openMore();
+  setTimeout(() => document.querySelector('details[data-persist="outlook"]')?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+}
+// What is in a month's In and Out for the chosen view
+export function openOutlookMonth(m) {
+  const view = getOutlookWho(), opts = getOutlookOpts();
+  const people = view === "all" ? includedWho() : [view];
+  const income = [], expense = [];
+  for (const w of people) {
+    const f = flowItems(m, w, opts);
+    income.push(...f.income); expense.push(...f.expense);
+  }
+  const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  const label = (x) => (view === "all" ? ` <span class="${x.who === "partner" || x.who === "pdebt" ? "text-ynah" : "text-blue-300"}">${x.who === "partner" || x.who === "pdebt" ? OWNERS.partner.label : OWNERS.charlie.label}</span>` : "");
+  const section = (title, cls, list) => {
+    const sorted = [...list].sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt));
+    const tot = list.reduce((s, x) => s + x.amt, 0);
+    const rowsHtml = sorted.slice(0, 8).map((x) => `<div class="flex items-center justify-between gap-2 text-[12px]"><span class="truncate text-slate-200 keep-case">${escapeHtml(x.name)}${label(x)}</span><span class="font-black ${cls} flex-shrink-0">${sp(x.amt)}</span></div>`).join("");
+    const more = sorted.length > 8 ? `<p class="text-[10px] text-slate-500">+${sorted.length - 8} smaller item${sorted.length - 8 === 1 ? "" : "s"} (${sp(sorted.slice(8).reduce((s, x) => s + x.amt, 0))})</p>` : "";
+    return `<div class="space-y-1"><div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-wider ${cls}">${title}</p><p class="text-xs font-black ${cls}">${sp(tot)}</p></div>${rowsHtml || `<p class="text-[11px] text-slate-500">Nothing</p>`}${more}</div>`;
+  };
+  const inc = income.reduce((s, x) => s + x.amt, 0), out = expense.reduce((s, x) => s + x.amt, 0);
+  const ks = outlookKeys();
+  const balRow = ks.includes(m) ? outlookRows(ks, opts).find((r) => r.m === m) : null;
+  const bal = balRow ? balRow[view].bal : null;
+  const note = [opts.cons ? "recurring income only" : "", opts.noInst ? "without installments" : ""].filter(Boolean).join(" · ");
+  showSheet(`${monthName(m)} · ${view === "all" ? "Everyone" : OWNERS[view].label}`,
+    `<div class="space-y-3">${section("Inflow", "text-emerald-400", income)}${section("Outflow", "text-rose-400", expense)}
+      <div class="flex items-center justify-between border-t border-white/10 pt-2 text-[12px]"><span class="font-bold text-slate-300">Net</span><span class="font-black ${inc - out >= 0 ? "text-emerald-400" : "text-rose-400"}">${sp(inc - out)}</span></div>
+      ${bal == null ? "" : `<div class="flex items-center justify-between text-[12px]"><span class="font-bold text-slate-300">Projected balance</span><span class="font-black ${bal >= 0 ? "text-white" : "text-rose-400"}">${sp(bal)}</span></div>`}
+      <p class="text-[10px] text-slate-500">Still to receive / pay${cmpKey(m, currentKey()) === 0 ? " this month (already settled items are not counted)" : ""}.${note ? ` Showing ${note}.` : ""}</p></div>`,
+    `<button type="button" data-action="qlClose" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-slate-300 bg-slate-700/60">Close</button>`);
+}
+
 export function yearOutlookCardHtml() {
   const start = currentKey();
   const tl = timeline();
@@ -990,55 +1247,105 @@ export function yearOutlookCardHtml() {
   for (let i = 0; i < 13; i++) { const m = addMonths(start, i); if (tl.includes(m)) keys.push(m); }
   if (!keys.length) return "";
   const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
+  const view = getOutlookWho(); // "all" | "charlie" | "partner"
+  const viewLabel = view === "all" ? "Everyone" : OWNERS[view].label;
+  const opts = getOutlookOpts();
+  const all = outlookRows(keys, opts);
   let totIn = 0, totOut = 0, low = null, neg = [], peak = null;
-  const rows = keys.map((m) => {
-    const t = monthTotals(m);
-    const inc = t.income + t.dI, out = t.expenses + t.dE, net = inc - out, bal = runningFundsAt(m);
+  const rows = all.map((r) => {
+    const { inc, out, net, bal } = r[view];
     totIn += inc; totOut += out;
-    if (!low || bal < low.bal) low = { m, bal };
-    if (bal < 0) neg.push(m);
-    if (!peak || out > peak.out) peak = { m, out };
-    return { m, inc, out, net, bal };
+    if (!low || bal < low.bal) low = { m: r.m, bal };
+    if (bal < 0) neg.push(r.m);
+    if (!peak || out > peak.out) peak = { m: r.m, out };
+    return { m: r.m, inc, out, net, bal, c: r.charlie.bal, p: r.partner.bal };
   });
   const last = keys[keys.length - 1];
-  const insts = allInstallments().filter((i) => cmpKey(i.end, start) >= 0 && cmpKey(i.end, last) <= 0).sort((a, b) => cmpKey(a.end, b.end));
+  const instOwners = view === "all" ? ["charlie", "debt", "partner", "pdebt"] : view === "charlie" ? ["charlie", "debt"] : ["partner", "pdebt"];
+  const insts = instOwners.flatMap((w) => getItems(w, "expenses").filter((it) => it.recurring && it.end)).filter((i) => cmpKey(i.end, start) >= 0 && cmpKey(i.end, last) <= 0).sort((a, b) => cmpKey(a.end, b.end));
   const freed = insts.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const net = totIn - totOut;
   const end = rows[rows.length - 1].bal;
-  const maxBal = Math.max(1, ...rows.map((r) => Math.abs(r.bal)));
+  // Balance line chart: the selected view in white (everyone view also draws each person), zero line, lowest point
+  const series = view === "all"
+    ? [{ v: rows.map((r) => r.c), stroke: "#93c5fd", w: 1.2 }, { v: rows.map((r) => r.p), stroke: "#DFC5FE", w: 1.2 }, { v: rows.map((r) => r.bal), stroke: "#ffffff", w: 2 }]
+    : [{ v: rows.map((r) => r.bal), stroke: view === "charlie" ? "#93c5fd" : "#DFC5FE", w: 2 }];
+  const allVals = series.flatMap((s) => s.v);
+  const yMin = Math.min(0, ...allVals), yMax = Math.max(0, ...allVals);
+  const span = yMax - yMin || 1;
+  const CW = 300, CH = 84, PAD = 5;
+  const xAt = (i) => (rows.length < 2 ? CW / 2 : PAD + (i * (CW - 2 * PAD)) / (rows.length - 1));
+  const yAt = (v) => PAD + ((yMax - v) / span) * (CH - 2 * PAD);
+  const pathOf = (vals) => vals.map((v, i) => `${i ? "L" : "M"}${xAt(i).toFixed(1)} ${yAt(v).toFixed(1)}`).join(" ");
+  const mainVals = series[series.length - 1].v;
+  const lowIdx = mainVals.reduce((bi, v, i) => (v < mainVals[bi] ? i : bi), 0);
+  const chart = `<div class="rounded-lg bg-black/20 px-2 pt-2 pb-1">
+      <svg viewBox="0 0 ${CW} ${CH}" class="w-full h-20" role="img" aria-label="Projected balance by month">
+        ${yMin < 0 ? `<line x1="0" x2="${CW}" y1="${yAt(0).toFixed(1)}" y2="${yAt(0).toFixed(1)}" stroke="#fb7185" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>` : ""}
+        ${series.map((s) => `<path d="${pathOf(s.v)}" fill="none" stroke="${s.stroke}" stroke-width="${s.w}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`).join("")}
+        ${rows.map((r, i) => { const cw = (CW - 2 * PAD) / Math.max(1, rows.length - 1); return `<rect data-action="openOutlookMonth" data-arg0="${r.m}" x="${(xAt(i) - cw / 2).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${CH}" fill="transparent" style="cursor:pointer"><title>${monthShort(r.m)}: ${sp(r.bal)}</title></rect><circle cx="${xAt(i).toFixed(1)}" cy="${yAt(r.bal).toFixed(1)}" r="1.6" fill="${r.bal < 0 ? "#fb7185" : "#e0e7ff"}" pointer-events="none"/>`; }).join("")}
+        <circle cx="${xAt(lowIdx).toFixed(1)}" cy="${yAt(mainVals[lowIdx]).toFixed(1)}" r="3.2" fill="${mainVals[lowIdx] < 0 ? "#fb7185" : "#fbbf24"}"/>
+      </svg>
+      <div class="flex items-center justify-between text-[9px] font-bold text-slate-500"><span>${monthShort(rows[0].m)}</span><span class="${mainVals[lowIdx] < 0 ? "text-rose-300" : "text-amber-300"}">low ${sp(mainVals[lowIdx])} · ${monthShort(rows[lowIdx].m)}</span><span>${monthShort(rows[rows.length - 1].m)}</span></div>
+      ${view === "all" ? `<div class="flex items-center justify-center gap-3 text-[9px] font-bold text-slate-400 pt-0.5"><span><b style="color:#fff">&mdash;</b> All</span><span><b style="color:#93c5fd">&mdash;</b> ${OWNERS.charlie.label}</span><span><b style="color:#DFC5FE">&mdash;</b> ${OWNERS.partner.label}</span></div>` : ""}
+    </div>`;
   const finding = (icon, tone, html) => `<div class="flex items-start gap-2 text-[11px] leading-snug"><span class="material-icons ${tone}" style="font-size:15px;margin-top:1px">${icon}</span><p class="text-slate-300">${html}</p></div>`;
   const finds = [
-    finding(net >= 0 ? "trending_up" : "trending_down", net >= 0 ? "text-emerald-400" : "text-rose-400", `Over ${keys.length} months you take in <b class="text-white">${peso(totIn)}</b> and spend <b class="text-white">${peso(totOut)}</b>: net <b class="${net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(net)}</b> (${totIn > 0 ? Math.round((net / totIn) * 100) : 0}% of income).`),
+    finding(net >= 0 ? "trending_up" : "trending_down", net >= 0 ? "text-emerald-400" : "text-rose-400", `${viewLabel}: over ${keys.length} months <b class="text-white">${peso(totIn)}</b> still comes in and <b class="text-white">${peso(totOut)}</b> goes out: net <b class="${net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(net)}</b> (${totIn > 0 ? Math.round((net / totIn) * 100) : 0}% of income).`),
     finding("flag", "text-indigo-300", `Projected balance goes from <b class="text-white">${sp(rows[0].bal)}</b> in ${monthShort(rows[0].m)} to <b class="text-white">${sp(end)}</b> in ${monthShort(last)}.`),
     neg.length
       ? finding("warning", "text-rose-400", `Balance dips below zero in <b class="text-rose-300">${neg.length} month${neg.length === 1 ? "" : "s"}</b> (${neg.slice(0, 4).map(monthShort).join(", ")}${neg.length > 4 ? "…" : ""}). Lowest: <b class="text-rose-300">${sp(low.bal)}</b> in ${monthShort(low.m)}.`)
       : finding("check_circle", "text-emerald-400", `Balance stays above zero. Lowest point: <b class="text-white">${sp(low.bal)}</b> in ${monthShort(low.m)}.`),
     finding("local_fire_department", "text-amber-300", `Heaviest month: <b class="text-white">${monthShort(peak.m)}</b> with ${peso(peak.out)} going out.`),
     insts.length ? finding("hourglass_bottom", "text-fuchsia-300", `${insts.length} installment${insts.length === 1 ? "" : "s"} finish in this window (${insts.slice(0, 4).map((i) => `${escapeHtml(i.name)} ${monthShort(i.end)}`).join(", ")}${insts.length > 4 ? "…" : ""}), freeing about <b class="text-white">${peso(freed)}</b> a month.`) : "",
-  ].join("");
-  const tr = rows.map((r) => `<div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 items-center py-1 text-[10px] font-bold border-t border-white/[0.04] ${r.m === start ? "bg-indigo-500/10 rounded" : ""}">
+  ].filter(Boolean);
+  // In the everyone view, also say what happens to each person's own balance
+  const personFind = (w) => {
+    const bals = rows.map((r) => ({ m: r.m, bal: w === "charlie" ? r.c : r.p }));
+    const lo = bals.reduce((a, b) => (b.bal < a.bal ? b : a), bals[0]);
+    const ng = bals.filter((b) => b.bal < 0).map((b) => b.m);
+    const name = OWNERS[w].label;
+    return ng.length
+      ? finding("person", "text-rose-400", `${name} balance dips below zero in <b class="text-rose-300">${ng.length} month${ng.length === 1 ? "" : "s"}</b> (${ng.slice(0, 4).map(monthShort).join(", ")}${ng.length > 4 ? "…" : ""}). Lowest: <b class="text-rose-300">${sp(lo.bal)}</b> in ${monthShort(lo.m)}.`)
+      : finding("person", "text-emerald-400", `${name} balance stays above zero. Lowest: <b class="text-white">${sp(lo.bal)}</b> in ${monthShort(lo.m)}.`);
+  };
+  const allFinds = [...finds, ...(view === "all" ? [personFind("charlie"), personFind("partner")] : [])];
+  const topFinds = allFinds.slice(0, 3).join("");
+  const moreFinds = allFinds.slice(3);
+  const toggle = ["all", "charlie", "partner"].map((w) => {
+    const on = w === view;
+    return `<button type="button" data-action="setOutlookWho" data-arg0="${w}" aria-pressed="${on}" class="flex-1 py-1.5 rounded-lg text-[11px] font-black ${on ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${w === "all" ? "All" : OWNERS[w].label}</button>`;
+  }).join("");
+  const optBtn = (name, label) => `<button type="button" data-action="toggleOutlookOpt" data-arg0="${name}" aria-pressed="${opts[name]}" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold ${opts[name] ? "bg-amber-500/25 text-amber-200 border border-amber-400/40" : "bg-slate-900 text-slate-400 border border-transparent"}">${label}</button>`;
+  const optsRow = `<div class="flex gap-1.5">${optBtn("cons", "Recurring income only")}${optBtn("noInst", "Without installments")}</div>`;
+  const optsNote = [opts.cons ? "recurring income only" : "", opts.noInst ? "without installments" : ""].filter(Boolean).join(", ");
+  const tr = rows.map((r) => `<div data-action="openOutlookMonth" data-arg0="${r.m}" role="button" tabindex="0" title="See what makes up ${monthShort(r.m)}" class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 items-center py-1 text-[10px] font-bold border-t border-white/[0.04] cursor-pointer active:bg-white/5 ${r.m === start ? "bg-indigo-500/10 rounded" : ""}">
       <span class="text-slate-300">${monthShort(r.m)}</span>
       <span class="text-right text-emerald-300">${peso(r.inc)}</span>
       <span class="text-right text-slate-300">${peso(r.out)}</span>
       <span class="text-right ${r.net >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(r.net)}</span>
       <span class="text-right font-black ${r.bal >= 0 ? "text-white" : "text-rose-400"}">${sp(r.bal)}</span></div>
-    <div class="h-[3px] rounded-full bg-slate-800 mb-0.5"><div class="h-full rounded-full ${r.bal >= 0 ? "bg-indigo-400/70" : "bg-rose-500/70"}" style="width:${Math.max(2, Math.round((Math.abs(r.bal) / maxBal) * 100))}%"></div></div>`).join("");
+    ${view === "all" ? `<div class="flex justify-end gap-3 pb-0.5 text-[9px] font-bold"><span class="${r.c >= 0 ? "text-blue-300" : "text-rose-400"}">${OWNERS.charlie.label} ${sp(r.c)}</span><span class="${r.p >= 0 ? "text-ynah" : "text-rose-400"}">${OWNERS.partner.label} ${sp(r.p)}</span></div>` : ""}`).join("");
   return `<details open data-persist="outlook" class="glass-card rounded-xl overflow-hidden w-full flex-shrink-0">
     <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">insights</span></div>
-        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">12-month outlook</h3><p class="text-[10px] text-slate-400">${monthShort(keys[0])} &rarr; ${monthShort(last)}</p></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">12-month outlook</h3><p class="text-[10px] text-slate-400">${viewLabel}${optsNote ? ` (${optsNote})` : ""} · ${monthShort(keys[0])} &rarr; ${monthShort(last)}</p></div>
       </div>
       <p class="text-xs font-black ${end >= 0 ? "text-emerald-300" : "text-rose-300"}">${sp(end)}</p>
     </summary>
     <div class="px-3 pb-3 space-y-2.5">
-      <div class="space-y-1.5">${finds}</div>
+      <div class="flex gap-1.5">${toggle}</div>
+      ${optsRow}
+      ${chart}
+      <div class="space-y-1.5">${topFinds}</div>
+      ${moreFinds.length ? `<details data-persist="outlook-more" class="group/om"><summary class="flex items-center gap-1 cursor-pointer list-none select-none text-[11px] font-bold text-indigo-300 py-0.5"><span class="material-icons" style="font-size:15px">chevron_right</span>${moreFinds.length} more insight${moreFinds.length === 1 ? "" : "s"}</summary><div class="space-y-1.5 pt-1">${moreFinds.join("")}</div></details>` : ""}
       <div class="rounded-lg bg-black/20 px-2 py-1.5">
         <div class="grid grid-cols-[3.2rem_1fr_1fr_1fr_1fr] gap-1 pb-1 text-[9px] font-black uppercase tracking-wide text-slate-500"><span>Month</span><span class="text-right">In</span><span class="text-right">Out</span><span class="text-right">Net</span><span class="text-right">Balance</span></div>
         ${tr}
       </div>
       <button type="button" data-action="exportOutlookCsv" class="w-full py-2 text-[11px] font-bold text-indigo-300 rounded-lg bg-slate-800/60 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">download</span>Export outlook (CSV)</button>
-      <p class="text-[10px] text-slate-500 leading-snug">Uses everything currently planned: recurring income and bills, installments, debts you are owed, and each BPI Platinum bill in the month it falls due. One-time items you have not added yet are not included.</p>
+      <p class="text-[10px] text-slate-500 leading-snug">In and Out are what is still to come: this month only counts what is not yet received or paid, later months count the full plan. So each month's Net is exactly the change in Balance. Tap a month to see what it is made of. "Recurring income only" drops one-time income and debts owed to you (a worst case); "Without installments" shows the balance if installments did not exist. Includes recurring income and bills, installments, both debt trackers and Charles' BPI Platinum bill in the month it falls due. One-time items you have not added yet are not included.</p>
     </div>
   </details>`;
 }
@@ -1068,7 +1375,7 @@ export function owedScheduleCardHtml() {
     }
     grand += left;
     return `<details class="rounded-lg bg-slate-900/30"><summary class="flex items-center justify-between gap-2 px-2.5 py-2 cursor-pointer list-none">
-        <div class="min-w-0"><p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(it.name)}</p>
+        <div class="min-w-0"><p class="text-xs font-bold text-slate-200 truncate keep-case">${escapeHtml(it.name)}</p>
           <p class="text-[10px] text-slate-500">${monthShort(first)} → ${monthShort(it.end)} &middot; ${months} month${months === 1 ? "" : "s"} &middot; ${peso(Number(it.amount) || 0)}/mo</p></div>
         <p class="text-xs font-black text-emerald-300 flex-shrink-0">${peso(left)}</p></summary>
       <div class="px-2.5 pb-2 border-t border-white/[0.04]">${rows}
@@ -1104,10 +1411,10 @@ export function recurringPaymentsCardHtml() {
           ${rowIconHtml(it.name, 22, it.kind)}
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              <p class="text-xs font-bold ${settled ? 'text-slate-400 line-through' : 'text-slate-200'} truncate">${escapeHtml(it.name)}</p>
+              <p class="text-xs font-bold ${settled ? 'text-slate-400 line-through' : 'text-slate-200'} truncate keep-case">${escapeHtml(it.name)}</p>
               ${dd != null ? `<span class="text-[8px] font-bold text-sky-400 px-1 py-0.2 bg-sky-500/10 rounded">${ordinal(dd)}</span>` : ''}
             </div>
-            <p class="text-[9px] text-slate-500">${isInc ? 'Income' : 'Monthly Bill'} · <span class="${o.text}">${o.label}</span></p>
+            <p class="text-[9px] text-slate-500">${isInc ? 'Income' : 'Monthly Bill'} · <span class="${o.text} keep-case">${o.label}</span></p>
           </div>
         </div>
         <div class="text-right flex-shrink-0 flex items-center gap-2">
@@ -1128,18 +1435,26 @@ export function recurringPaymentsCardHtml() {
       </div>
       <p class="text-xs font-black text-teal-300">${peso(totalMonthly)}</p>
     </summary>
-    <div class="p-2.5 pt-0 space-y-1">${rows || `<div class="text-center py-2 text-[10px] text-slate-500">No recurring payments for this month</div>`}</div>
+    <div class="p-2.5 pt-0 space-y-1">${rows || `<div class="text-center py-2 text-[10px] text-slate-500">No recurring payments for this month</div>`}
+      <button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" aria-label="Add recurring bill" class="w-full mt-1 py-2 rounded-lg border border-dashed border-teal-400/30 text-teal-300 flex items-center justify-center"><span class="material-icons" style="font-size:18px">add</span></button>
+    </div>
   </details>`;
+}
+
+/** Redraw the Overview cards in place (used when data changes while Overview is open). */
+export function refreshMore() {
+  const body = $("more-body"), ov = $("more-overlay");
+  if (!body || !ov || !ov.classList.contains("open")) return;
+  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
+  body.innerHTML = `\n    ${investmentsCardHtml()}\n    ${inst}\n  `;
+  body.querySelectorAll("details").forEach((d) => (d.open = true));
 }
 
 export function openMore() {
   const body = $("more-body");
-  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet — add an expense with a "runs until" month.</div>`;
+  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
   body.innerHTML = `
     ${investmentsCardHtml()}
-    ${yearOutlookCardHtml()}
-    ${monthOverviewCardHtml()}
-    ${owedScheduleCardHtml()}
     ${inst}
   `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
@@ -1154,6 +1469,7 @@ export function closeMore() {
 }
 
 export function selectMonth(k) {
+  setSelectedKey(k); // set now so rapid taps on arrows don't lose a step
   if (document.startViewTransition) {
     document.startViewTransition(() => {
       setSelectedKey(k);
@@ -1174,6 +1490,28 @@ export function selectMonth(k) {
 }
 
 
+export function stepMonth(d) {
+  selectMonth(stepKey(timeline(), getSelectedKey(), Number(d)));
+}
+
+export function goToday() {
+  if (timeline().includes(currentKey())) selectMonth(currentKey());
+}
+
+export function jumpYear(y) {
+  document.getElementById(`mp-year-${y}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/** Compact money for tight spaces: ₱820, ₱7.3k, ₱1.2M, -₱820 */
+export function compactPeso(n) {
+  n = Math.round(Number(n) || 0);
+  const a = Math.abs(n), sign = n < 0 ? "-" : "";
+  const fmt = (x, u) => x.toFixed(1).replace(/\.0$/, "") + u;
+  if (a >= 999950) return `${sign}₱${fmt(a / 1e6, "M")}`;
+  if (a >= 1000) return `${sign}₱${fmt(a / 1e3, "k")}`;
+  return `${sign}₱${a}`;
+}
+
 export function toggleMonthPicker() {
   const mp = $("month-picker");
   const open = mp.classList.toggle("open");
@@ -1183,11 +1521,25 @@ export function toggleMonthPicker() {
     const years = {};
     const selectedKey = getSelectedKey();
     timeline().forEach((k) => { const y = keyParts(k).y; (years[y] = years[y] || []).push(k); });
-    $("month-picker-grid").innerHTML = Object.entries(years).map(([y, keys]) => `
-      <div>
+    const nowK = currentKey();
+    // Projected per month for the view on screen (Simulated, or the ticked people), computed once for all buttons
+    const hideProj = getHideProjected();
+    const proj = hideProj ? null : projectedByMonth(getSimView() ? ["simulated"] : includedWho());
+    const projLine = (k, sel) => {
+      if (!hideProj && !Number.isFinite(proj[k])) return "";
+      const v = hideProj ? null : proj[k];
+      const cls = hideProj || v >= 0 ? (sel ? "text-indigo-100" : "text-slate-400") : (sel ? "text-rose-200" : "text-rose-400");
+      return `<span class="block max-w-full truncate text-[10px] font-bold leading-tight tabular-nums ${cls}">${hideProj ? "••••" : compactPeso(v)}</span>`;
+    };
+    const pills = `<div class="sticky top-0 z-10 -mx-8 px-8 py-3 bg-slate-950/95 flex gap-2 overflow-x-auto no-scrollbar">
+      <button data-action="goToday" class="flex-shrink-0 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase">Today</button>
+      ${Object.keys(years).map((y) => `<button data-action="jumpYear" data-arg0="${y}" class="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-black ${Number(y) === keyParts(selectedKey).y ? "bg-slate-700 text-white" : "bg-slate-800 text-slate-300"}">${y}</button>`).join("")}
+    </div>`;
+    $("month-picker-grid").innerHTML = pills + Object.entries(years).map(([y, keys]) => `
+      <div id="mp-year-${y}" style="scroll-margin-top:64px">
         <p class="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-3">${y}</p>
         <div class="grid grid-cols-3 gap-3">
-          ${keys.map((k) => `<button data-action="selectMonth" data-arg0="${k}" class="py-4 rounded-2xl font-black text-sm ${k === selectedKey ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"} transition-transform">${MONTHS_SHORT[keyParts(k).m]}</button>`).join("")}
+          ${keys.map((k) => `<button data-action="selectMonth" data-arg0="${k}" class="py-2.5 rounded-2xl font-black text-sm ${k === selectedKey ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"} transition-transform flex flex-col items-center justify-center gap-0.5 min-w-0" style="min-height:52px">${MONTHS_SHORT[keyParts(k).m]}${projLine(k, k === selectedKey)}</button>`).join("")}
         </div>
       </div>`).join("");
   }
@@ -1198,9 +1550,10 @@ export function toggleMonthPicker() {
 // =============================
 /** Account choices for a spending entry: last one used, else the item's own account, else the first. */
 function spendAccountOptions(it) {
-  const accts = payableAccounts();
+  const owner = ["partner", "pdebt"].some((w) => getItems(w, "expenses").some((x) => x.id === it.id || getKids(x).some((c) => c.id === it.id))) ? "partner" : "charlie";
+  const accts = payableAccounts(owner);
   let last = ""; try { last = localStorage.getItem("moneyku_spend_acct") || ""; } catch { /* ignore */ }
-  const own = accountForMethod(it?.paymentMethod)?.id || "";
+  const own = accountForMethod(it?.paymentMethod, owner)?.id || "";
   const pick = [last, own].find((id) => id && accts.some((a) => a.id === id)) || accts[0]?.id || "";
   return `<option value="">No account</option>` + accts.map((a) => `<option value="${escapeHtml(a.id)}" ${a.id === pick ? "selected" : ""}>${escapeHtml(a.name)}</option>`).join("");
 }
@@ -1215,7 +1568,7 @@ export function spendSectionHtml(it) {
   const rows = list.map((e, i) => `
     <div class="flex items-center gap-2 py-2 px-3 bg-slate-900/60 rounded-xl">
       <span class="material-icons text-emerald-400" style="font-size:16px">payments</span>
-      <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}${e.acct ? ` <span class="text-indigo-300">&middot; from ${escapeHtml(accountName(e.acct))}</span>` : ""}</span>
+      <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}${e.note ? ` <span class="text-slate-200 keep-case">${escapeHtml(e.note)}</span>` : ""}${e.date ? ` <span class="text-slate-300">&middot; ${escapeHtml(new Date(e.date + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric" }))}</span>` : ""}${e.acct ? ` <span class="text-indigo-300">&middot; from ${escapeHtml(accountName(e.acct))}</span>` : ""}</span>
       <span class="text-[13px] font-black text-white">${peso(e.amount)}</span>
       <button type="button" data-action="deleteSpend" data-arg0="${e.id}" title="Remove" class="text-slate-500 hover:text-rose-400 flex-shrink-0"><span class="material-icons" style="font-size:16px">close</span></button>
     </div>`).join("");
@@ -1229,10 +1582,18 @@ export function spendSectionHtml(it) {
       <span class="text-[11px] font-bold text-slate-400 flex-shrink-0">${peso(spent)} / ${peso(est)}</span>
     </div>
     ${rows ? `<div class="space-y-1.5">${rows}</div>` : `<p class="text-[11px] text-slate-600 text-center py-1">No spending logged yet.</p>`}
-    <div class="spend-add flex items-center gap-2">
-      <select id="f-spend-acct" title="Subtracted from this account&#39;s balance" aria-label="Account" class="flex-shrink-0 w-[7.5rem] bg-slate-900 rounded-xl py-3 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select>
-      <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Add spending  ₱0" class="spend-amt bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" />
-      <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 flex items-center justify-center active:scale-95 transition-transform"><span class="material-icons" style="font-size:22px">add</span></button>
+    <div class="spend-add rounded-xl border border-emerald-400/50 bg-emerald-500/10 p-3 space-y-2">
+      <p class="text-[11px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1"><span class="material-icons" style="font-size:16px">add_circle</span>Add spending</p>
+      <div class="flex items-center gap-2">
+        <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Amount  ₱0" class="spend-amt bg-slate-900 rounded-xl text-[14px] font-bold text-white focus:outline-none" />
+        <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 h-12 px-4 rounded-xl bg-emerald-500 text-slate-950 font-black text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform"><span class="material-icons" style="font-size:20px">add</span>Add</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">From account</label>
+          <select id="f-spend-acct" title="Subtracted from this account&#39;s balance" aria-label="Account" class="w-full bg-slate-900 rounded-xl py-2.5 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select></div>
+        <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">Date <span class="text-slate-500">(optional)</span></label>
+          <input type="date" id="f-spend-date" data-action="openDatePicker" value="${spendTodayIn(k)}" min="${k}-01" max="${k}-${String(new Date(keyParts(k).y, keyParts(k).m + 1, 0).getDate()).padStart(2, "0")}" aria-label="Date (optional)" class="w-full bg-slate-900 rounded-xl text-[12px] font-bold text-white focus:outline-none" /></div>
+      </div>
     </div>
   </div>`;
 }
@@ -1243,11 +1604,18 @@ export function refreshSpendSection(id) {
   if (item && host) host.innerHTML = spendSectionHtml(item);
 }
 
+// Today as YYYY-MM-DD, but only when it falls inside month key k (spend dates are limited to that month)
+function spendTodayIn(k) {
+  const n = new Date(), s = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+  return s.startsWith(k + "-") ? s : "";
+}
+
 export async function addSpend() {
   const activeEdit = getActiveEdit();
   if (!activeEdit || !activeEdit.id) return;
   const amount = parseFloat($("f-spend-amount")?.value) || 0;
-  if (!amount) return toast("Amount required", "error");
+  if (!amount) return fieldError("f-spend-amount", "Amount required");
+  if (activeEdit.who === "simulated") return; // the simulation has no accounts to take spending from
   const { id } = activeEdit, k = getSelectedKey();
   const appData = getAppData();
   const cur = getSpendList(id, k);
@@ -1256,7 +1624,10 @@ export async function addSpend() {
   // Taking it from an account subtracts it from that balance now (and Delete gives it back)
   const account = acct ? (appData.accounts || []).find((a) => a.id === acct) : null;
   if (account) account.amount = Math.round(((Number(account.amount) || 0) - amount + Number.EPSILON) * 100) / 100;
-  cur.push(account ? { id: generateId(), amount, acct, ded: true } : { id: generateId(), amount });
+  const date = $("f-spend-date")?.value || spendTodayIn(k); // blank = today (when this month is the current one)
+  const entry = account ? { id: generateId(), amount, acct, ded: true } : { id: generateId(), amount };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) entry.date = date;
+  cur.push(entry);
   appData.spend = appData.spend || {};
   appData.spend[k] = appData.spend[k] || {};
   appData.spend[k][id] = cur;
@@ -1304,13 +1675,15 @@ export async function saveChildAndAddAnother() {
   if (!activeEdit || activeEdit.kind !== "child") return;
   const name = ($("f-name")?.value || "").trim();
   const amount = parseMathAmount($("f-amount")?.value);
-  if (!name) return toast("Name required", "error");
+  if (!name) return fieldError("f-name", "Name required");
   const { who, parentId } = activeEdit;
   const appData = getAppData();
   const parent = getItems(who, "expenses").find((x) => x.id === parentId);
   if (parent) {
     if (!Array.isArray(parent.children)) parent.children = [];
-    parent.children.push({ id: generateId(), name, amount });
+    parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}), ...(childPeopleInput() || {}), ...(childPeopleInput() ? { perMonday: childPeopleInput().people * childPeopleInput().perPerson } : {}) });
+    const gn = ($("f-parent")?.value || "").trim();
+    if (gn) parent.name = gn;
   }
   await syncSet(appData);
   renderAll();
@@ -1361,6 +1734,7 @@ async function saveModalInner() {
   const activeEdit = getActiveEdit();
   if (!activeEdit) return;
   if (activeEdit.kind === "budgets") return window.saveBudgets?.();
+  if (activeEdit.kind === "quickspend") return saveQuickSpend();
   const name = ($("f-name")?.value || "").trim();
   const amount = parseMathAmount($("f-amount")?.value);
   const appData = getAppData();
@@ -1405,13 +1779,15 @@ async function saveModalInner() {
   }
 
   if (activeEdit.kind === "account") {
-    if (!name) return toast("Name required", "error");
-    const owner = "charlie";
+    if (!name) return fieldError("f-name", "Name required");
+    const owner = activeEdit.owner === "partner" ? "partner" : "charlie";
     if (activeEdit.id) {
       const a = appData.accounts.find((x) => x.id === activeEdit.id);
       if (a) { a.name = name; a.amount = amount; a.owner = owner; a.type = $("f-type")?.value || "bank"; }
     } else {
-      appData.accounts.push({ id: generateId(), name, amount, owner, type: $("f-type")?.value || "bank" });
+      const dn = new Date();
+      const today = `${dn.getFullYear()}-${String(dn.getMonth() + 1).padStart(2, "0")}-${String(dn.getDate()).padStart(2, "0")}`;
+      appData.accounts.push({ id: generateId(), name, amount, owner, type: $("f-type")?.value || "bank", updated: today });
     }
     await syncSet(appData);
     closeModal(); renderAll(); toast("Saved");
@@ -1419,11 +1795,13 @@ async function saveModalInner() {
   }
 
   if (activeEdit.kind === "child") {
-    if (!name) return toast("Name required", "error");
+    if (!name) return fieldError("f-name", "Name required");
     const { who, parentId, id } = activeEdit;
     const parent = getItems(who, "expenses").find((x) => x.id === parentId);
     if (parent) {
       if (!Array.isArray(parent.children)) parent.children = [];
+      const gn = ($("f-parent")?.value || "").trim();
+      if (gn) parent.name = gn; // rename the group header
       if (id) {
         const c = parent.children.find((x) => x.id === id);
         if (c) {
@@ -1435,12 +1813,21 @@ async function saveModalInner() {
             if (scope === null) return;
           }
           c.name = name;
+          const cdd = childDueDayInput();
+          if (cdd != null) c.dueDay = cdd; else delete c.dueDay;
+          if ($("f-people")) { const pe = childPeopleInput(); if (pe) Object.assign(c, pe); else { delete c.people; delete c.perPerson; } }
           if (changed) applyItemAmount(appData, parent.children, c, amount, scope, selectedKey, { recurring: parent.recurring });
+          // Budget per person x people is a weekly (per-Monday) rate, so every month recomputes with its own Mondays
+          const pe2 = $("f-people") ? childPeopleInput() : null;
+          if (pe2 && scope !== "month") {
+            const tgt = scope === "future" && changed ? parent.children[parent.children.indexOf(c) + 1] : c;
+            if (tgt) tgt.perMonday = pe2.people * pe2.perPerson;
+          }
         }
         const pf = $("f-paid");
         if (pf) deducted = setPaidFlag(appData, selectedKey, id, pf.dataset.on === "true");
       } else {
-        parent.children.push({ id: generateId(), name, amount });
+        parent.children.push({ id: generateId(), name, amount, ...(childDueDayInput() != null ? { dueDay: childDueDayInput() } : {}), ...(childPeopleInput() || {}), ...(childPeopleInput() ? { perMonday: childPeopleInput().people * childPeopleInput().perPerson } : {}) });
       }
     }
     await syncSet(appData);
@@ -1449,9 +1836,12 @@ async function saveModalInner() {
   }
 
   // Regular item
-  if (!name) return toast("Name required", "error");
+  if (!name) return fieldError("f-name", "Name required");
   const bb = budgetBefore();
-  const { who, type, id } = activeEdit;
+  const { type, id } = activeEdit;
+  // New items can be assigned to a person in the modal ("Whose account")
+  const pickedWho = !id ? $("f-who")?.dataset.val : null;
+  const who = ["charlie", "partner", "debt", "pdebt"].includes(pickedWho) ? pickedWho : activeEdit.who;
   const recurring = $("f-recurring").dataset.on === "true";
   const start = $("f-start").value;
   const end = $("f-end").value || null;
@@ -1488,6 +1878,7 @@ async function saveModalInner() {
       it.txDay = txDay;
       it.cutoffDay = cutoffDay;
       if (txDate) it.txDate = txDate; else delete it.txDate;
+      if ($("f-include")) { if ($("f-include").dataset.on === "true") delete it.excluded; else it.excluded = true; }
       if ($("f-category")) { if (category) it.category = category; else delete it.category; }
       if (getKids(it).length) {
         // Amount is sum of children

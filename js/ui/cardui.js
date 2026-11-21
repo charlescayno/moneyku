@@ -2,10 +2,12 @@
 // BPI Platinum Rewards: the separate card section in Expenses, statements,
 // "Pay card" and reconciliation.
 // =============================
-import { CARD_NAME, cardSettings, cardSummary, clearStatement, daysUntil, isCardItem, keysForMonth, payCard, removeCardPayment, saveCardSettings, saveStatement, statement } from "../card.js";
-import { getAppData, getItems, getSelectedKey, monthsPaidCount, setSelectedKey, timeline } from "../state.js";
+import { CARD_NAME, cardSettings, cardSummary, clearStatement, daysUntil, isCardItem, keysForMonth, paidViaStatement, payCard, removeCardPayment, saveCardSettings, saveStatement, statement } from "../card.js";
+import { getAppData, getItems, getSelectedKey, monthsPaidCount, setPaidExtra, setSelectedKey, timeline } from "../state.js";
 import { syncSet } from "../firebase.js";
 import { escapeHtml, monthShort, monthsInclusive, parseMathAmount, peso } from "../utils.js";
+
+setPaidExtra(paidViaStatement); // a fully paid card statement counts its installment months as paid
 import { payableAccounts } from "../payfrom.js";
 import { catInfo, categoryOf } from "../categories.js";
 import { toast } from "./core.js";
@@ -109,15 +111,18 @@ export function cardSectionHtml(k) {
   const owed = keys.reduce((s, key) => s + statement(key).remaining, 0);
   const count = getItems("charlie", "expenses").filter(isCardItem).length;
   const empty = `<div class="px-3 py-3 text-center"><p class="text-[11px] font-bold text-slate-500">${count ? "No card statements to show for this month." : "No card expenses yet."}</p>
-      <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p></div>`;
-  return `<div id="sec-card" class="border-t border-white/[0.04] pt-2" style="scroll-margin-top:5.5rem">
+      <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p>
+      <button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 text-[11px] font-bold"><span class="material-icons" style="font-size:16px">add</span>Add a card expense</button></div>`;
+  return `<div id="sec-card" style="scroll-margin-top:5.5rem;margin-top:8px">
     <details data-persist="sec-card-v2" class="group">
-      <summary class="flex items-center justify-between px-1.5 mb-1 cursor-pointer list-none select-none">
+      <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
         <div class="flex items-center gap-1">
           <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
           <div class="flex items-baseline gap-1.5">
-            <p class="text-[9px] font-black uppercase tracking-[0.15em] text-indigo-300">&#128179; ${CARD_NAME}</p>
-            <span class="text-[11px] font-bold ${owed > 0.005 ? "text-rose-400" : "text-slate-500"}">${peso(owed)}</span>
+            <img src="assets/bpi-logo.png" alt="BPI" width="20" height="20" class="rounded flex-shrink-0 self-center" style="width:20px;height:20px;object-fit:contain">
+            <svg class="flex-shrink-0 self-center" width="26" height="18" viewBox="0 0 26 18" role="img" aria-label="BPI Platinum Rewards card"><defs><linearGradient id="bpiPlat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e5e7eb"/><stop offset=".55" stop-color="#9ca3af"/><stop offset="1" stop-color="#d1d5db"/></linearGradient></defs><rect x=".5" y=".5" width="25" height="17" rx="3" fill="url(#bpiPlat)" stroke="#6b7280"/><rect x="3" y="4" width="5" height="3.6" rx=".8" fill="#fcd34d" stroke="#b45309" stroke-width=".4"/><circle cx="17" cy="12" r="3.2" fill="#ef4444" opacity=".9"/><circle cx="20" cy="12" r="3.2" fill="#f59e0b" opacity=".85"/></svg>
+            <p class="font-black uppercase tracking-[0.12em] text-slate-400" style="font-size:11px">${CARD_NAME}</p>
+            <span class="font-bold ${owed > 0.005 ? "text-rose-400" : "text-slate-500"}" style="font-size:14px">${peso(owed)}</span>
           </div>
         </div>
         <button type="button" data-action="cardSettingsOpen" title="Card settings" aria-label="Card settings" class="text-slate-500 px-1"><span class="material-icons" style="font-size:14px">tune</span></button>
@@ -244,7 +249,7 @@ export function cardPayOpen(key) {
   let sel = null;
   try { sel = localStorage.getItem("moneyku_pay_acct"); } catch { /* ignore */ }
   let acctId = (accts.find((a) => a.id === sel) || accts[0]).id;
-  const rows = () => accts.map((a) => `<button type="button" data-acct="${escapeHtml(a.id)}" class="w-full flex items-center justify-between gap-2 p-3 rounded-xl border ${a.id === acctId ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-900/60"} text-left"><span class="text-sm font-bold text-white truncate">${escapeHtml(a.name)}</span><span class="text-[11px] font-bold text-slate-400">${peso(a.amount)}</span></button>`).join("");
+  const rows = () => accts.map((a) => `<button type="button" data-acct="${escapeHtml(a.id)}" class="w-full flex items-center justify-between gap-2 p-3 rounded-xl border ${a.id === acctId ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-900/60"} text-left"><span class="text-sm font-bold text-white truncate keep-case">${escapeHtml(a.name)}</span><span class="text-[11px] font-bold text-slate-400">${peso(a.amount)}</span></button>`).join("");
   const el = dialog(`${title("Pay BPI Platinum Rewards", `Cut ${fmtDate(st.cutoff)} &middot; due ${fmtDate(st.due)}`)}
     <p class="text-[11px] font-bold text-slate-400">Left to pay <span class="text-rose-400">${peso(st.remaining)}</span> of ${peso(st.total)}</p>
     ${field("Amount (&#8369;)", `<input id="cp-amount" type="text" inputmode="decimal" value="${st.remaining}" class="${inputCls}" />`)}
