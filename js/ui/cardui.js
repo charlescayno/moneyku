@@ -110,7 +110,7 @@ export function cardSectionHtml(k) {
   const count = getItems("charlie", "expenses").filter(isCardItem).length;
   const empty = `<div class="px-3 py-3 text-center"><p class="text-[11px] font-bold text-slate-500">${count ? "No card statements to show for this month." : "No card expenses yet."}</p>
       <p class="text-[10px] text-slate-600">Set an expense's payment method to ${CARD_NAME} and it moves here.</p></div>`;
-  return `<div id="sec-card" style="scroll-margin-top:5.5rem;border-top:2px solid rgba(148,163,184,.28);margin-top:12px;padding-top:14px">
+  return `<div id="sec-card" style="scroll-margin-top:5.5rem;margin-top:8px">
     <details data-persist="sec-card-v2" class="group">
       <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="padding:7px 8px">
         <div class="flex items-center gap-1">

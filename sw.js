@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneyku-cache-v248';
+const CACHE_NAME = 'moneyku-cache-v249';
 const FONT_CSS = 'https://fonts.googleapis.com/icon?family=Material+Icons';
 const urlsToCache = [
   './',
