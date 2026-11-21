@@ -131,11 +131,11 @@ export function renderSyncStatus() {
 export function markSync(status) {
   sync.status = status;
   if (status === "synced") sync.at = Date.now();
-  if (status === "saving") { sync.since = Date.now(); setTimeout(renderSyncStatus, 4200); }
+  if (status === "saving") { sync.since = Date.now(); const t2 = setTimeout(renderSyncStatus, 4200); if (t2 && t2.unref) t2.unref(); }
   renderSyncStatus();
 }
 if (typeof window !== "undefined") {
-  setInterval(renderSyncStatus, 15000);
+  const tick = setInterval(renderSyncStatus, 15000); if (tick && tick.unref) tick.unref(); // never keeps a test process alive
   window.addEventListener("online", renderSyncStatus);
   window.addEventListener("offline", renderSyncStatus);
 }
