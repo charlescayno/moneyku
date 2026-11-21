@@ -116,7 +116,9 @@ export function cardSectionHtml(k) {
         <div class="flex items-center gap-1">
           <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:12px">chevron_right</span>
           <div class="flex items-baseline gap-1.5">
-            <p class="font-black uppercase tracking-[0.12em] text-slate-400" style="font-size:11px">&#128179; ${CARD_NAME}</p>
+            <img src="assets/bpi-logo.png" alt="BPI" width="20" height="20" class="rounded flex-shrink-0 self-center" style="width:20px;height:20px;object-fit:contain">
+            <svg class="flex-shrink-0 self-center" width="26" height="18" viewBox="0 0 26 18" role="img" aria-label="BPI Platinum Rewards card"><defs><linearGradient id="bpiPlat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e5e7eb"/><stop offset=".55" stop-color="#9ca3af"/><stop offset="1" stop-color="#d1d5db"/></linearGradient></defs><rect x=".5" y=".5" width="25" height="17" rx="3" fill="url(#bpiPlat)" stroke="#6b7280"/><rect x="3" y="4" width="5" height="3.6" rx=".8" fill="#fcd34d" stroke="#b45309" stroke-width=".4"/><circle cx="17" cy="12" r="3.2" fill="#ef4444" opacity=".9"/><circle cx="20" cy="12" r="3.2" fill="#f59e0b" opacity=".85"/></svg>
+            <p class="font-black uppercase tracking-[0.12em] text-slate-400" style="font-size:11px">${CARD_NAME}</p>
             <span class="font-bold ${owed > 0.005 ? "text-rose-400" : "text-slate-500"}" style="font-size:14px">${peso(owed)}</span>
           </div>
         </div>

@@ -272,6 +272,26 @@ def check_inst(pg, name, fails):
     if int(b["left"]) - int(a1["left"]) != 1 or a1["pct"] == b["pct"]: fails.append(f"{name}: installment card did not update after ticking this month paid: {b} -> {a1}")
     if int(a1["left"]) - int(a2["left"]) != 1: fails.append(f"{name}: installment card did not update after ticking last month paid: {a1} -> {a2}")
     if rs != b: fails.append(f"{name}: installment card did not restore after unticking: {b} vs {rs}")
+CARD = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js');
+  const now = u.currentKey();
+  st.setAppData({startMonth:'2026-01', accounts:[], paid:{}, spend:{}, items:{charlie:{income:[],expenses:[{id:'c1',name:'Grab',amount:500,recurring:false,start:now,paymentMethod:'bpi_platinum'}]},partner:{income:[],expenses:[]},debt:{income:[],expenses:[]}}, settings:{}});
+  st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(now); lay.renderAll(); await new Promise(r => setTimeout(r, 600));
+  const card = document.getElementById('sec-card'); const pc = card?.closest('.person-card');
+  const debt = pc && [...pc.querySelectorAll('[data-persist^="debts"], [data-persist^="debt"]')][0];
+  const logo = card?.querySelector('img[src*="bpi-logo"]'), svg = card?.querySelector('svg[aria-label*="Platinum"]');
+  if (logo) await new Promise(r => logo.complete ? r() : (logo.onload = logo.onerror = r));
+  return { hasCard: !!card, hasDebt: !!debt, afterDebt: !!(card && debt && (debt.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING)),
+           lastSection: !!card && pc && card.parentElement.lastElementChild === card, logoOk: !!logo && logo.naturalWidth > 0, cardIcon: !!svg };
+}
+"""
+
+def check_card(pg, name, fails):
+    r = pg.evaluate(CARD); print(name, "bpi card", r)
+    bad = {k: r[k] for k in ("hasCard", "afterDebt", "lastSection", "logoOk", "cardIcon") if not r[k]}
+    if bad: fails.append(f"{name}: BPI Platinum section wrong: {r}")
 def check_fold(pg, name, fails):
     r = pg.evaluate(FOLD); print(name, "fold", r)
     bad = {k: v for k, v in r.items() if v is not True}
@@ -337,6 +357,7 @@ def main():
                     check_fold(pg, name, fails)
                     check_today(pg, name, fails)
                     check_inst(pg, name, fails)
+                    check_card(pg, name, fails)
                     check_add(pg, name, fails)
                     ta = pg.evaluate("() => { const t = document.getElementById('toast'); return [t.getAttribute('role'), t.getAttribute('aria-live')]; }")
                     if ta != ["status", "polite"]: fails.append(f"toast is not a live region: {ta}")

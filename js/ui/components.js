@@ -680,8 +680,8 @@ export function personSectionHtml(who, includeDebt = true) {
           ${copyBtn}
         </details>
       </div>
-      ${who === "charlie" ? cardSectionHtml(k) : ""}
       ${debtSectionHtml}
+      ${who === "charlie" ? cardSectionHtml(k) : ""}
     </div>
   </details>`;
 }

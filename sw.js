@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneyku-cache-v246';
+const CACHE_NAME = 'moneyku-cache-v247';
 const FONT_CSS = 'https://fonts.googleapis.com/icon?family=Material+Icons';
 const urlsToCache = [
   './',
@@ -7,6 +7,7 @@ const urlsToCache = [
   './assets/icon-192.png',
   './assets/icon-512.png',
   './assets/money-icon.png',
+  './assets/bpi-logo.png',
   './assets/avatar-charlie.jpg',
   './assets/avatar-karla.jpg',
   './assets/avatar-ynah.jpg',
