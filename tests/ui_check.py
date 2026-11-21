@@ -269,6 +269,7 @@ def check_next5(pg, name, fails, shot=None):
     down = pg.evaluate(NEXT5, [2000, 0, 1500])
     print(name, "next5 up", up, "down", down)
     s = up["stacks"]
+    if up["months"] != 3: fails.append(f"{name}: next5 shows {up['months']} months, want 3")
     if len(s) != up["months"]: fails.append(f"{name}: {len(s)} stacks for {up['months']} months")
     if any(x["neg"] or not x["note"] for x in s): fails.append(f"{name}: positive months need a banknote and no red: {s}")
     if any(b["h"] <= a["h"] for a, b in zip(s, s[1:])): fails.append(f"{name}: stack heights should grow with the balance: {[x['h'] for x in s]}")

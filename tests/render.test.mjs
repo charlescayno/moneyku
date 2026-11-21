@@ -58,10 +58,10 @@ test("next-6-months card scrolls forward and back", async () => {
   const { setHideProjected } = await import("../js/state.js");
   setHideProjected(false);
   const first = next5CardHtml();
-  assert.ok(first.includes("Projected in next 6 months"));
+  assert.ok(first.includes("Projected in next 3 months"));
   next5Shift(1); // no live card element in the stub, so the offset change is what we check next
   const later = next5CardHtml();
-  assert.ok(!later.includes("Projected in next 6 months") && later.includes("Earlier months"));
+  assert.ok(!later.includes("Projected in next 3 months") && later.includes("Earlier months"));
   next5Reset();
-  assert.ok(next5CardHtml().includes("Projected in next 6 months"));
+  assert.ok(next5CardHtml().includes("Projected in next 3 months"));
 });

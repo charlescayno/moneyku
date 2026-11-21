@@ -1,8 +1,8 @@
-// "Projected in next 6 months": projected balance at the end of each of the next six months, as figures plus a line.
+// "Projected in next 3 months": projected balance at the end of each of the next six months, as figures plus a line.
 import { MONTHS_SHORT, addMonths, cmpKey, currentKey, keyParts, peso } from "../utils.js";
 import { getHideProjected, getSelectedKey, getSimView, includedWho, outlookRows, projectedByMonth, timeline } from "../state.js";
 
-const COUNT = 6;
+const COUNT = 3;
 let offset = 0; // months from the current month where the window starts (scrolled with the arrows or a swipe)
 const sp = (n) => (n < 0 ? "-" + peso(-n) : peso(n));
 const cmp = (n) => { const a = Math.abs(n), s = n < 0 ? "-" : ""; return a >= 1e6 ? s + "₱" + (a / 1e6).toFixed(2) + "M" : a >= 1e4 ? s + "₱" + Math.round(a / 1e3) + "k" : a >= 1e3 ? s + "₱" + (a / 1e3).toFixed(1) + "k" : s + "₱" + Math.round(a); };
@@ -59,6 +59,10 @@ function stackSvg(cx, v, y0, yv, w, ac, op, m) {
       + `<rect x="${f(nx + 3)}" y="${f(ny + 3)}" width="${f(nw - 6)}" height="${nh - 6}" rx="2" fill="none" stroke="#059669" stroke-width="1" opacity=".6"/>`
       + `<circle cx="${f(cx)}" cy="${f(ny + nh / 2)}" r="9" fill="#34d399" stroke="#047857" stroke-width="1.2"/>`
       + `<text x="${f(cx)}" y="${f(ny + nh / 2 + 0.5)}" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="900" fill="#064e3b">₱</text></g>`;
+  }
+  if (!neg) { // sparkles twinkling over the stack and the note
+    const top = y0 - h - 26, sp = [[-0.32, top + 4, 0], [0.34, top + 14, 0.7], [-0.2, y0 - h * 0.55, 1.4], [0.3, y0 - h * 0.25, 2.1]];
+    sp.forEach(([dx, sy, d], i) => { s += `<g transform="translate(${f(cx + dx * w)} ${f(sy)})" pointer-events="none"><path class="n5-spark" style="animation-delay:${d}s;animation-duration:${2.4 + i * 0.3}s" d="M0-6L1.5-1.5L6 0L1.5 1.5L0 6L-1.5 1.5L-6 0L-1.5-1.5Z" fill="#fff"/></g>`; });
   }
   const uy = neg ? y0 - 4 : y0 + 2.5;
   s += `<rect x="${x}" y="${f(uy)}" width="${f(w)}" height="2" rx="1" fill="${ac}"/>`;
