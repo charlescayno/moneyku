@@ -238,7 +238,15 @@ export function flashLabel(anchorEl, text) {
 export function applyPaidVisual(btn, settled) {
   const row = btn.closest(".item-row");
   const name = row ? row.querySelector(".item-name") : null;
+  const icon = btn.querySelector(".check-icon");
   if (settled) {
+    // Sub-expense rows start with an invisible tick and a transparent box: make both visible (and remember to restore on undo)
+    if (icon && icon.classList.contains("text-transparent")) {
+      btn.dataset.bare = "1";
+      btn.classList.remove("bg-transparent", "border-slate-700");
+      icon.classList.remove("text-transparent", "opacity-0");
+      icon.classList.add("text-white", "opacity-100");
+    }
     btn.classList.add("is-paid", "bg-emerald-500", "border-emerald-500");
     btn.classList.remove("border-slate-600");
     if (row) row.classList.add("opacity-60");
@@ -247,6 +255,12 @@ export function applyPaidVisual(btn, settled) {
     if (row) { row.classList.remove("row-sweep"); void row.offsetWidth; row.classList.add("row-sweep"); setTimeout(() => row.classList.remove("row-sweep"), 750); }
   } else {
     btn.classList.remove("is-paid", "bg-emerald-500", "border-emerald-500");
+    if (btn.dataset.bare === "1" && icon) {
+      delete btn.dataset.bare;
+      btn.classList.add("bg-transparent", "border-slate-700");
+      icon.classList.remove("text-white", "opacity-100");
+      icon.classList.add("text-transparent", "opacity-0");
+    }
     btn.classList.add("border-slate-600");
     if (row) row.classList.remove("opacity-60");
     if (name) { name.classList.remove("line-through"); if (name.classList.contains("text-slate-500")) name.classList.replace("text-slate-500", "text-slate-200"); }

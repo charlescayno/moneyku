@@ -63,6 +63,24 @@ async () => {
 }
 """
 
+PAID = """
+async () => {
+  const st = await import('/js/state.js'); const u = await import('/js/utils.js'); const lay = await import('/js/ui/layout.js'); const ac = await import('/js/ui/actions.js');
+  st.setAppData({startMonth:'2026-01', items:{charlie:{income:[],expenses:[
+    {id:'g1',name:'Home',amount:0,recurring:true,start:'2026-01',children:[{id:'r1',name:'Rent',amount:12000,start:'2026-01',dueDay:1}]}]},debt:{income:[],expenses:[]}}, settings:{}});
+  document.getElementById('budget-view')?.classList.remove('hidden');
+  st.setSelectedKey(u.currentKey()); lay.renderBudget();
+  await new Promise(r => setTimeout(r, 900));
+  document.querySelectorAll('#budget-body details').forEach(d => d.open = true);
+  const btn = document.querySelector('[data-child="r1"] .paid-check');
+  const snap = () => { const s = getComputedStyle(btn), si = getComputedStyle(btn.querySelector('.check-icon')); return {bg: s.backgroundColor, icon: si.color, op: si.opacity}; };
+  ac.applyPaidVisual(btn, true); await new Promise(r => setTimeout(r, 500));
+  const paid = snap();
+  ac.applyPaidVisual(btn, false); await new Promise(r => setTimeout(r, 500));
+  return {paid, undone: snap()};
+}
+"""
+
 def main():
     srv = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1.5); fails = []
@@ -86,6 +104,10 @@ def main():
                 if name == "phone-390":
                     f = pg.evaluate(FORM); print("form", f)
                     if f["msg"] != "Name required" or not f["invalid"] or not f["focused"] or not f["cleared"]: fails.append(f"inline error behaviour wrong: {f}")
+                if name == "phone-390":
+                    pd = pg.evaluate(PAID); print("paid", pd)
+                    if pd["paid"]["bg"] == "rgba(0, 0, 0, 0)" or pd["paid"]["icon"] == "rgba(0, 0, 0, 0)" or pd["paid"]["op"] != "1": fails.append(f"paid sub-row tick not visible: {pd['paid']}")
+                    if pd["undone"]["icon"] != "rgba(0, 0, 0, 0)" or pd["undone"]["bg"] != "rgba(0, 0, 0, 0)": fails.append(f"undo did not restore the empty box: {pd['undone']}")
                 if name == "phone-390":
                     s = pg.evaluate(SIM); print("sim", s)
                     want = ["charlie:1", "charlie:1", "partner:1", "partner:1", "sim:1"]
