@@ -1536,7 +1536,7 @@ export function refreshMore() {
   const body = $("more-body"), ov = $("more-overlay");
   if (!body || !ov || !ov.classList.contains("open")) return;
   const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
-  body.innerHTML = `\n    ${investmentsCardHtml()}\n    ${inst}\n    ${debtOverviewCardHtml()}\n  `;
+  body.innerHTML = `\n    ${debtOverviewCardHtml()}\n    ${inst}\n    ${investmentsCardHtml()}\n  `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
 }
 
@@ -1544,9 +1544,9 @@ export function openMore() {
   const body = $("more-body");
   const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
   body.innerHTML = `
-    ${investmentsCardHtml()}
-    ${inst}
     ${debtOverviewCardHtml()}
+    ${inst}
+    ${investmentsCardHtml()}
   `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
   const ov = $("more-overlay");
