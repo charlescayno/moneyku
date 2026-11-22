@@ -100,6 +100,7 @@ import {
   toggleExplain,
   next5Shift,
   next5Reset,
+  runwayHorizon,
   toggleInvestments,
   toggleExpenseSort,
   toggleSimPerson,
@@ -207,6 +208,7 @@ window.focusPerson = focusPerson;
 window.toggleExplain = toggleExplain;
 window.next5Shift = next5Shift;
 window.next5Reset = next5Reset;
+window.runwayHorizon = runwayHorizon;
 window.toggleInvestments = toggleInvestments;
 window.toggleExpenseSort = toggleExpenseSort;
 window.toggleSimPerson = toggleSimPerson;

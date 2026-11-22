@@ -8,6 +8,7 @@ import { renderMonthStrip, toggleProjected, updateHeader } from './actions.js';
 import { cardSummaryHtml } from './cardui.js';
 import { cardDueIn } from '../card.js';
 import { next5CardHtml } from './next5.js';
+import { runwayCardHtml } from './runway.js';
 import { upcomingBillsWidgetHtml } from '../calendar.js';
 
 // =============================
@@ -163,6 +164,7 @@ export function renderBudget() {
         </div>
       </div>
       ${next5CardHtml()}
+      ${runwayCardHtml()}
       <div class="min-w-0" id="sec-simulated" style="scroll-margin-top:5.5rem">${personSectionHtml("simulated", false)}</div>
     </div>`;
     applyPersistedDetails();

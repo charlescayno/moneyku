@@ -121,3 +121,4 @@ export {
   initQuickLog
 } from "./quicklog.js";
 export { next5Shift, next5Reset } from "./next5.js";
+export { runwayHorizon } from "./runway.js";

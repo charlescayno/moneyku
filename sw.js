@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneyku-cache-v292';
+const CACHE_NAME = 'moneyku-cache-v293';
 const FONT_CSS = 'https://fonts.googleapis.com/icon?family=Material+Icons';
 const urlsToCache = [
   './',
@@ -29,7 +29,7 @@ const urlsToCache = [
   './js/gemini.js',
   './js/itemOps.js', './js/migrations.js',
   './js/arrange.js', './js/payfrom.js', './js/scope.js', './js/card.js',
-  './js/ui/next5.js', './js/simulated.js', './js/ui/childmenu.js', './js/history.js', './js/ui/historyui.js', './js/ui/cardui.js',
+  './js/ui/next5.js', './js/ui/runway.js', './js/simulated.js', './js/ui/childmenu.js', './js/history.js', './js/ui/historyui.js', './js/ui/cardui.js',
   './js/ui/quicklog.js', './js/ui/addsheet.js',
   './js/ui/index.js',
   './js/ui/core.js',
