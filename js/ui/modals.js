@@ -470,8 +470,8 @@ export function confirmDelete() {
      btnContainer.innerHTML = `
         <button data-action="doDelete" data-arg0="month" class="w-full py-4 font-black text-white bg-rose-600/80 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg">This month only</button>
         <button data-action="doDelete" data-arg0="future" class="w-full py-4 font-black text-white bg-rose-600/80 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg">This & future months</button>
-        <button data-action="doDelete" data-arg0="all" class="w-full py-4 font-black text-rose-200 bg-rose-900/50 hover:bg-rose-900 rounded-2xl transition-colors mt-4">All occurrences</button>
-        <button data-action="closeConfirm" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform mt-2">Cancel</button>
+        <button data-action="doDelete" data-arg0="all" class="w-full py-4 font-black text-rose-200 bg-rose-900/50 hover:bg-rose-900 rounded-2xl transition-colors">All occurrences</button>
+        <button data-action="closeConfirm" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform">Cancel</button>
      `;
   } else {
      const isAccount = activeEdit?.kind === "account";
