@@ -265,10 +265,12 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
   if (kind === "expenses" || kind === "income") {
     // Clean one-line row (expenses and income share it): round check, name + small due badge, amount. Details live in the edit modal (tap the row).
     const badge = [];
-    if (ds && ds.state === "overdue") badge.push(`<span class="due-chip due-overdue text-rose-300 font-black whitespace-nowrap">${dd != null ? `${ordinal(dd)} · ` : ""}overdue${ds.days ? ` ${ds.days}d` : ""}</span>`);
-    else if (ds && ds.state === "week") badge.push(`<span class="due-chip due-soon text-amber-300 font-black whitespace-nowrap">${dd != null ? `${ordinal(dd)} · ` : ""}${ds.days === 0 ? "due today" : `in ${ds.days}d`}</span>`);
+    // The due day sits at the end of the name ("Salary · 10th"); under the amount only the status is left
+    let dayTag = "";
+    if (ds && ds.state === "overdue") { if (dd != null) dayTag = ordinal(dd); badge.push(`<span class="due-chip due-overdue text-rose-300 font-black whitespace-nowrap">overdue${ds.days ? ` ${ds.days}d` : ""}</span>`); }
+    else if (ds && ds.state === "week") { if (dd != null) dayTag = ordinal(dd); badge.push(`<span class="due-chip due-soon text-amber-300 font-black whitespace-nowrap">${ds.days === 0 ? "due today" : `in ${ds.days}d`}</span>`); }
     else if (installment) badge.push(`<span class="text-amber-400/80 font-bold whitespace-nowrap">→ ${monthShort(it.end)}</span>`);
-    else if (it.recurring && dd != null) badge.push(`<span class="text-sky-300 font-bold whitespace-nowrap">${ordinal(dd)}</span>`);
+    else if (it.recurring && dd != null) dayTag = ordinal(dd);
     return `<div data-item="${it.id}" data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
     class="item-row flex items-center gap-2 pl-1.5 pr-2 rounded-xl transition-colors cursor-pointer" style="min-height:48px;border-top:0">
     <button data-action="togglePaidQuick" data-arg0="${it.id}" data-arg1="${kind}" title="${kind === "income" ? "Mark received" : "Mark paid"}" aria-label="Mark ${escapeHtml(it.name)} ${kind === "income" ? "received" : "paid"}" class="paid-check ${settled ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border">
@@ -276,7 +278,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     </button>
     ${iconHtml}
     <div class="flex-1 min-w-0 py-1.5">
-      <p class="item-name text-sm font-bold ${settled ? "text-slate-400" : "text-slate-200"} truncate">${escapeHtml(it.name)}</p>
+      <div class="flex items-baseline gap-1.5 min-w-0"><p class="item-name text-sm font-bold ${settled ? "text-slate-400" : "text-slate-200"} truncate">${escapeHtml(it.name)}</p>${dayTag ? `<span class="text-[11px] font-bold text-sky-300 whitespace-nowrap flex-shrink-0">· ${dayTag}</span>` : ""}</div>
       ${paidNoteHtml(it, k, kind, settled)}
       ${spendLine}
       ${progress}
