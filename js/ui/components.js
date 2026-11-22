@@ -1538,16 +1538,44 @@ export function toggleMonthPicker() {
     const projLine = (k, sel) => {
       if (!hideProj && !Number.isFinite(proj[k])) return "";
       const v = hideProj ? null : proj[k];
-      const cls = hideProj || v >= 0 ? (sel ? "text-indigo-100" : "text-slate-400") : (sel ? "text-rose-200" : "text-rose-400");
+      const cls = hideProj ? (sel ? "text-indigo-100" : "text-slate-400") : v >= 0 ? (sel ? "text-emerald-200" : "text-emerald-400") : (sel ? "text-rose-200" : "text-rose-400");
       return `<span class="block max-w-full truncate text-[10px] font-bold leading-tight tabular-nums ${cls}">${hideProj ? "••••" : compactPeso(v)}</span>`;
     };
     const pills = `<div class="sticky top-0 z-10 -mx-8 px-8 py-3 bg-slate-950/95 flex gap-2 overflow-x-auto no-scrollbar">
       <button data-action="goToday" class="flex-shrink-0 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase">Today</button>
       ${Object.keys(years).map((y) => `<button data-action="jumpYear" data-arg0="${y}" class="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-black ${Number(y) === keyParts(selectedKey).y ? "bg-slate-700 text-white" : "bg-slate-800 text-slate-300"}">${y}</button>`).join("")}
     </div>`;
+    // Quarter cards: money in, money out and the net for the months of that quarter, plus the projected balance at its end
+    const simOn = getSimView(), whos = includedWho();
+    const flow = (k) => {
+      const t = monthTotals(k);
+      if (simOn) return { i: t.sI, e: t.sE };
+      return { i: (whos.includes("charlie") ? t.cI : 0) + (whos.includes("partner") ? t.pI : 0), e: (whos.includes("charlie") ? t.cE : 0) + (whos.includes("partner") ? t.pE : 0) };
+    };
+    const tone = (v) => (v >= 0 ? "text-emerald-400" : "text-rose-400");
+    const quartersHtml = (keys) => {
+      const qs = [0, 1, 2, 3].map((q) => keys.filter((k) => Math.floor(keyParts(k).m / 3) === q)).filter((ks) => ks.length);
+      if (!qs.length) return "";
+      return `<div class="grid grid-cols-2 gap-3 mb-3">${qs.map((ks) => {
+        const q = Math.floor(keyParts(ks[0]).m / 3);
+        const sum = ks.reduce((a, k) => { const f = flow(k); return { i: a.i + f.i, e: a.e + f.e }; }, { i: 0, e: 0 });
+        const net = sum.i - sum.e, end = hideProj ? null : proj[ks[ks.length - 1]];
+        const m = (v, cls) => `<span class="${hideProj ? "text-slate-400" : cls} tabular-nums">${hideProj ? "••••" : compactPeso(v)}</span>`;
+        return `<div class="mp-quarter rounded-2xl bg-slate-900/60 border border-white/5 px-3 py-2.5 min-w-0">
+          <div class="flex items-baseline justify-between gap-2"><span class="text-[11px] font-black text-slate-300">Q${q + 1}</span><span class="text-[10px] font-bold text-slate-400">${MONTHS_SHORT[keyParts(ks[0]).m]}${ks.length > 1 ? `–${MONTHS_SHORT[keyParts(ks[ks.length - 1]).m]}` : ""}</span></div>
+          <p class="text-base font-black tabular-nums ${hideProj ? "text-white" : tone(net)} truncate">${hideProj ? "••••" : (net > 0 ? "+" : "") + compactPeso(net)}</p>
+          <div class="text-[10px] font-bold text-slate-400 leading-snug">
+            <p class="flex justify-between gap-2"><span>in</span>${m(sum.i, "text-emerald-400")}</p>
+            <p class="flex justify-between gap-2"><span>out</span>${m(sum.e, "text-rose-400")}</p>
+            ${Number.isFinite(end) ? `<p class="flex justify-between gap-2"><span>ends</span>${m(end, tone(end))}</p>` : ""}
+          </div>
+        </div>`;
+      }).join("")}</div>`;
+    };
     $("month-picker-grid").innerHTML = pills + Object.entries(years).map(([y, keys]) => `
       <div id="mp-year-${y}" style="scroll-margin-top:64px">
         <p class="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-3">${y}</p>
+        ${quartersHtml(keys)}
         <div class="grid grid-cols-3 gap-3">
           ${keys.map((k) => `<button data-action="selectMonth" data-arg0="${k}" class="py-2.5 rounded-2xl font-black text-sm ${k === selectedKey ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-300"} transition-transform flex flex-col items-center justify-center gap-0.5 min-w-0" style="min-height:52px">${MONTHS_SHORT[keyParts(k).m]}${projLine(k, k === selectedKey)}</button>`).join("")}
         </div>
