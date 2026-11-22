@@ -177,7 +177,7 @@ export function initEventListeners() {
       return;
     }
     
-    if (action === 'openItemModal' || action === 'openBudgetModal' || action === 'toggleExpenseSort' || action === 'toggleSimPerson' || action === 'cardSettingsOpen') e.preventDefault();
+    if (action === 'openItemModal' || action === 'openBudgetModal' || action === 'toggleExpenseSort' || action === 'toggleSimPerson' || action === 'cardSettingsOpen' || action === 'setAccountsView') e.preventDefault();
     
     const args = [];
     let i = 0;

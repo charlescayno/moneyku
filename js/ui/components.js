@@ -723,25 +723,38 @@ export function acctIconHtml(a) {
   return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=128" alt="${escapeHtml(BANK_LABELS[key] || a.name)}" loading="lazy" class="w-full h-full object-cover bg-white" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
     <span class="material-icons text-slate-300 items-center justify-center" style="font-size:18px;display:none">account_balance</span>`;
 }
-export function acctRowHtml(a) {
-  return `<div class="item-row flex items-center justify-between px-2.5 py-1.5 rounded-lg group">
+/** Tidy display name: a bare bank name ("Gcash", "MARIBANK") shows as its proper label; anything longer is left as typed. */
+export function acctDisplayName(a) {
+  const raw = String(a?.name || "").trim(), low = raw.toLowerCase();
+  const key = bankIconFor(raw);
+  if (key && (low === key || low === (BANK_LABELS[key] || "").toLowerCase() || low === "mari bank")) return BANK_LABELS[key];
+  if (low === "cash") return "Cash";
+  return raw;
+}
+
+/** One account row. `share` (0..1) draws the thin bar showing its slice of all cash on hand. The whole row opens the editor. */
+export function acctRowHtml(a, share = null) {
+  const amt = Number(a.amount) || 0;
+  const tone = amt < 0 ? "text-rose-400" : amt === 0 ? "text-slate-500" : "text-white";
+  const bar = share == null ? "" : `<span aria-hidden="true" style="position:absolute;left:10px;right:10px;bottom:2px;height:2px;border-radius:2px;background:rgba(255,255,255,.06)"><i style="display:block;height:100%;width:${Math.max(0, Math.min(100, Math.round(share * 100)))}%;border-radius:2px;background:rgba(52,211,153,.55)"></i></span>`;
+  return `<div data-action="openAccountModal" data-arg0="${a.id}" role="button" class="item-row relative flex items-center justify-between px-2.5 py-1.5 rounded-lg group cursor-pointer ${amt === 0 ? "opacity-70" : ""}">
     <div class="flex items-center gap-2 min-w-0 flex-1">
       <div class="w-9 h-9 rounded-xl bg-slate-800/80 border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
         ${acctIconHtml(a)}
       </div>
-      <p class="text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(a.name)}</p>
-      <img src="assets/avatar-${a.owner === "partner" ? "ynah" : "charles"}.jpg" alt="${a.owner === "partner" ? "Ynah" : "Charles"}" class="w-5 h-5 rounded-full object-cover flex-shrink-0">
+      <p class="text-sm font-bold text-slate-100 truncate keep-case">${escapeHtml(acctDisplayName(a))}</p>
     </div>
-    <div class="flex items-center gap-1.5 flex-shrink-0">
-      <p class="text-xs font-black text-white">${peso(a.amount)}</p>
-      <button data-action="openAccountModal" data-arg0="${a.id}" class="text-slate-400 hover:text-white transition-opacity p-0.5"><span class="material-icons" style="font-size:13px">edit</span></button>
+    <div class="flex items-center gap-1 flex-shrink-0">
+      <p class="text-xs font-black tabular-nums ${tone}">${peso(a.amount)}</p>
+      <span class="material-icons text-slate-600" style="font-size:16px" aria-hidden="true">chevron_right</span>
     </div>
+    ${bar}
   </div>`;
 }
 
-export function acctGroupHtml(group) {
+export function acctGroupHtml(group, cashTotal = 0) {
   const tot = group.items.reduce((s, a) => s + (Number(a.amount) || 0), 0);
-  const subs = group.items.map((a) => acctRowHtml(a)).join("");
+  const subs = group.items.map((a) => acctRowHtml(a, cashTotal > 0 ? Math.max(0, Number(a.amount) || 0) / cashTotal : null)).join("");
   const first = group.items[0];
   return `<div class="rounded-lg bg-slate-900/30 border border-white/[0.04] p-1.5 space-y-1">
     <div class="flex items-center justify-between px-1.5 py-0.5">
@@ -749,7 +762,7 @@ export function acctGroupHtml(group) {
         <div class="w-7 h-7 rounded-lg bg-slate-800 border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
           ${acctIconHtml(first)}
         </div>
-        <p class="text-[11px] font-black text-slate-300 truncate uppercase tracking-wider">${escapeHtml(group.name)}</p>
+        <p class="text-[11px] font-black text-slate-300 truncate uppercase tracking-wider">${escapeHtml(acctDisplayName({ name: group.name }))}</p>
       </div>
       <p class="text-xs font-black text-emerald-400">${peso(tot)}</p>
     </div>
@@ -793,7 +806,7 @@ export function acctCardHtml(a) {
       <div class="flex items-center gap-1.5 min-h-[18px]">${logo}${theme.label ? `<span class="text-[11px] font-black tracking-tight truncate">${escapeHtml(theme.label)}</span>` : ""}</div>
       ${chip}
       <div class="mt-auto">
-        <p class="text-[9px] font-semibold leading-tight truncate keep-case" style="color:${sub}">${escapeHtml(a.name)}</p>
+        <p class="text-[9px] font-semibold leading-tight truncate keep-case" style="color:${sub}">${escapeHtml(acctDisplayName(a))}</p>
         <p class="text-[13px] font-black leading-tight whitespace-nowrap">${peso(a.amount)}</p>
         <div class="flex justify-end mt-1 h-3">
           ${network ? `<span class="flex flex-shrink-0"><i class="block w-3 h-3 rounded-full" style="background:#eb001b"></i><i class="block w-3 h-3 rounded-full -ml-1.5" style="background:#f79e1b;opacity:.9"></i></span>` : ""}
@@ -824,8 +837,11 @@ export function setAccountsView(v) {
 
 export function accountsCardHtml(who = "charlie") {
   const appData = getAppData();
-  const accts = (appData?.accounts || []).filter((a) => acctOwner(a) === who)
-    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true }));
+  const amtOf = (a) => Number(a.amount) || 0;
+  // Biggest balance first, empty accounts last, credit cards after cash and bank
+  const rank = (a) => (acctType(a) === "credit" ? 2 : amtOf(a) === 0 ? 1 : 0);
+  const byBalance = (a, b) => rank(a) - rank(b) || amtOf(b) - amtOf(a) || String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base", numeric: true });
+  const accts = (appData?.accounts || []).filter((a) => acctOwner(a) === who).sort(byBalance);
   const view = getAccountsView();
   const groups = [];
   const idx = {};
@@ -834,35 +850,41 @@ export function accountsCardHtml(who = "charlie") {
     if (idx[key] === undefined) { idx[key] = groups.length; groups.push({ key, name: a.name, items: [] }); }
     groups[idx[key]].items.push(a);
   }
-  const sum = (l) => l.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+  const sum = (l) => l.reduce((s, a) => s + amtOf(a), 0);
   const bank = accts.filter((a) => acctType(a) !== "credit");
   const credit = accts.filter((a) => acctType(a) === "credit");
+  const cashTotal = bank.reduce((s, a) => s + Math.max(0, amtOf(a)), 0);
+  const share = (a) => (acctType(a) === "credit" || cashTotal <= 0 ? null : Math.max(0, amtOf(a)) / cashTotal);
   const empty = `<p class="text-[10px] text-slate-600 px-2 py-1.5">No accounts yet. Add one below to see your balances here.</p>`;
   const rows = !accts.length ? empty
     : view === "cards"
       ? acctCardSection("Cash & Bank", bank, sum(bank)) + acctCardSection("Credit", credit, sum(credit))
-      : groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g) : acctRowHtml(g.items[0]))).join("");
-  const tgl = (v, icon, label) => `<button type="button" data-action="setAccountsView" data-arg0="${v}" aria-label="${label}" aria-pressed="${view === v}" class="w-7 h-6 flex items-center justify-center rounded-md ${view === v ? "bg-slate-600/70 text-white" : "text-slate-400"}"><span class="material-icons" style="font-size:15px">${icon}</span></button>`;
+      : groups.map((g) => (g.items.length > 1 ? acctGroupHtml(g, cashTotal) : acctRowHtml(g.items[0], share(g.items[0])))).join("");
+  const nextView = view === "cards" ? "list" : "cards";
+  const toggle = `<button type="button" data-action="setAccountsView" data-arg0="${nextView}" aria-label="Switch to ${nextView} view" title="Switch to ${nextView} view" class="flex items-center justify-center rounded-lg bg-slate-900/70 border border-white/5 text-slate-300 flex-shrink-0" style="width:40px"><span class="material-icons" style="font-size:16px">${view === "cards" ? "view_list" : "view_carousel"}</span></button>`;
   const isP = who === "partner";
+  const stale = staleBalanceDays(who);
+  const sub = `${accts.length} account${accts.length === 1 ? "" : "s"}${stale == null ? "" : stale > 7 ? ` &middot; <span class="text-amber-300">oldest update ${stale}d ago</span>` : stale === 0 ? " &middot; updated today" : ` &middot; oldest update ${stale}d ago`}`;
+  const total = accountsTotal(who);
   return `<details data-persist="accounts${isP ? "-p" : ""}" class="glass-card rounded-xl overflow-hidden border ${isP ? "border-ynah" : "border-emerald-500/10"} w-full flex-shrink-0">
-    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
-      <div class="flex items-center gap-2">
+    <summary class="flex items-center justify-between gap-2 px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2 min-w-0">
         <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${isP ? "ynah-grad" : "from-indigo-500 to-teal-600"} flex items-center justify-center flex-shrink-0">
           <span class="material-icons text-white" style="font-size:14px">account_balance</span>
         </div>
-        <div>
-          <h3 class="text-xs font-black text-white uppercase tracking-wide">${isP ? OWNERS.partner.label : OWNERS.charlie.label} Accounts</h3>
-          <p class="text-[8px] text-slate-400">Balances on hand${(() => { const d = staleBalanceDays(who); return d != null && d > 7 ? ` · <span class="text-amber-300">oldest update ${d}d ago</span>` : ""; })()}</p>
+        <div class="min-w-0">
+          <h3 class="text-xs font-black text-white uppercase tracking-wide truncate">${isP ? OWNERS.partner.label : OWNERS.charlie.label} Accounts</h3>
+          <p class="text-[8px] text-slate-400 truncate">${sub}</p>
         </div>
       </div>
-      <p class="text-xs font-black text-emerald-400">${peso(accountsTotal(who))}</p>
+      <p class="text-xs font-black tabular-nums flex-shrink-0 ${total < 0 ? "text-rose-400" : "text-emerald-400"}">${peso(total)}</p>
     </summary>
     <div class="p-2.5 pt-0 space-y-1">
-      <div class="flex justify-end"><div class="inline-flex gap-0.5 p-0.5 rounded-lg bg-slate-900/70 border border-white/5">${tgl("cards", "view_carousel", "Card view")}${tgl("list", "view_list", "List view")}</div></div>
       ${rows}
-      <div class="flex gap-2 mt-1.5">
+      <div class="flex gap-2" style="margin-top:12px">
         <button data-action="openAccountModal" data-arg0="" data-arg1="${who}" class="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">add</span>Add account</button>
         ${accts.length >= 2 ? `<button data-action="openTransferModal" data-arg0="${who}" class="flex-1 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg font-bold text-indigo-300 text-[11px] flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">swap_horiz</span>Transfer</button>` : ""}
+        ${accts.length ? toggle : ""}
       </div>
     </div>
   </details>`;
