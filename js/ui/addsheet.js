@@ -12,7 +12,7 @@ import { closeModal, openItemModal, openModalShell } from "./modals.js";
 import { renderAll } from "./layout.js";
 
 const LAST_ITEM_KEY = "moneyku_qs_item";
-const TABS = [["spend", "payments", "quick spend"], ["bill", "receipt_long", "new bill"], ["income", "savings", "income"]];
+const TABS = [["spend", "payments", "Quick spend"], ["bill", "receipt_long", "New bill"], ["income", "savings", "Income"]];
 
 /** Short display name of a person ("Charles'" -> "Charles"). */
 export const ownerName = (w) => (OWNERS[w]?.label || "").replace(/'s?$/, "");
@@ -69,31 +69,30 @@ function refreshLeft() {
   const left = leftOf(hit.it, k, parseFloat($("f-qs-amount")?.value) || 0);
   box.classList.toggle("over", left < 0);
   box.innerHTML = `<p class="as-left-amt">${left < 0 ? "-" + peso(-left) : peso(left)}</p>
-    <p class="as-left-sub">${left < 0 ? "over" : "left"} in ${escapeHtml(hit.it.name)} for ${escapeHtml(monthShort(k).toLowerCase())}</p>`;
+    <p class="as-left-sub">${left < 0 ? "over" : "left"} in ${escapeHtml(hit.it.name)} for ${escapeHtml(monthShort(k))}</p>`;
 }
 
 function openQuickSpend() {
   const k = getSelectedKey();
   setActiveEdit({ kind: "quickspend" });
-  $("modal-title").textContent = "add expense";
-  $("modal-title").className = "as-title";
+  $("modal-title").textContent = "Add Expense";
+  $("modal-title").className = `text-lg font-black uppercase tracking-tight ${OWNERS[defaultWho()]?.text || "text-white"}`;
   const list = spendTargets(k);
   const sel = defaultTarget(list);
   const multi = includedWho().length > 1;
   const opts = list.map(({ it, w }) => `<option value="${it.id}" ${it.id === sel ? "selected" : ""}>${escapeHtml(it.name)}${multi ? ` (${escapeHtml(ownerName(w))})` : ""}</option>`).join("");
   $("modal-body").innerHTML = `${addTabsHtml("spend")}
     <div class="grid grid-cols-2 gap-2.5">
-      <div class="space-y-1"><label class="as-label" for="f-qs-note">what did you spend on?</label>
+      <div class="space-y-1"><label class="as-label" for="f-qs-note">What did you spend on?</label>
         <input type="text" id="f-qs-note" class="as-input" placeholder="e.g. grab, lunch, gas" autocomplete="off" /></div>
-      <div class="space-y-1"><label class="as-label" for="f-qs-amount">how much? (₱)</label>
+      <div class="space-y-1"><label class="as-label" for="f-qs-amount">How much? (₱)</label>
         <input type="number" id="f-qs-amount" class="as-input" inputmode="decimal" placeholder="0" /></div>
     </div>
-    <div class="space-y-1"><label class="as-label" for="f-qs-item">from budget</label>
+    <div class="space-y-1"><label class="as-label" for="f-qs-item">From budget</label>
       ${list.length ? `<select id="f-qs-item" class="as-input">${opts}</select>` : `<p class="as-left-sub">No expenses this month to log against. Add a bill first.</p>`}</div>
     <div id="qs-left" class="as-left"></div>`;
   $("delete-btn").classList.add("hidden");
   openModalShell();
-  $("save-btn").classList.add("as-save");
   $("f-qs-amount")?.addEventListener("input", refreshLeft);
   $("f-qs-item")?.addEventListener("change", refreshLeft);
   refreshLeft();

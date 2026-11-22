@@ -103,34 +103,26 @@ details.item-parent { background: var(--surface-in) !important; border-color: va
 .n5-anim .n5-stack.n5-neg { transform-origin: top; }
 @media (prefers-reduced-motion: reduce) { .n5-stack, .n5-anim .n5-stack { animation: none; } }
 
-/* ---- "+" add sheet: tabs, owner cards, inputs, "left" panel, cyan save ---- */
-.as-title { font-size: 20px; font-weight: 900; color: #fff; text-transform: lowercase; letter-spacing: -0.01em; }
-.as-tabs { display: flex; gap: 10px; }
-.as-tab { flex: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 12px;
-  background: #0f131a; border: 1px solid rgba(255,255,255,.08); color: #cbd5e1; font-size: 13px; font-weight: 800; text-transform: lowercase; }
-.as-tab .material-icons { font-size: 17px; }
-.as-tab.on { border-color: #22d3ee; color: #67e8f9; background: #0b1620; }
-.as-label { display: block; font-size: 12px; font-weight: 600; color: #a3acb9; margin-left: 2px; text-transform: lowercase; }
-.as-input { width: 100%; min-height: 44px; background: #0f131a; border: 1px solid rgba(255,255,255,.08); border-radius: 12px;
-  padding: 0 14px; font-size: 14px; font-weight: 700; color: #fff; outline: none; }
-.as-input:focus { border-color: #22d3ee; }
-.as-input::placeholder { color: #6b7280; font-weight: 500; }
-.as-owners .as-owner { min-height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-radius: 12px;
-  background: #0f131a; border: 1px solid rgba(255,255,255,.08); color: #e2e8f0; font-size: 14px; font-weight: 800; text-align: left; }
-.as-owners .as-owner.on { border-color: #22d3ee; color: #67e8f9; background: #0b1620; }
-.as-avatar { width: 34px; height: 34px; border-radius: 9999px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,.2); }
-.as-left { background: #0f131a; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 16px; }
-.as-left-amt { font-size: 32px; line-height: 1.1; font-weight: 900; color: #34d399; font-variant-numeric: tabular-nums; }
-.as-left.over .as-left-amt { color: #fb7185; }
-.as-left-sub { font-size: 12px; color: #a3acb9; margin-top: 4px; text-transform: lowercase; }
-#save-btn.as-save { background: #22d3ee !important; color: #06202a !important; text-transform: lowercase; }
-.as-tabs { gap: 8px; }
-.as-tab { gap: 4px; padding: 0 6px; font-size: 12.5px; white-space: nowrap; }
+/* ---- "+" add sheet: same look as the rest of the app (slate-900 fields, indigo selection, small caps labels) ---- */
+.as-tabs { display: flex; gap: 8px; }
+.as-tab { flex: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 6px; border-radius: 12px;
+  background: #0f172a; color: #94a3b8; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
 .as-tab .material-icons { font-size: 15px; }
-#modal-body .as-input:focus, #modal-body .as-input:focus-visible { outline: none !important; border-color: #22d3ee; box-shadow: inset 0 0 0 1px #22d3ee !important; }
-select.as-input { text-transform: lowercase; }
+.as-tab.on { background: #4f46e5; color: #fff; }
+.as-label { display: block; font-size: 10px; font-weight: 700; color: #64748b; margin-left: 4px; text-transform: uppercase; }
+.as-input { width: 100%; min-height: 44px; background: #0f172a; border: 0; border-radius: 12px;
+  padding: 0 14px; font-size: 14px; font-weight: 700; color: #fff; outline: none; }
+.as-input::placeholder { color: #64748b; font-weight: 500; }
+#modal-body .as-input:focus, #modal-body .as-input:focus-visible { outline: none !important; box-shadow: inset 0 0 0 2px #3b82f6 !important; }
+.as-owners .as-owner { min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-radius: 12px;
+  background: #0f172a; color: #94a3b8; font-size: 13px; font-weight: 700; text-align: left; }
+.as-owners .as-owner.on { background: #4f46e5; color: #fff; }
+.as-avatar { width: 30px; height: 30px; border-radius: 9999px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,.2); }
+.as-left { background: #0f172a; border-radius: 12px; padding: 14px 16px; }
+.as-left-amt { font-size: 28px; line-height: 1.1; font-weight: 900; color: #34d399; font-variant-numeric: tabular-nums; }
+.as-left.over .as-left-amt { color: #fb7185; }
+.as-left-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
 .as-row-end { align-items: end; }
-#modal-content:has(#save-btn.as-save) [data-action="closeModal"] { text-transform: lowercase; }
 
 /* ---- income / expenses / debt sections each get their own flat tint (green / red / amber) ---- */
 #budget-body details[data-persist^="sec-income"],

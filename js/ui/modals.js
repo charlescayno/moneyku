@@ -102,7 +102,6 @@ export function openModalShell() {
 
 export function closeModal() {
   $("modal-overlay").classList.remove("open");
-  $("save-btn")?.classList.remove("as-save");
   setActiveEdit(null);
 }
 
@@ -126,15 +125,15 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   if ((who === "debt" || who === "pdebt") && isNew) {
     title = kind === "income" ? "Add Person (They owe me)" : "Add Person (I owe them)";
   }
-  $("modal-title").textContent = as ? (kind === "income" ? "add income" : "add expense") : title;
-  $("modal-title").className = as ? "as-title" : `text-lg font-black uppercase tracking-tight ${o.text}`;
+  $("modal-title").textContent = as ? (kind === "income" ? "Add Income" : "Add Expense") : title;
+  $("modal-title").className = `text-lg font-black uppercase tracking-tight ${o.text}`;
 
   const kids = it ? getKids(it, selectedKey) : [];
   let body = as ? addTabsHtml(kind === "income" ? "income" : "bill") : "";
   let more = "";
   if (as && who !== "simulated" && who !== "debt" && who !== "pdebt") {
-    body += `<div class="space-y-1"><label class="as-label">whose is this?</label>
-      <div id="f-who" data-val="${who}" class="as-owners grid grid-cols-2 gap-2.5">${["charlie", "partner"].map((w) => `<button type="button" data-action="pickOwner" data-arg0="${w}" aria-pressed="${w === who}" class="as-owner${w === who ? " on" : ""}"><img src="assets/avatar-${ownerName(w).toLowerCase()}.jpg" alt="" class="as-avatar">${escapeHtml(ownerName(w).toLowerCase())}</button>`).join("")}</div></div>`;
+    body += `<div class="space-y-1"><label class="as-label">Whose is this?</label>
+      <div id="f-who" data-val="${who}" class="as-owners grid grid-cols-2 gap-2.5">${["charlie", "partner"].map((w) => `<button type="button" data-action="pickOwner" data-arg0="${w}" aria-pressed="${w === who}" class="as-owner${w === who ? " on" : ""}"><img src="assets/avatar-${ownerName(w).toLowerCase()}.jpg" alt="" class="as-avatar">${escapeHtml(ownerName(w))}</button>`).join("")}</div></div>`;
   } else if (isNew && who !== "simulated") { // the simulation is its own account: nothing to pick
     // Which person's account the new item belongs to
     const debtSide = who === "debt" || who === "pdebt";
@@ -146,8 +145,8 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   }
   if (as) {
     body += `<div class="grid grid-cols-2 gap-2.5">
-      <div class="space-y-1"><label class="as-label" for="f-name">what is it?</label><input type="text" id="f-name" class="as-input" placeholder="${kind === "income" ? "e.g. salary" : "e.g. rent"}" autocomplete="off" /></div>
-      <div class="space-y-1" id="f-amount-wrap"><label class="as-label" for="f-amount">how much? (₱)</label><input type="text" id="f-amount" class="as-input" inputmode="text" placeholder="0" /></div>
+      <div class="space-y-1"><label class="as-label" for="f-name">What is it?</label><input type="text" id="f-name" class="as-input" placeholder="${kind === "income" ? "e.g. salary" : "e.g. rent"}" autocomplete="off" /></div>
+      <div class="space-y-1" id="f-amount-wrap"><label class="as-label" for="f-amount">How much? (₱)</label><input type="text" id="f-amount" class="as-input" inputmode="text" placeholder="0" /></div>
     </div>`;
   } else body += inputBlock(kind === "income" ? "Source" : (who === "debt" ? "Name" : "Name"), "f-name", name, "text", 'placeholder="e.g. Rent"');
   if (as) { /* name and amount are already in the two-column row above */ } else if (kids.length) {
@@ -172,7 +171,7 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   if (!isNew && !kids.length && kind === "expenses" && who !== "simulated") body += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
 
   body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
-    <div><p class="text-sm font-bold text-white">${as ? "recurring" : "Recurring"}</p><p class="text-[10px] text-slate-500">${as ? "repeats on a schedule" : "Repeats every month"}</p></div>
+    <div><p class="text-sm font-bold text-white">Recurring</p><p class="text-[10px] text-slate-500">Repeats every month</p></div>
     <button type="button" id="f-recurring" data-on="${recurring}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${recurring ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
       <span class="absolute top-1 ${recurring ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span>
     </button>
@@ -241,9 +240,9 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   const ddVal = it ? (dueDayFor(it) ?? "") : (pd >= 1 && pd <= 31 ? pd : "");
   if (as) {
     body += `<div class="grid grid-cols-2 gap-2.5 as-row-end">
-      <div class="space-y-1"><label class="as-label" for="f-start">starting</label>
+      <div class="space-y-1"><label class="as-label" for="f-start">Starting</label>
         <select id="f-start" class="as-input">${monthSelect("f-start", start, false)}</select></div>
-      <div class="space-y-1"><label class="as-label" for="f-dueday">mark paid on day (1-31, optional)</label>
+      <div class="space-y-1"><label class="as-label" for="f-dueday">Mark paid on day (1-31, optional)</label>
         <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="as-input" /></div>
     </div>`;
     more += endHtml;
@@ -300,7 +299,6 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   else { delBtn.classList.remove("hidden"); delBtn.onclick = () => confirmDelete(); }
 
   openModalShell();
-  $("save-btn").classList.toggle("as-save", as);
   if (kind === "expenses") updateBpiCcMonth(!!it);
 
   setTimeout(() => $("f-name")?.focus(), 50);
