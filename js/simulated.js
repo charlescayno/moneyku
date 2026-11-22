@@ -5,7 +5,7 @@
 // "Copy from Charles / Ynah" makes independent snapshots (new ids, nothing shared with the source).
 // =============================
 import { $, escapeHtml, generateId, monthShort, parseMathAmount, peso } from "./utils.js";
-import { getAppData, getItems, getSelectedKey, itemActiveIn, setAppData, setSimView } from "./state.js";
+import { accountsTotal, getAppData, getItems, getSelectedKey, itemActiveIn, setAppData, setSimView } from "./state.js";
 import { syncSet } from "./firebase.js";
 import { isCardItem, cardDueIn, CARD_NAME } from "./card.js";
 import { toast } from "./ui/core.js";
@@ -211,11 +211,23 @@ export async function clearSimulation() {
 
 export function openSimCash() {
   const cur = Number(getAppData()?.simCash) || 0;
+  const c = accountsTotal("charlie"), y = accountsTotal("partner");
+  const fillBtn = (label, amt, av) => `<button type="button" data-action="simCashFill" data-arg0="${Math.round(amt * 100) / 100}" class="flex items-center gap-2.5 w-full px-3 rounded-xl text-left" style="min-height:44px;background:rgba(255,255,255,.06)">${av}<span class="flex-1 text-[13px] font-bold text-slate-100">${label}</span><span class="text-[13px] font-black tabular-nums ${amt < 0 ? "text-rose-400" : "text-emerald-400"}">${peso(amt)}</span></button>`;
+  const avatar = (n) => `<img src="assets/avatar-${n}.jpg" alt="" class="w-6 h-6 rounded-full object-cover flex-shrink-0">`;
+  const fills = fillBtn("Charles' accounts", c, avatar("charles")) + fillBtn("Ynah's accounts", y, avatar("ynah")) + fillBtn("Charles + Ynah", c + y, `<span class="material-icons text-slate-300 flex-shrink-0" style="font-size:24px">groups</span>`);
   showSheet("Simulated starting cash",
-    `<p class="text-[11px] text-slate-400 pb-1">The cash the simulation starts from. It feeds Current money on hand and Projected, and is independent of real accounts.</p>
-     <input id="sim-cash-input" type="text" inputmode="decimal" autocomplete="off" value="${cur || ""}" placeholder="0" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" />`,
+    `<p class="text-[11px] text-slate-400 pb-1">The cash the simulation starts from. It feeds Current money on hand and Projected. Picking an account total below only copies the number, so the simulation stays independent of real accounts.</p>
+     <input id="sim-cash-input" type="text" inputmode="decimal" autocomplete="off" value="${cur || ""}" placeholder="0" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" />
+     <p class="text-[11px] font-bold text-slate-400 pt-3 pb-1.5">Start from the cash in their accounts</p>
+     <div class="flex flex-col gap-2">${fills}</div>`,
     `${CANCEL_BTN}<button type="button" data-action="simCashSave" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-indigo-600">Save</button>`);
   setTimeout(() => $("sim-cash-input")?.focus(), 60);
+}
+
+/** Copy a real accounts total into the field (a snapshot: the simulation stays independent once saved). */
+export function simCashFill(amount) {
+  const input = $("sim-cash-input");
+  if (input) { input.value = String(Number(amount) || 0); input.focus(); }
 }
 
 export async function simCashSave() {
