@@ -1540,3 +1540,15 @@ html.app-ready.kb-open #tabbar { display: none; }
   line-height: 1.2;
 }
 .parent-sumtext.truncate { white-space: normal !important; overflow: visible; text-overflow: clip !important; min-width: 0; }
+
+/* Income / Expenses headers: the title and total never shrink; the buttons drop to their own line when they don't fit */
+details[data-persist^="sec-income"] > summary,
+details[data-persist^="sec-expenses"] > summary { flex-wrap: wrap; column-gap: 8px; }
+details[data-persist^="sec-income"] > summary > div:first-child,
+details[data-persist^="sec-expenses"] > summary > div:first-child { flex: 0 0 auto; }
+details[data-persist^="sec-income"] > summary .sec-title.truncate,
+details[data-persist^="sec-expenses"] > summary .sec-title.truncate { overflow: visible; text-overflow: clip; }
+details[data-persist^="sec-income"] > summary > :last-child,
+details[data-persist^="sec-expenses"] > summary > :last-child { margin-left: auto; flex: 0 0 auto; }
+details[data-persist^="sec-income"] > summary button,
+details[data-persist^="sec-expenses"] > summary button { white-space: nowrap; }
