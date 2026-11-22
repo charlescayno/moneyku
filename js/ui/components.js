@@ -540,15 +540,18 @@ export function simIncomeSliderHtml(who) {
   const entered = simIncomeEntered(getSelectedKey());
   if (!(entered > 0)) return "";
   const s = getSimIncomeScale();
-  const lo = Math.round(entered * 0.5), hi = Math.round(entered * 1.5), val = Math.round((entered * s) / 100);
+  const half = Math.round(entered * 0.5), delta = Math.round((entered * s) / 100 - entered);
   const same = Math.abs(s - 100) < 0.005;
   return `<div class="mt-1.5 rounded-lg bg-black/20 px-3 py-2.5 flex flex-col gap-1.5">
     <div class="flex items-center justify-between gap-2">
-      <p class="text-[11px] font-bold text-slate-400">what if income is <span id="sim-inc-pct" class="font-black ${same ? "text-white" : s > 100 ? "text-emerald-300" : "text-amber-300"}">${peso((entered * s) / 100)}</span></p>
+      <div class="min-w-0">
+        <p class="text-[11px] font-bold text-slate-400">what if I add <span id="sim-inc-pct" class="font-black ${same ? "text-white" : s > 100 ? "text-emerald-300" : "text-amber-300"}">${same ? peso(0) : signedPeso(delta)}</span> to income</p>
+        <p id="sim-inc-total" class="text-[11px] font-bold text-slate-500">${peso(entered)} entered${same ? "" : ` &rarr; ${peso((entered * s) / 100)}`}</p>
+      </div>
       ${same ? "" : `<button type="button" data-action="resetSimIncome" class="text-[10px] font-bold text-indigo-300 px-2 rounded-md bg-white/5" style="min-height:28px">reset</button>`}
     </div>
-    <input id="sim-inc-slider" type="range" min="${lo}" max="${hi}" step="1" value="${val}" data-entered="${entered}" aria-label="Estimate this month's income as an amount" style="width:100%;height:28px;accent-color:#fbbf24">
-    <div class="flex justify-between text-[9px] font-bold text-slate-500"><span>${peso(lo)}</span><span>${peso(entered)}</span><span>${peso(hi)}</span></div>
+    <input id="sim-inc-slider" type="range" min="${-half}" max="${half}" step="1" value="${delta}" data-entered="${entered}" aria-label="Amount to add on top of this month's entered income" style="width:100%;height:28px;accent-color:#fbbf24">
+    <div class="flex justify-between text-[9px] font-bold text-slate-500"><span>${signedPeso(-half)}</span><span>as entered</span><span>${signedPeso(half)}</span></div>
   </div>`;
 }
 

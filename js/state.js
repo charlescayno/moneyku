@@ -60,7 +60,7 @@ export function simIncomeEntered(k) {
   for (const it of getItems("simulated", "income")) if (itemActiveIn(it, k)) t += itemAmts(it, k).total;
   return t;
 }
-export function setSimIncomeScale(p) { simIncScale = Math.min(150, Math.max(50, Math.round((Number(p) || 100) * 100) / 100)); localStorage.setItem("simIncScale", String(simIncScale)); }
+export function setSimIncomeScale(p) { simIncScale = Math.min(150, Math.max(50, Math.round((Number(p) || 100) * 1e6) / 1e6)); localStorage.setItem("simIncScale", String(simIncScale)); }
 let simPersonSort = localStorage.getItem("simPersonSort") !== "0"; // grouped by person unless switched off
 export function getSimPersonSort() { return simPersonSort; }
 export function setSimPersonSort(on) { simPersonSort = !!on; localStorage.setItem("simPersonSort", simPersonSort ? "1" : "0"); }

@@ -345,16 +345,19 @@ export async function reorderItems(who, kind, orderIds) {
 
 export function resetSimIncome() { setSimIncomeScale(100); renderBudget(); }
 
-// Slider (in pesos): the label follows the finger; the numbers and projection refresh when it is released
+// Slider (pesos added on top of the entered income): the labels follow the finger; the numbers and projection refresh when it is released
 const sliderScale = (el) => {
   const entered = Number(el.dataset.entered) || 0;
-  const v = Number(el.value);
-  return entered > 0 && Math.abs(v - entered) >= 1 ? (v / entered) * 100 : 100;
+  const d = Number(el.value);
+  return entered > 0 && Math.abs(d) >= 1 ? ((entered + d) / entered) * 100 : 100;
 };
 document.addEventListener("input", (e) => {
   if (e.target?.id !== "sim-inc-slider") return;
+  const d = Number(e.target.value), entered = Number(e.target.dataset.entered) || 0;
   const lab = document.getElementById("sim-inc-pct");
-  if (lab) lab.textContent = peso(Number(e.target.value));
+  if (lab) lab.textContent = Math.abs(d) < 1 ? peso(0) : signedPeso(d);
+  const tot = document.getElementById("sim-inc-total");
+  if (tot) tot.innerHTML = `${peso(entered)} entered${Math.abs(d) < 1 ? "" : ` &rarr; ${peso(entered + d)}`}`;
 });
 document.addEventListener("change", (e) => {
   if (e.target?.id !== "sim-inc-slider") return;
