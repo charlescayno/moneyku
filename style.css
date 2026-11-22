@@ -1526,3 +1526,17 @@ html.app-ready.kb-open #tabbar { display: none; }
   #person-tiles [data-arg0="all"] .material-icons { font-size: 14px !important; }
   #person-tiles [data-arg0="all"] > span:first-child { gap: 4px; }
 }
+
+/* Names wrap to up to three lines instead of being cut off with an ellipsis */
+.item-name.truncate {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  white-space: normal !important;
+  overflow: hidden;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  line-height: 1.2;
+}
+.parent-sumtext.truncate { white-space: normal !important; overflow: visible; text-overflow: clip !important; min-width: 0; }
