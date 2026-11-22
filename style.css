@@ -1506,3 +1506,17 @@ html.app-ready #tabbar {
 #tabbar button:focus-visible { outline: 2px solid #a5b4fc; outline-offset: -4px; border-radius: 10px; }
 html.app-ready body:has(#modal-overlay.open, #confirm-overlay.open, #calendar-overlay.open, #more-overlay.open, #month-picker.open, #ql-overlay.open, [role="dialog"][aria-modal="true"]) #tabbar,
 html.app-ready.kb-open #tabbar { display: none; }
+
+/* Date fields in sheets: iOS Safari gives native date inputs an intrinsic width that ignores w-full and pushes them out of the card */
+#modal-body .spend-add .grid > div { min-width: 0; }
+#modal-body input[type="date"] {
+  display: block;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+#modal-body input[type="date"]::-webkit-date-and-time-value { text-align: center; min-width: 0; margin: 0 auto; }
+#modal-body input[type="date"]::-webkit-datetime-edit { padding: 0; }
