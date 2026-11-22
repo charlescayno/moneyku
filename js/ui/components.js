@@ -321,6 +321,11 @@ function groupKeyOf(it, kind, who) {
 const groupLabel = (c) => INCOME_GROUP_LABEL[c] || CATEGORY_LABELS[c];
 const groupRank = (c) => (c === "salary" ? -2 : c === "contrib" ? -1 : Number(c));
 
+/** Which person a simulated item is listed under ("" = neither). */
+function setSimOwner(it, who) {
+  if (who === "charlie" || who === "partner") it.copiedFromWho = who; else delete it.copiedFromWho;
+}
+
 export function categoryGroupedHtml(items, k, kind, who) {
   if (!items.length) return "";
   const sorted = sortItems(items, kind);
@@ -410,7 +415,7 @@ export function groupedRowsHtml(items, k, kind, who) {
     const parts = [["charlie", "Charles"], ["partner", "Ynah"], ["", "Simulated only"]].map(([key, label]) => ({ key, label, list: items.filter((it) => (it.copiedFromWho === "charlie" || it.copiedFromWho === "partner" ? it.copiedFromWho : "") === key) })).filter((p) => p.list.length);
     return parts.map((p) => {
       if (!p.key) return groupedRowsByDue(p.list, k, kind, who); // items made only in the simulation need no heading
-      const sub = p.list.reduce((s, it) => s + amountIn(it, k), 0);
+      const sub = p.list.reduce((s, it) => s + (getKids(it, k).length ? itemTotal(it, k) : amountIn(it, k)), 0);
       const av = p.key ? `<img src="assets/avatar-${p.label.toLowerCase()}.jpg" alt="" class="sim-av w-5 h-5 rounded-full object-cover">` : "";
       return `<div class="sim-person-group mb-1" data-who="${p.key}"><div class="flex justify-between items-center px-2 pt-2 pb-0.5"><p class="flex items-center gap-1.5 text-[11px] font-black text-slate-400 ${p.key ? "keep-case" : ""}">${av}${p.label}</p><p class="text-[11px] font-bold tabular-nums ${kind === "income" ? "text-emerald-400" : "text-slate-400"}">${peso(sub)}</p></div>${groupedRowsByDue(p.list, k, kind, who)}</div>`;
     }).join("");
@@ -2010,9 +2015,11 @@ async function saveModalInner() {
       const on = pf.dataset.on === "true";
       deducted = setPaidFlag(appData, selectedKey, id, on);
     }
+    if (it && who === "simulated" && $("f-simwho")) setSimOwner(it, $("f-simwho").dataset.val);
   } else {
     const isGroup = $("f-group")?.dataset.on === "true";
     const created = addItemData(appData, { who, kind: type, name, amount: isGroup ? 0 : amount, start, recurring, end, dueDay, paymentMethod: payMethod, txDay, cutoffDay, txDate, category });
+    if (who === "simulated" && $("f-simwho")) setSimOwner(created, $("f-simwho").dataset.val);
     if (isGroup) {
       rememberPayMethod(payMethod);
       await syncSet(appData);

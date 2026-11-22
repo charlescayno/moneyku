@@ -143,6 +143,12 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
     body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Whose account</label>
       <div id="f-who" data-val="${who}" class="grid grid-cols-2 gap-2">${opts.map(([w, label]) => `<button type="button" data-action="pickOwner" data-arg0="${w}" class="py-3 rounded-xl font-bold text-xs ${w === who ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${escapeHtml(label)}</button>`).join("")}</div></div>`;
   }
+  if (who === "simulated") {
+    // The simulation can list an item under Charles or Ynah when "Person" grouping is on
+    const cur = it?.copiedFromWho === "charlie" || it?.copiedFromWho === "partner" ? it.copiedFromWho : "";
+    body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Belongs to</label>
+      <div id="f-simwho" data-val="${cur}" class="grid grid-cols-3 gap-2">${[["charlie", "Charles"], ["partner", "Ynah"], ["", "Neither"]].map(([w, l]) => `<button type="button" data-action="pickOwner" data-arg0="${w}" class="py-3 rounded-xl font-bold text-xs ${w === cur ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${l}</button>`).join("")}</div></div>`;
+  }
   if (as) {
     body += `<div class="grid grid-cols-2 gap-2.5">
       <div class="space-y-1"><label class="as-label" for="f-name">What is it?</label><input type="text" id="f-name" class="as-input" placeholder="${kind === "income" ? "e.g. salary" : "e.g. rent"}" autocomplete="off" /></div>
