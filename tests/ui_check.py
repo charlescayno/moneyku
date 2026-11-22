@@ -483,7 +483,7 @@ def main():
                     s = pg.evaluate(SIM); print("sim", s)
                     want = ["charlie:1", "charlie:1", "partner:1", "partner:1", "sim:1"]
                     if s["groups"] != want: fails.append(f"sim grouping wrong: {s['groups']} (want {want})")
-                    if s["borderC"] and s["borderC"][0] != "3px": fails.append(f"sim group border missing: {s['borderC']}")
+                    if s["borderC"] and s["borderC"][0] != "1px": fails.append(f"sim group border missing: {s['borderC']}")
                     if s["hscroll"]: fails.append("sim: horizontal scroll")
                 pg.close()
             b.close()

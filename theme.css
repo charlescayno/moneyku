@@ -71,8 +71,8 @@ body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px
 
 /* ---- Simulated: Charles' and Ynah's items shown as separate blocks (blue = Charles, purple = Ynah) ---- */
 .sim-person-group { border: 1px solid rgba(255,255,255,.07); border-radius: 14px; padding-bottom: 4px; margin-bottom: 8px !important; }
-.sim-person-group[data-who="charlie"] { border-left: 3px solid #38bdf8; }
-.sim-person-group[data-who="partner"] { border-left: 3px solid #c084fc; }
+.sim-person-group[data-who="charlie"] { border-color: rgba(56,189,248,.30); background: rgba(56,189,248,.04); }
+.sim-person-group[data-who="partner"] { border-color: rgba(192,132,252,.30); background: rgba(192,132,252,.04); }
 
 /* ---- native controls (scrollbars, select menus, date pickers) follow the dark theme ---- */
 :root { color-scheme: dark; }
