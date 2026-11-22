@@ -189,7 +189,8 @@ export function dueStatus(it, k) {
 
 /** Small avatar showing whose budget a simulated item was copied from (nothing for items made inside the simulation). */
 export function simSourceHtml(it, who) {
-  if (who !== "simulated" || (it.copiedFromWho !== "charlie" && it.copiedFromWho !== "partner")) return "";
+  // Grouped by person, the group header already shows whose it is
+  if (who !== "simulated" || getSimPersonSort() || (it.copiedFromWho !== "charlie" && it.copiedFromWho !== "partner")) return "";
   const n = it.copiedFromWho === "partner" ? "Ynah" : "Charles";
   return `<img src="assets/avatar-${n.toLowerCase()}.jpg" alt="${n}" title="Copied from ${n}" class="sim-src w-5 h-5 rounded-full object-cover flex-shrink-0 border border-white/20">`;
 }
