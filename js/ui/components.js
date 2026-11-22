@@ -665,13 +665,13 @@ export function personSectionHtml(who, includeDebt = true) {
         </div>
         <div>
           <h3 class="font-black text-white uppercase tracking-wide" style="font-size:15px;line-height:1.2">${o.label}</h3>
-          ${who === 'debt' ? '' : `<p class="person-net font-bold whitespace-nowrap ${net >= 0 ? "text-emerald-300" : "text-rose-300"}" style="font-size:12px;line-height:1.3">net ${net >= 0 ? "+" : ""}${peso(net)}</p>`}
+          ${who === 'debt' ? '' : `<p class="person-net font-bold whitespace-nowrap ${net >= 0 ? "text-emerald-300" : "text-rose-300"}" style="font-size:12px;line-height:1.3">net ${net >= 0 ? "+" : ""}${pesoRow(net)}</p>`}
         </div>
       </div>
       ${who === 'debt' ? '' : `
       <div class="person-inout text-right">
         <p class="font-bold uppercase text-white/60" style="font-size:10px;line-height:1.3">in / out</p>
-        <p class="font-black text-white" style="font-size:13px;line-height:1.3">${peso(incTot)} <span class="text-white/40">-</span> ${peso(expTot)}</p>
+        <p class="font-black text-white" style="font-size:13px;line-height:1.3">${pesoRow(incTot)} <span class="text-white/40">-</span> ${pesoRow(expTot)}</p>
       </div>`}
     </summary>
     <div class="p-2.5 space-y-2 no-scrollbar">
