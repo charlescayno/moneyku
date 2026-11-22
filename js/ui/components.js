@@ -500,7 +500,7 @@ export function debtTrackerCardHtml(who = "debt") {
         <p class="font-bold" style="font-size:14px"><span class="text-emerald-400">${peso(debtIncTot)}</span> <span class="text-slate-500 font-normal">/</span> <span class="text-rose-400">${peso(debtExpTot)}</span></p>
       </summary>
       <div style="margin-top:6px">
-        <details open class="group" style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.16);border-radius:10px;padding:2px 6px 6px">
+        <details open class="group" style="background:rgba(16,185,129,.13);border:1px solid rgba(16,185,129,.32);border-radius:10px;padding:2px 6px 6px">
           <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("16,185,129")}">
             <div class="flex items-center gap-1">
               ${chev}
@@ -514,7 +514,7 @@ export function debtTrackerCardHtml(who = "debt") {
           <div class="space-y-0.5 mt-1">${debtIncHtml}</div>
         </details>
         <div style="margin-top:8px">
-          <details open class="group" style="background:rgba(244,63,94,.06);border:1px solid rgba(244,63,94,.16);border-radius:10px;padding:2px 6px 6px">
+          <details open class="group" style="background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.32);border-radius:10px;padding:2px 6px 6px">
             <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("244,63,94")}">
               <div class="flex items-center gap-1">
                 ${chev}

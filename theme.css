@@ -127,8 +127,8 @@ select.as-input { text-transform: lowercase; }
 #budget-body details[data-persist^="sec-income"],
 #budget-body details[data-persist^="sec-expenses"],
 #budget-body details[data-persist^="debts"] { border-radius: 14px; padding: 2px 4px 6px; }
-#budget-body details[data-persist^="sec-income"] { background: rgba(16, 185, 129, .04); border: 1px solid rgba(16, 185, 129, .10); }
-#budget-body details[data-persist^="sec-expenses"] { background: rgba(244, 63, 94, .035); border: 1px solid rgba(244, 63, 94, .10); }
+#budget-body details[data-persist^="sec-income"] { background: rgba(16, 185, 129, .13); border: 1px solid rgba(16, 185, 129, .32); }
+#budget-body details[data-persist^="sec-expenses"] { background: rgba(244, 63, 94, .12); border: 1px solid rgba(244, 63, 94, .32); }
 #budget-body details[data-persist^="debts"] { background: none; border: 0; padding: 0; }
 #budget-body summary:focus, #budget-body summary:focus-visible { outline: none; }
 /* the line between income and expenses is replaced by the two tinted blocks */
