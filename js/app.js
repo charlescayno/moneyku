@@ -4,7 +4,7 @@
 
 import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
 import { openChildMenu, childMenuEdit, childMenuReorder, childMenuDelete } from './ui/childmenu.js';
-import { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, clearSimulation, openSimCash, simCashSave, simCashFill } from "./simulated.js";
+import { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, askClearSimulationAgain, clearSimulation, openSimCash, simCashSave, simCashFill } from "./simulated.js";
 import { openAddSheet, addSheetTab } from "./ui/addsheet.js";
 import { openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
@@ -234,7 +234,7 @@ initHistory();
 Object.assign(window, { openHistory, histUndo, histRedo, histRestore });
 Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo, cardToggleDone });
 Object.assign(window, { openAddSheet, addSheetTab });
-Object.assign(window, { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, clearSimulation, openSimCash, simCashSave, simCashFill, dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
+Object.assign(window, { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, askClearSimulationAgain, clearSimulation, openSimCash, simCashSave, simCashFill, dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
 initExtras();
 initTabs();
 window.fetchInvestmentRates = fetchInvestmentRates;

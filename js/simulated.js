@@ -184,7 +184,14 @@ export function askClearSimulation() {
   const n = getItems("simulated", "income").length + getItems("simulated", "expenses").length;
   showSheet("Clear simulation?",
     `<p class="text-sm text-slate-300 leading-relaxed">This removes all ${n} simulated ${n === 1 ? "item" : "items"} and the starting cash. Charles' and Ynah's budgets are not touched.</p>`,
-    `${CANCEL_BTN}<button type="button" data-action="clearSimulation" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-rose-600">Clear simulation</button>`);
+    `${CANCEL_BTN}<button type="button" data-action="askClearSimulationAgain" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-rose-600">Continue</button>`);
+}
+
+/** Second confirmation: clearing wipes the whole sandbox, so ask again before doing it. */
+export function askClearSimulationAgain() {
+  showSheet("Are you sure?",
+    `<p class="text-sm text-slate-300 leading-relaxed">Last check: everything in the simulation will be removed. You can undo it right after from the message at the bottom.</p>`,
+    `${CANCEL_BTN}<button type="button" data-action="clearSimulation" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-rose-600">Yes, clear it</button>`);
 }
 
 export async function clearSimulation() {
