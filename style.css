@@ -1520,3 +1520,9 @@ html.app-ready.kb-open #tabbar { display: none; }
 }
 #modal-body input[type="date"]::-webkit-date-and-time-value { text-align: center; min-width: 0; margin: 0 auto; }
 #modal-body input[type="date"]::-webkit-datetime-edit { padding: 0; }
+
+/* Very narrow phones: shrink the Together icon so its label fits the tile */
+@media (max-width: 340px) {
+  #person-tiles [data-arg0="all"] .material-icons { font-size: 14px !important; }
+  #person-tiles [data-arg0="all"] > span:first-child { gap: 4px; }
+}
