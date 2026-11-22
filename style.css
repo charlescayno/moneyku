@@ -1552,3 +1552,9 @@ details[data-persist^="sec-income"] > summary > :last-child,
 details[data-persist^="sec-expenses"] > summary > :last-child { margin-left: auto; flex: 0 0 auto; }
 details[data-persist^="sec-income"] > summary button,
 details[data-persist^="sec-expenses"] > summary button { white-space: nowrap; }
+
+/* Bottom sheets: grab handle (drag it, or the title, down to close) */
+#ql-head { touch-action: none; margin: -0.25rem -1rem 0; padding: 0 1rem; }
+#ql-handle { display: flex; justify-content: center; padding: 2px 0 10px; }
+#ql-handle span { width: 40px; height: 4px; border-radius: 999px; background: rgba(148, 163, 184, .45); }
+@media (min-width: 640px) { #ql-handle { display: none; } }

@@ -4,7 +4,7 @@
 // =============================
 import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso, PM_LABELS } from "./utils.js";
 import { exportData } from "./ui/actions.js";
-import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemTotal, monthTotals, outlookRows, runningFundsAt, getSimView, setAppData, timeline, includedWho } from "./state.js";
+import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemAmts, itemTotal, childAmt, childFinal, monthTotals, outlookRows, runningFundsAt, getSimView, setAppData, timeline, includedWho } from "./state.js";
 import { normalize, syncSet } from "./firebase.js";
 import { addItemData } from "./itemOps.js";
 import { CARD_METHOD, charges, statement } from "./card.js";
@@ -81,45 +81,127 @@ export function qlAddChooser() {
     b("text-rose-300 bg-rose-500/15 border border-rose-500/25", "expenses", "Expense"));
 }
 
-/** Pie (donut) chart of one person's expenses for the month being viewed. `mode` picks what the slices are. */
-const PIE_MODES = [["item", "Expense"], ["cat", "Category"], ["type", "Type"], ["pay", "Pay via"], ["paid", "Status"]];
-export function openExpenseChart(who, mode = "item") {
+/** Pie (donut) chart of one person's expenses for the month being viewed. `mode` picks what the slices are; `drill` is a slice number to open. */
+const PIE_MODES = [["item", "Item"], ["cat", "Category"], ["type", "Type"], ["pay", "Pay via"], ["paid", "Status"]];
+const MAX_SLICES = 7;
+const OTHER_GREY = "#64748b";
+/** Money-out reds: the biggest slice is the darkest, then lighter and lighter. */
+const rampColor = (i, n) => { const t = n <= 1 ? 0 : i / (n - 1); return `hsl(347 ${Math.round(78 - t * 22)}% ${Math.round(40 + t * 42)}%)`; };
+const r2c = (n) => Math.round(n * 100) / 100;
+
+/** Every expense of `who` active in month k as { it, v, paid } (excluded items count as 0 and drop out). */
+function chartItems(who, k) {
+  return getItems(who, "expenses").filter((it) => itemActiveIn(it, k)).map((it) => { const a = itemAmts(it, k); return { it, v: a.total, paid: a.paid }; }).filter((r) => r.v > 0.005);
+}
+function monthSpend(who, k) { return chartItems(who, k).reduce((s, r) => s + r.v, 0); }
+function monthIncome(who, k) { return getItems(who, "income").filter((it) => itemActiveIn(it, k)).reduce((s, it) => s + itemAmts(it, k).total, 0); }
+
+/** Collapse the month's expenses into slices { name, v, paid, color?, members } for the chosen view. */
+function chartRows(who, mode, k) {
+  const items = chartItems(who, k);
+  const m = new Map();
+  const add = (key, name, color, r, members) => {
+    const g = m.get(key) || { name, v: 0, paid: 0, color, members: [] };
+    g.v += r.v; g.paid += r.paid; g.members.push(...members); m.set(key, g);
+  };
+  const self = (r) => ({ name: r.it.name, v: r.v, paid: r.paid });
+  for (const r of items) {
+    if (mode === "cat") { const c = catInfo(categoryOf(r.it)); add(c.id || c.label, c.label, null, r, [self(r)]); }
+    else if (mode === "type") { const t = !r.it.recurring ? "One-time" : r.it.end ? "Installment" : "Recurring"; add(t, t, null, r, [self(r)]); }
+    else if (mode === "pay") {
+      const key = r.it.paymentMethod && r.it.paymentMethod !== "cash" && r.it.paymentMethod !== "none" ? r.it.paymentMethod : "cash";
+      add(key, key === "cash" ? "Cash / other" : PM_LABELS[key] || (String(key).startsWith("cc_") ? "Credit card" : key), null, r, [self(r)]);
+    } else if (mode === "paid") {
+      const paidPart = r.paid, openPart = r.v - r.paid;
+      if (paidPart > 0.005) add("paid", "Paid", "#10b981", { v: paidPart, paid: paidPart }, [{ name: r.it.name, v: paidPart, paid: paidPart }]);
+      if (openPart > 0.005) add("unpaid", "Still to pay", "#f43f5e", { v: openPart, paid: 0 }, [{ name: r.it.name, v: openPart, paid: 0 }]);
+    } else {
+      const kids = getKids(r.it, k);
+      const members = kids.length > 1 ? kids.map((c) => { const ok = isPaid(c.id, k); const v = ok ? childFinal(c, k) : childAmt(c, k); return { name: c.name, v, paid: ok ? v : 0 }; }).filter((x) => x.v > 0.005) : [];
+      add(r.it.id, r.it.name, null, r, members);
+    }
+  }
+  return [...m.values()].sort((a, b) => b.v - a.v);
+}
+
+/** Largest slices first, the small tail folded into a grey "Other" that can be opened. */
+function foldSlices(rows) {
+  if (rows.length <= MAX_SLICES + 1) return rows;
+  const tail = rows.slice(MAX_SLICES);
+  return [...rows.slice(0, MAX_SLICES), { name: "Other", v: tail.reduce((s, r) => s + r.v, 0), paid: tail.reduce((s, r) => s + r.paid, 0), color: OTHER_GREY, members: tail.map((r) => ({ name: r.name, v: r.v, paid: r.paid })), other: true }];
+}
+
+export function openExpenseChart(who, mode = "item", drill = "") {
   const k = getSelectedKey();
   if (!PIE_MODES.some(([id]) => id === mode)) mode = "item";
-  const items = getItems(who, "expenses").filter((it) => itemActiveIn(it, k)).map((it) => ({ it, v: itemTotal(it, k) })).filter((r) => r.v > 0.005);
-  const palette = ["#f43f5e", "#f59e0b", "#10b981", "#6366f1", "#06b6d4", "#d946ef", "#84cc16", "#f97316"];
-  // Collapse the items into slices { name, v, color? } according to the chosen view
-  const group = (keyOf, nameOf, colorOf) => {
-    const m = new Map();
-    for (const r of items) { const key = keyOf(r.it); const g = m.get(key) || { name: nameOf(key, r.it), v: 0, color: colorOf ? colorOf(key) : null }; g.v += r.v; m.set(key, g); }
-    return [...m.values()];
-  };
-  let rows;
-  if (mode === "cat") rows = group((it) => categoryOf(it), (id) => catInfo(id).label, (id) => catInfo(id).color);
-  else if (mode === "type") rows = group((it) => (!it.recurring ? "One-time" : it.end ? "Installment" : "Recurring"), (key) => key);
-  else if (mode === "pay") rows = group((it) => it.paymentMethod && it.paymentMethod !== "cash" && it.paymentMethod !== "none" ? it.paymentMethod : "cash", (key) => (key === "cash" ? "Cash / other" : PM_LABELS[key] || (String(key).startsWith("cc_") ? "Credit card" : key)));
-  else if (mode === "paid") rows = group((it) => (isPaid(it.id, k) ? "paid" : "unpaid"), (key) => (key === "paid" ? "Paid" : "Still to pay"), (key) => (key === "paid" ? "#10b981" : "#f43f5e"));
-  else rows = items.map((r) => ({ name: r.it.name, v: r.v }));
-  rows.sort((a, b) => b.v - a.v);
-  const total = rows.reduce((s, r) => s + r.v, 0);
   const tabs = `<div class="flex flex-wrap gap-1.5 mb-3">${PIE_MODES.map(([id, label]) => `<button type="button" data-action="openExpenseChart" data-arg0="${who}" data-arg1="${id}" aria-pressed="${id === mode}" class="text-[11px] font-bold px-2.5 rounded-full ${id === mode ? "bg-indigo-600 text-white" : "bg-white/5 text-slate-400"}" style="min-height:32px">${label}</button>`).join("")}</div>`;
+  const top = foldSlices(chartRows(who, mode, k));
+  const total = top.reduce((s, r) => s + r.v, 0);
   if (!total) { showSheet(`Expenses in ${monthShort(k)}`, `${tabs}<p class="text-center text-[11px] text-slate-500 py-3">No expenses this month.</p>`, CLOSE_BTN); return; }
-  const MAX = 7;
-  const slices = rows.length > MAX + 1 ? [...rows.slice(0, MAX), { name: "Other", v: rows.slice(MAX).reduce((s, r) => s + r.v, 0) }] : rows;
-  const col = (s, i) => s.color || palette[i % palette.length];
-  const R = 80, C = 100, r2 = 48;
-  let ang = -Math.PI / 2;
+
+  // Opening one slice shows what it is made of (a group's sub-items, a category's items, or the small ones in "Other")
+  const idx = drill === "" || drill == null ? -1 : Number(drill);
+  const parent = idx >= 0 && top[idx] && top[idx].members.length > 1 ? top[idx] : null;
+  const slices = parent ? parent.members.map((x) => ({ ...x, members: [] })).sort((a, b) => b.v - a.v) : top;
+  const shown = slices.reduce((s, r) => s + r.v, 0);
+  const paidTotal = slices.reduce((s, r) => s + r.paid, 0);
+  const named = slices.filter((s) => !s.color);
+  const colorOf = (s) => (s.color ? s.color : rampColor(named.indexOf(s), named.length));
+  const drillable = (s, i) => !parent && s.members.length > 1;
+  const faded = mode !== "paid";
+
+  const R = 80, C = 100, r2 = 48, TAU = Math.PI * 2;
   const pt = (a, r) => `${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`;
+  const arc = (a0, a1, fill, op, attrs) => {
+    if (a1 - a0 < 0.0005) return "";
+    const o = op < 1 ? ` fill-opacity="${op}"` : "";
+    if (a1 - a0 >= TAU * 0.9999) return `<circle cx="${C}" cy="${C}" r="${(R + r2) / 2}" fill="none" stroke="${fill}" stroke-width="${R - r2}"${op < 1 ? ` stroke-opacity="${op}"` : ""} ${attrs}/>`;
+    const big = a1 - a0 > Math.PI ? 1 : 0;
+    return `<path d="M${pt(a0, R)} A${R} ${R} 0 ${big} 1 ${pt(a1, R)} L${pt(a1, r2)} A${r2} ${r2} 0 ${big} 0 ${pt(a0, r2)} Z" fill="${fill}"${o} stroke="#0f172a" stroke-width="1.5" ${attrs}/>`;
+  };
+  let ang = -Math.PI / 2;
   const paths = slices.map((s, i) => {
-    const frac = s.v / total;
-    if (frac > 0.9999) return `<circle cx="${C}" cy="${C}" r="${(R + r2) / 2}" fill="none" stroke="${col(s, i)}" stroke-width="${R - r2}"/>`;
-    const a0 = ang, a1 = ang + frac * Math.PI * 2; ang = a1;
-    const big = frac > 0.5 ? 1 : 0;
-    return `<path d="M${pt(a0, R)} A${R} ${R} 0 ${big} 1 ${pt(a1, R)} L${pt(a1, r2)} A${r2} ${r2} 0 ${big} 0 ${pt(a0, r2)} Z" fill="${col(s, i)}" stroke="#0f172a" stroke-width="1.5"/>`;
+    const a0 = ang, a1 = ang + (s.v / shown) * TAU; ang = a1;
+    const attrs = drillable(s, i) ? `data-action="openExpenseChart" data-arg0="${who}" data-arg1="${mode}" data-arg2="${i}" style="cursor:pointer"` : "";
+    const col = colorOf(s);
+    if (!faded || s.paid <= 0.005) return arc(a0, a1, col, faded ? 0.38 : 1, attrs);
+    if (s.paid >= s.v - 0.005) return arc(a0, a1, col, 1, attrs);
+    const mid = a0 + (s.paid / s.v) * (a1 - a0);
+    return arc(a0, mid, col, 1, attrs) + arc(mid, a1, col, 0.38, attrs);
   }).join("");
-  const legend = slices.map((s, i) => `<div class="flex items-center gap-2 py-1"><span class="flex-shrink-0 rounded-full" style="width:10px;height:10px;background:${col(s, i)}"></span><span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-200 keep-case">${escapeHtml(s.name)}</span><span class="text-[11px] font-bold text-slate-500 flex-shrink-0">${Math.round((s.v / total) * 100)}%</span><span class="text-[12px] font-black text-white flex-shrink-0 tabular-nums" style="min-width:4.5rem;text-align:right">${peso(s.v)}</span></div>`).join("");
-  const svg = `<svg viewBox="0 0 200 200" class="block mx-auto" style="width:200px;height:200px" role="img" aria-label="Expenses pie chart">${paths}<text x="${C}" y="${C - 2}" text-anchor="middle" font-size="10" font-weight="700" fill="#94a3b8">TOTAL</text><text x="${C}" y="${C + 14}" text-anchor="middle" font-size="14" font-weight="900" fill="#fff">${peso(total)}</text></svg>`;
-  showSheet(`Expenses in ${monthShort(k)}`, `${tabs}${svg}<div class="mt-2">${legend}</div>`, CLOSE_BTN);
+
+  const legend = slices.map((s, i) => {
+    const col = colorOf(s), pct = Math.round((s.v / shown) * 100), left = r2c(s.v - s.paid);
+    const can = drillable(s, i);
+    const attrs = can ? `data-action="openExpenseChart" data-arg0="${who}" data-arg1="${mode}" data-arg2="${i}" role="button"` : "";
+    return `<div ${attrs} class="relative flex items-center gap-2 px-2 py-1.5 rounded-lg overflow-hidden ${can ? "cursor-pointer" : ""}" style="position:relative;overflow:hidden">
+      <span class="rounded-lg" style="position:absolute;top:0;bottom:0;left:0;width:${Math.max(3, Math.round((s.v / slices[0].v) * 100))}%;background:${col};opacity:.16" aria-hidden="true"></span>
+      <span class="relative flex-shrink-0 rounded-full" style="width:10px;height:10px;background:${col}"></span>
+      <span class="relative flex-1 min-w-0"><span class="block truncate text-[12px] font-bold text-slate-100 keep-case">${escapeHtml(s.name)}</span>${faded && left > 0.5 && s.paid > 0.5 ? `<span class="block text-[10px] font-bold text-slate-400">${peso(left)} left</span>` : ""}</span>
+      <span class="relative text-[11px] font-bold text-slate-300 flex-shrink-0">${pct}%</span>
+      <span class="relative text-[12px] font-black text-white flex-shrink-0 tabular-nums" style="min-width:4.5rem;text-align:right">${peso(s.v)}</span>
+      ${can ? `<span class="relative material-icons text-slate-400 flex-shrink-0" style="font-size:16px" aria-hidden="true">chevron_right</span>` : `<span class="relative flex-shrink-0" style="width:16px" aria-hidden="true"></span>`}
+    </div>`;
+  }).join("");
+
+  const centerLabel = parent ? parent.name : "TOTAL";
+  const svg = `<svg viewBox="0 0 200 200" class="block mx-auto" style="width:200px;height:200px" role="img" aria-label="Expenses pie chart">${paths}<text x="${C}" y="${C - 2}" text-anchor="middle" font-size="${parent ? 9 : 10}" font-weight="700" fill="#94a3b8">${escapeHtml(centerLabel.length > 16 ? centerLabel.slice(0, 15) + "…" : centerLabel.toUpperCase())}</text><text x="${C}" y="${C + 14}" text-anchor="middle" font-size="14" font-weight="900" fill="#fff">${peso(shown)}</text></svg>`;
+
+  // One line of context under the donut: share of income and change against last month
+  const bits = [];
+  if (!parent) {
+    const inc = monthIncome(who, k);
+    if (inc > 0.5) bits.push(`<b class="text-white">${Math.round((total / inc) * 100)}%</b> of income`);
+    const prevK = addMonths(k, -1), prev = monthSpend(who, prevK);
+    if (prev > 0.5 && Math.abs(total - prev) >= 0.5) {
+      const up = total > prev;
+      bits.push(`<span class="${up ? "text-rose-300" : "text-emerald-300"} font-bold">${up ? "&#9650;" : "&#9660;"} ${peso(Math.abs(total - prev))}</span> vs ${monthShort(prevK)}`);
+    }
+  }
+  const summary = bits.length ? `<p class="text-center text-[11px] text-slate-400 mt-1">${bits.join(" &middot; ")}</p>` : "";
+  const key = faded ? `<p class="text-center text-[10px] text-slate-400 mt-0.5">${paidTotal > 0.5 ? `${peso(paidTotal)} paid &middot; ${peso(shown - paidTotal)} left &middot; ` : ""}solid = paid, faded = still to pay</p>` : "";
+  const back = parent ? `<button type="button" data-action="openExpenseChart" data-arg0="${who}" data-arg1="${mode}" class="flex items-center gap-1 text-[12px] font-bold text-indigo-300 mb-2" style="min-height:32px"><span class="material-icons" style="font-size:16px">arrow_back</span>Back to all</button>` : "";
+  showSheet(parent ? `${parent.name} in ${monthShort(k)}` : `Expenses in ${monthShort(k)}`, `${parent ? back : tabs}${svg}${summary}${key}<div class="mt-2">${legend}</div>`, CLOSE_BTN);
 }
 
 /** Quick spend: pick the bill/budget this month, then log the amount in its spending section. */

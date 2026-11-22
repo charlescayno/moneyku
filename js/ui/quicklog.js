@@ -23,6 +23,7 @@ const PRIMARY = "text-white bg-indigo-600 shadow-lg shadow-indigo-900/40";
 export function showSheet(title, bodyHtml, actionsHtml) {
   $("ql-title").textContent = title;
   $("ql-body").innerHTML = bodyHtml;
+  $("ql-body").scrollTop = 0;
   $("ql-actions").innerHTML = actionsHtml;
   const o = $("ql-overlay");
   o.classList.add("open");
@@ -264,10 +265,33 @@ function watchKeyboard() {
   update();
 }
 
+// Drag the handle / title down to dismiss the sheet
+function bindSheetSwipe() {
+  const head = $("ql-head"), sheet = $("ql-sheet");
+  if (!head || !sheet) return;
+  let y0 = null, dy = 0, t0 = 0;
+  head.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); sheet.style.transition = "none"; }, { passive: true });
+  head.addEventListener("touchmove", (e) => {
+    if (y0 == null) return;
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    sheet.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  const end = () => {
+    if (y0 == null) return;
+    const fast = dy / Math.max(1, Date.now() - t0) > 0.6; // px per ms
+    y0 = null;
+    sheet.style.transition = "";
+    if (dy > 90 || (fast && dy > 30)) qlClose(); else sheet.style.transform = "translateY(0)";
+  };
+  head.addEventListener("touchend", end);
+  head.addEventListener("touchcancel", end);
+}
+
 export function initQuickLog() {
   const overlay = $("ql-overlay");
   if (!overlay || overlay.dataset.bound) return;
   overlay.dataset.bound = "1";
   overlay.addEventListener("click", (e) => { if (e.target === overlay) qlClose(); });
   watchKeyboard();
+  bindSheetSwipe();
 }
