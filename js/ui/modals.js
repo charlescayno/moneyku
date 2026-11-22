@@ -474,8 +474,10 @@ export function confirmDelete() {
         <button data-action="closeConfirm" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform mt-2">Cancel</button>
      `;
   } else {
-     $("confirm-title").textContent = "Delete item?";
-     $("confirm-sub").textContent = "This removes it from every month.";
+     const isAccount = activeEdit?.kind === "account";
+     const isIncome = activeEdit?.type === "income";
+     $("confirm-title").textContent = isAccount ? "Delete account?" : `Delete this ${isIncome ? "income" : "payment"}?`;
+     $("confirm-sub").textContent = isAccount ? "This removes the account." : "It only happens once, so only this one is removed.";
      btnContainer.innerHTML = `
         <button data-action="doDelete" data-arg0="all" class="w-full py-4 font-black text-white bg-rose-600 rounded-2xl transition-transform shadow-lg shadow-rose-900/30">Delete</button>
         <button data-action="closeConfirm" class="w-full py-4 font-bold text-slate-400 bg-slate-700/50 rounded-2xl transition-transform">Cancel</button>
