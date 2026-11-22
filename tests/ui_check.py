@@ -411,9 +411,9 @@ def check_accounts(pg, name, fails):
 
 def check_add(pg, name, fails):
     r = pg.evaluate(ADD); print(name, "add", r)
-    want = {"title": "add expense", "tabOn": "paymentsquick spend", "defaultItem": "xs", "left0": "₱10,000", "left1": "₱9,750",
-            "hscroll": False, "spend": {"amount": 250, "note": "lunch"}, "closedAfterSpend": True, "billTab": "receipt_longnew bill",
-            "owners": 2, "ownerVal": "partner", "billSaved": True, "incomeTitle": "add income", "incomeSaved": True}
+    want = {"title": "Add Expense", "tabOn": "paymentsQuick spend", "defaultItem": "xs", "left0": "₱10,000", "left1": "₱9,750",
+            "hscroll": False, "spend": {"amount": 250, "note": "lunch"}, "closedAfterSpend": True, "billTab": "receipt_longNew bill",
+            "owners": 2, "ownerVal": "partner", "billSaved": True, "incomeTitle": "Add Income", "incomeSaved": True}
     bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
     if bad: fails.append(f"{name}: add sheet wrong (got, want): {bad}")
 
