@@ -69,10 +69,19 @@ body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px
 .field-invalid { outline: 1.5px solid #fb7185 !important; outline-offset: 0; }
 .field-error { color: #fda4af; font-size: 11px; font-weight: 700; margin: 2px 0 0 4px; }
 
-/* ---- Simulated: Charles' and Ynah's items shown as separate blocks (blue = Charles, purple = Ynah) ---- */
-.sim-person-group { border: 1px solid rgba(255,255,255,.07); border-radius: 14px; padding-bottom: 4px; margin-bottom: 8px !important; }
-.sim-person-group[data-who="charlie"] { border-color: rgba(56,189,248,.30); background: rgba(56,189,248,.04); }
-.sim-person-group[data-who="partner"] { border-color: rgba(192,132,252,.30); background: rgba(192,132,252,.04); }
+/* ---- Colour roles: green = money in, red = money out, amber = due soon, blue / purple = whose it is (avatar ring only) ---- */
+:root {
+  --inc-bg: #12332e; --inc-bd: #21604f;
+  --exp-bg: #371b29; --exp-bd: #6c2b43;
+  --surface-in: rgba(0, 0, 0, .20); --surface-bd: rgba(255, 255, 255, .09);
+}
+/* Simulated: Charles' and Ynah's items as neutral blocks (the person shows in the avatar ring, not a second tint) */
+.sim-person-group { border: 1px solid var(--surface-bd); background: var(--surface-in); border-radius: 14px; padding-bottom: 4px; margin-bottom: 8px !important; }
+.sim-person-group .sim-av { border: 2px solid transparent; }
+.sim-person-group[data-who="charlie"] .sim-av { border-color: #38bdf8; }
+.sim-person-group[data-who="partner"] .sim-av { border-color: #c084fc; }
+/* Group cards (e.g. Cayno Family Expenses) use the same surface as the person blocks */
+details.item-parent { background: var(--surface-in) !important; border-color: var(--surface-bd) !important; }
 
 /* ---- native controls (scrollbars, select menus, date pickers) follow the dark theme ---- */
 :root { color-scheme: dark; }
@@ -127,8 +136,8 @@ select.as-input { text-transform: lowercase; }
 #budget-body details[data-persist^="sec-income"],
 #budget-body details[data-persist^="sec-expenses"],
 #budget-body details[data-persist^="debts"] { border-radius: 14px; padding: 2px 4px 6px; }
-#budget-body details[data-persist^="sec-income"] { background: rgba(16, 185, 129, .13); border: 1px solid rgba(16, 185, 129, .32); }
-#budget-body details[data-persist^="sec-expenses"] { background: rgba(244, 63, 94, .12); border: 1px solid rgba(244, 63, 94, .32); }
+#budget-body details[data-persist^="sec-income"] { background: var(--inc-bg); border: 1px solid var(--inc-bd); }
+#budget-body details[data-persist^="sec-expenses"] { background: var(--exp-bg); border: 1px solid var(--exp-bd); }
 #budget-body details[data-persist^="debts"] { background: none; border: 0; padding: 0; }
 #budget-body summary:focus, #budget-body summary:focus-visible { outline: none; }
 /* the line between income and expenses is replaced by the two tinted blocks */
@@ -174,3 +183,7 @@ select.as-input { text-transform: lowercase; }
 
 /* Person groups: keep the paid circles off the group outline */
 .sim-person-group .item-row { padding-left: 12px !important; }
+
+/* Muted text a little lighter so it stays readable on the tinted sections (4.5:1 and up) */
+#budget-body .text-slate-400 { color: #aab6c8; }
+#budget-body .text-slate-500 { color: #9ba8bb; }

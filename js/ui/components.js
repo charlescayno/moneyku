@@ -247,7 +247,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
   if (ds && ds.state === "overdue") tags.unshift(`<span class="due-chip due-overdue text-[11px] font-black text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/40 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">error_outline</span>Overdue${ds.days ? ` ${ds.days}d` : ""}</span>`);
   else if (ds && ds.state === "week") tags.unshift(`<span class="due-chip due-soon text-[11px] font-black text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">schedule</span>${ds.days === 0 ? "Due today" : `Due in ${ds.days}d`}</span>`);
   if (installment) tags.push(`<span class="text-[11px] font-bold text-amber-400/80">→ ${monthShort(it.end)}</span>`);
-  else if (it.recurring && dd != null) tags.push(`<span class="text-[11px] font-bold text-sky-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
+  else if (it.recurring && dd != null) tags.push(`<span class="text-[11px] font-bold text-slate-300 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">event_available</span>${ordinal(dd)}</span>`);
   else if (it.recurring) tags.push(`<span class="text-[11px] font-bold text-indigo-300/90 uppercase tracking-wide flex items-center gap-0.5"><span class="material-icons" style="font-size:11px">autorenew</span>Recurring</span>`);
   
   let progress = "";
@@ -278,7 +278,7 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     </button>
     ${iconHtml}
     <div class="flex-1 min-w-0 py-1.5">
-      <div class="flex items-baseline gap-1.5 min-w-0"><p class="item-name text-sm font-bold ${settled ? "text-slate-400" : "text-slate-200"} truncate">${escapeHtml(it.name)}</p>${dayTag ? `<span class="text-[11px] font-bold text-sky-300 whitespace-nowrap flex-shrink-0">· ${dayTag}</span>` : ""}</div>
+      <div class="flex items-baseline gap-1.5 min-w-0"><p class="item-name text-sm font-bold ${settled ? "text-slate-400" : "text-slate-200"} truncate">${escapeHtml(it.name)}</p>${dayTag ? `<span class="text-[11px] font-bold text-slate-300 whitespace-nowrap flex-shrink-0">· ${dayTag}</span>` : ""}</div>
       ${paidNoteHtml(it, k, kind, settled)}
       ${spendLine}
       ${progress}
@@ -397,7 +397,7 @@ export function groupedRowsHtml(items, k, kind, who) {
     const parts = [["charlie", "Charles"], ["partner", "Ynah"], ["", "Simulated only"]].map(([key, label]) => ({ key, label, list: items.filter((it) => (it.copiedFromWho === "charlie" || it.copiedFromWho === "partner" ? it.copiedFromWho : "") === key) })).filter((p) => p.list.length);
     return parts.map((p) => {
       const sub = p.list.reduce((s, it) => s + amountIn(it, k), 0);
-      const av = p.key ? `<img src="assets/avatar-${p.label.toLowerCase()}.jpg" alt="" class="w-4 h-4 rounded-full object-cover border border-white/20">` : "";
+      const av = p.key ? `<img src="assets/avatar-${p.label.toLowerCase()}.jpg" alt="" class="sim-av w-5 h-5 rounded-full object-cover">` : "";
       return `<div class="sim-person-group mb-1" data-who="${p.key}"><div class="flex justify-between items-center px-2 pt-2 pb-0.5"><p class="flex items-center gap-1.5 text-[11px] font-black text-slate-400 ${p.key ? "keep-case" : ""}">${av}${p.label}</p><p class="text-[11px] font-bold tabular-nums ${kind === "income" ? "text-emerald-400" : "text-slate-400"}">${peso(sub)}</p></div>${groupedRowsByDue(p.list, k, kind, who)}</div>`;
     }).join("");
   }
@@ -503,7 +503,7 @@ export function debtTrackerCardHtml(who = "debt") {
         <p class="font-bold" style="font-size:14px"><span class="text-emerald-400">${peso(debtIncTot)}</span> <span class="text-slate-500 font-normal">/</span> <span class="text-rose-400">${peso(debtExpTot)}</span></p>
       </summary>
       <div style="margin-top:6px">
-        <details open class="group" style="background:rgba(16,185,129,.13);border:1px solid rgba(16,185,129,.32);border-radius:10px;padding:2px 6px 6px">
+        <details open class="group" style="background:var(--inc-bg);border:1px solid var(--inc-bd);border-radius:10px;padding:2px 6px 6px">
           <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("16,185,129")}">
             <div class="flex items-center gap-1">
               ${chev}
@@ -517,7 +517,7 @@ export function debtTrackerCardHtml(who = "debt") {
           <div class="space-y-0.5 mt-1">${debtIncHtml}</div>
         </details>
         <div style="margin-top:8px">
-          <details open class="group" style="background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.32);border-radius:10px;padding:2px 6px 6px">
+          <details open class="group" style="background:var(--exp-bg);border:1px solid var(--exp-bd);border-radius:10px;padding:2px 6px 6px">
             <summary class="flex items-center justify-between mb-1 cursor-pointer list-none select-none" style="${hdrStyle("244,63,94")}">
               <div class="flex items-center gap-1">
                 ${chev}
