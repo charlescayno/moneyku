@@ -1718,6 +1718,8 @@ export function spendSectionHtml(it) {
         <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">Date <span class="text-slate-500">(optional)</span></label>
           <input type="date" id="f-spend-date" data-action="openDatePicker" value="${spendTodayIn(k)}" min="${k}-01" max="${k}-${String(new Date(keyParts(k).y, keyParts(k).m + 1, 0).getDate()).padStart(2, "0")}" aria-label="Date (optional)" class="w-full bg-slate-900 rounded-xl text-[12px] font-bold text-white focus:outline-none" /></div>
       </div>
+      <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1" for="f-spend-note">Description <span class="text-slate-500">(optional)</span></label>
+        <input type="text" id="f-spend-note" maxlength="60" autocomplete="off" placeholder="e.g. grab, lunch, gas" class="w-full bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" /></div>
     </div>
   </div>`;
 }
@@ -1751,6 +1753,8 @@ export async function addSpend() {
   const date = $("f-spend-date")?.value || spendTodayIn(k); // blank = today (when this month is the current one)
   const entry = account ? { id: generateId(), amount, acct, ded: true } : { id: generateId(), amount };
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) entry.date = date;
+  const note = ($("f-spend-note")?.value || "").trim().slice(0, 60);
+  if (note) entry.note = note;
   cur.push(entry);
   appData.spend = appData.spend || {};
   appData.spend[k] = appData.spend[k] || {};

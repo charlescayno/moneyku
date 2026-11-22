@@ -286,7 +286,8 @@ input:focus-visible {
 
 /* "Log spending" row — amount input fills the row next to the + button,
    opting out of the big-padding default the modal applies to every input. */
-#modal-body .spend-add input[type="number"] {
+#modal-body .spend-add input[type="number"],
+#modal-body .spend-add input[type="text"] {
   padding: 0.55rem 0.75rem !important;
 }
 #modal-body .spend-add .spend-amt {
