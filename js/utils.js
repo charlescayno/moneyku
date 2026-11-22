@@ -48,6 +48,7 @@ export const ACCOUNT_PAYMENT_METHODS = [
   { id: "maribank", label: "Maribank", short: "Maribank", icon: "\u{1F3E6}", account: /mari\s*bank/i },
   { id: "gcash", label: "GCash", short: "GCash", icon: "\u{1F4F1}", account: /g\s*cash/i },
   { id: "bpi_debit", label: "BPI Debit Card", short: "BPI Debit", icon: "\u{1F4B3}", account: /^bpi\b/i },
+  { id: "securitybank", label: "Security Bank", short: "Security Bank", icon: "\u{1F3E6}", account: /security\s*bank|\bsecb\b/i },
 ];
 export const PM_LABELS = Object.fromEntries([...CREDIT_CARD_METHODS, ...ACCOUNT_PAYMENT_METHODS].map((c) => [c.id, c.short]));
 export const isAccountMethod = (id) => ACCOUNT_PAYMENT_METHODS.some((m) => m.id === id);

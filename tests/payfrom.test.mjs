@@ -63,3 +63,12 @@ test("setPaidData alone never moves money (callers charge the account first)", (
   setPaidData(d, item.id, K, true);
   assert.equal(gcash.amount, 1000);
 });
+
+test("a Security Bank expense is charged to the Security Bank account", () => {
+  const d = makeData({ accounts: [{ id: "g", name: "Gcash", amount: 1000 }, { id: "s", name: "Security Bank", amount: 8000 }] });
+  const item = addItemData(d, { kind: "expenses", name: "Rent", amount: 2500, start: "2026-01", recurring: true, paymentMethod: "securitybank" });
+  setAppData(d);
+  autoDeduct(K, item.id);
+  assert.equal(d.accounts[1].amount, 5500);
+  assert.equal(d.accounts[0].amount, 1000);
+});
