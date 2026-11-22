@@ -1558,3 +1558,10 @@ details[data-persist^="sec-expenses"] > summary button { white-space: nowrap; }
 #ql-handle { display: flex; justify-content: center; padding: 2px 0 10px; }
 #ql-handle span { width: 40px; height: 4px; border-radius: 999px; background: rgba(148, 163, 184, .45); }
 @media (min-width: 640px) { #ql-handle { display: none; } }
+
+/* Person header: the name block and the in / out figures never overlap; when they don't fit side by side the figures drop to their own line */
+.person-head { flex-wrap: wrap; column-gap: 12px; row-gap: 4px; }
+.person-head > div:first-child { flex: 1 1 auto; }
+.person-head .person-inout { margin-left: auto; flex: 0 0 auto; }
+.person-head .person-inout p:last-child { white-space: nowrap; }
+.person-head .person-net { display: inline-block; padding: 0 6px; border-radius: 6px; background: rgba(8, 15, 30, .42); }
