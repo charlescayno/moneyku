@@ -71,11 +71,11 @@ function statementHtml(key, k) {
     const check = c.posted
       ? `<button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Posted to the card" class="paid-check is-paid bg-emerald-500 border-emerald-500 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"><span class="material-icons check-icon text-white" style="font-size:14px">check</span></button>`
       : covered
-        ? `<span title="Covered by the paid statement" class="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border border-emerald-500/40 bg-emerald-500/15"><span class="material-icons text-emerald-300" style="font-size:14px">check</span></span>`
+        ? `<div title="Covered by the paid statement" class="paid-check is-paid bg-emerald-500 border-emerald-500 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"><span class="material-icons check-icon text-white" style="font-size:14px">check</span></div>`
         : `<button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark posted to the card" class="paid-check border-slate-600 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"><span class="material-icons check-icon text-white" style="font-size:14px">check</span></button>`;
     return `<div data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" data-arg2="${c.id}" data-name="${escapeHtml(c.item.name.toLowerCase())}" class="item-row flex items-center gap-2 py-1.5 px-1 rounded-lg cursor-pointer ${done(c) ? "opacity-60" : ""}">
         ${check}
-        <div class="flex-1 min-w-0"><p class="text-[13px] font-bold text-slate-200 truncate ${c.posted ? "line-through" : ""}">${escapeHtml(c.item.name)}</p><p class="text-[11px] font-bold text-slate-500">${fmtDate(c.date)}${times > 1 ? ` &middot; <span class="text-slate-400">&times;${times}</span>` : ""}${recurNote(c.item)}</p></div>
+        <div class="flex-1 min-w-0"><p class="text-[13px] font-bold text-slate-200 truncate ${done(c) ? "line-through" : ""}">${escapeHtml(c.item.name)}</p><p class="text-[11px] font-bold text-slate-500">${fmtDate(c.date)}${times > 1 ? ` &middot; <span class="text-slate-400">&times;${times}</span>` : ""}${recurNote(c.item)}</p></div>
         <p class="text-[13px] font-black text-white flex-shrink-0">${peso(c.amt)}</p></div>`;
   };
   const doneCount = st.charges.filter(done).length;
