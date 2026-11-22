@@ -168,3 +168,6 @@ select.as-input { text-transform: lowercase; }
 .inst-dot.is-now { outline: 1.5px solid #a5b4fc; outline-offset: 1px; }
 .app-header-title { flex: 1 1 auto; min-width: 0; }
 #sync-status { display: inline-block; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+
+/* Person tiles: everything that is not in the current view is greyed out */
+.tile-off { opacity: .5; filter: grayscale(1); }
