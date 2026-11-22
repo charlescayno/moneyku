@@ -1513,19 +1513,19 @@ export function debtOverviewCardHtml() {
     ${rs.length ? rs.map((r) => row(r, kind)).join("") : `<p class="text-[11px] text-slate-500 px-2.5 py-1">None this month.</p>`}
   </div>`;
   return `<details open class="glass-card rounded-xl overflow-hidden border border-sky-500/15 w-full flex-shrink-0">
-    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
-      <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">handshake</span></div>
-        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">Debts</h3><p class="text-[8px] text-slate-400">${monthShort(k)} &middot; <span class="text-emerald-400">owed to me ${peso(owedTot)}</span> &middot; <span class="text-rose-400">I owe ${peso(oweTot)}</span></p></div>
+    <summary class="flex items-center justify-between gap-3 px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-7 h-7 flex-shrink-0 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">handshake</span></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">Debts</h3><p class="text-[8px] text-slate-400" style="line-height:1.5"><span class="whitespace-nowrap" style="margin-right:8px">${monthShort(k)}</span> <span class="text-emerald-400 whitespace-nowrap" style="margin-right:8px">owed to me ${peso(owedTot)}</span> <span class="text-rose-400 whitespace-nowrap">I owe ${peso(oweTot)}</span></p></div>
       </div>
-      <p class="text-xs font-black tabular-nums ${net >= 0 ? "text-emerald-400" : "text-rose-400"}" title="Still to receive minus still to pay">${net > 0 ? "+" : ""}${peso(net)}</p>
+      <p class="text-xs font-black tabular-nums whitespace-nowrap flex-shrink-0 ${net >= 0 ? "text-emerald-400" : "text-rose-400"}" title="Still to receive minus still to pay">${net > 0 ? "+" : ""}${peso(net)}</p>
     </summary>
     <div class="p-2.5 pt-0 space-y-2">
       ${section("Owed to me", "text-emerald-400", "income", owed, owedTot)}
       ${section("I owe", "text-rose-400", "expenses", owe, oweTot)}
       <div class="flex gap-2">
-        <button type="button" data-action="openItemModal" data-arg0="debt" data-arg1="income" class="flex-1 py-2 rounded-lg border border-dashed border-emerald-400/30 text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1" style="min-height:36px"><span class="material-icons" style="font-size:16px">add</span>Owed to me</button>
-        <button type="button" data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="flex-1 py-2 rounded-lg border border-dashed border-rose-400/30 text-rose-300 text-[11px] font-bold flex items-center justify-center gap-1" style="min-height:36px"><span class="material-icons" style="font-size:16px">add</span>I owe</button>
+        <button type="button" data-action="openItemModal" data-arg0="debt" data-arg1="income" class="flex-1 py-2 rounded-lg text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1" style="min-height:36px;border:1px dashed rgba(52,211,153,.4);background:rgba(16,185,129,.06)"><span class="material-icons" style="font-size:16px">add</span>Owed to me</button>
+        <button type="button" data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="flex-1 py-2 rounded-lg text-rose-300 text-[11px] font-bold flex items-center justify-center gap-1" style="min-height:36px;border:1px dashed rgba(251,113,133,.4);background:rgba(244,63,94,.06)"><span class="material-icons" style="font-size:16px">add</span>I owe</button>
       </div>
     </div>
   </details>`;
