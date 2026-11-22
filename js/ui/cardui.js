@@ -35,59 +35,118 @@ function recurNote(it) {
   return ` &middot; <span class="text-amber-300/90">Monthly until ${monthShort(it.end)} &middot; ${monthsPaidCount(it)}/${total} paid</span>`;
 }
 
+// "Hide done charges" is remembered per statement; a fully paid statement starts collapsed to its summary.
+const HIDE_KEY = "moneyku_card_hidedone";
+const hideMap = () => { try { return JSON.parse(localStorage.getItem(HIDE_KEY) || "{}") || {}; } catch { return {}; } };
+const hidesDone = (key, covered) => (key in hideMap() ? !!hideMap()[key] : covered);
+export function cardToggleDone(key) {
+  const m = hideMap(), covered = statement(key).status === "paid";
+  m[key] = !hidesDone(key, covered);
+  try { localStorage.setItem(HIDE_KEY, JSON.stringify(m)); } catch { /* ignore */ }
+  renderAll();
+}
+
+/** "paid Nov 20" / "due in 7 days" / "overdue by 3 days": the one thing to know about a statement's timing. */
+function timingNote(st) {
+  if (st.status === "paid") {
+    const last = st.payments.map((p) => p.date).filter(Boolean).sort().pop();
+    return last ? `<span class="text-emerald-300">paid ${fmtDate(last)}</span>` : `<span class="text-emerald-300">paid</span>`;
+  }
+  const [txt, tone] = dueBadge(daysUntil(st.due));
+  return `<span class="${tone === "overdue" ? "text-rose-300" : tone === "soon" ? "text-amber-300" : "text-slate-400"}">${txt}</span>`;
+}
+
 function statementHtml(key, k) {
   const st = statement(key);
   const [label, cls] = STATUS[st.status];
   const accounts = getAppData().accounts || [];
   const acctName = (id) => accounts.find((a) => a.id === id)?.name || "account";
-  const rowHtml = (c) => `<div data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" data-arg2="${c.id}" class="item-row flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer ${c.posted ? "opacity-60" : ""}">
-        <button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark posted to the card" class="paid-check ${c.posted ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"><span class="material-icons check-icon text-white" style="font-size:14px">check</span></button>
-        <div class="flex-1 min-w-0"><p class="text-xs font-bold text-slate-200 truncate ${c.posted ? "line-through" : ""}">${escapeHtml(c.item.name)}</p><p class="text-[9px] font-bold text-slate-500">${fmtDate(c.date)}${recurNote(c.item)}</p></div>
-        <p class="text-xs font-black text-white flex-shrink-0">${peso(c.amt)}</p></div>`;
-  // Long statements are grouped by category (collapsed, biggest first) to keep the list short
+  const covered = st.status === "paid"; // a paid statement settles every charge on it
+  const done = (c) => c.posted || covered;
+  const hide = hidesDone(key, covered);
+  const sameName = new Map();
+  for (const c of st.charges) { const n = c.item.name.trim().toLowerCase(); sameName.set(n, (sameName.get(n) || 0) + 1); }
+  const rowHtml = (c) => {
+    const times = sameName.get(c.item.name.trim().toLowerCase()) || 1;
+    const check = c.posted
+      ? `<button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Posted to the card" class="paid-check is-paid bg-emerald-500 border-emerald-500 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"><span class="material-icons check-icon text-white" style="font-size:14px">check</span></button>`
+      : covered
+        ? `<span title="Covered by the paid statement" class="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border border-emerald-500/40 bg-emerald-500/15"><span class="material-icons text-emerald-300" style="font-size:14px">check</span></span>`
+        : `<button data-action="togglePaidQuick" data-arg0="${c.id}" data-arg1="expenses" title="Mark posted to the card" class="paid-check border-slate-600 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"><span class="material-icons check-icon text-white" style="font-size:14px">check</span></button>`;
+    return `<div data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" data-arg2="${c.id}" data-name="${escapeHtml(c.item.name.toLowerCase())}" class="item-row flex items-center gap-2 py-1.5 px-1 rounded-lg cursor-pointer ${done(c) ? "opacity-60" : ""}">
+        ${check}
+        <div class="flex-1 min-w-0"><p class="text-[13px] font-bold text-slate-200 truncate ${c.posted ? "line-through" : ""}">${escapeHtml(c.item.name)}</p><p class="text-[11px] font-bold text-slate-500">${fmtDate(c.date)}${times > 1 ? ` &middot; <span class="text-slate-400">&times;${times}</span>` : ""}${recurNote(c.item)}</p></div>
+        <p class="text-[13px] font-black text-white flex-shrink-0">${peso(c.amt)}</p></div>`;
+  };
+  const doneCount = st.charges.filter(done).length;
+  const leftAmt = st.charges.filter((c) => !done(c)).reduce((a, c) => a + c.amt, 0);
+  const shown = hide ? st.charges.filter((c) => !done(c)) : st.charges;
+  // Long statements are grouped by category (biggest first); each group shows what is still to post, with the total beside it
   const groupHtml = () => {
     const groups = new Map();
-    for (const c of st.charges) {
+    for (const c of shown) {
       const id = categoryOf(c.item);
       if (!groups.has(id)) groups.set(id, []);
       groups.get(id).push(c);
     }
-    return [...groups.entries()]
-      .map(([id, list]) => ({ id, list, total: list.reduce((s, c) => s + c.amt, 0), info: catInfo(id) }))
-      .sort((a, b) => b.total - a.total)
-      .map((g) => {
-        const left = g.list.filter((c) => !c.posted).length;
-        return `<details data-persist="cardcat-${key}-${g.id}" class="group/c rounded-lg bg-slate-800/40">
-          <summary class="flex items-center gap-2 px-2 py-2 cursor-pointer list-none select-none">
-            <span class="material-icons" style="font-size:16px;color:${g.info.color}">${g.info.icon}</span>
-            <div class="flex-1 min-w-0"><p class="text-xs font-black text-white truncate">${g.info.label}</p>
-              <p class="text-[10px] font-bold text-slate-500">${g.list.length} charge${g.list.length === 1 ? "" : "s"}${left < g.list.length ? ` &middot; ${g.list.length - left} posted` : ""}</p></div>
-            <p class="text-xs font-black text-white flex-shrink-0">${peso(g.total)}</p>
+    const list = [...groups.entries()]
+      .map(([id, items]) => ({ id, items, total: items.reduce((a, c) => a + c.amt, 0), left: items.filter((c) => !done(c)).reduce((a, c) => a + c.amt, 0), info: catInfo(id) }))
+      .sort((a, b) => b.total - a.total);
+    const sum = list.reduce((a, g) => a + Math.max(0, g.total), 0);
+    const bar = list.length > 1 && sum > 0
+      ? `<div class="flex h-1.5 rounded-full overflow-hidden gap-px mx-1 mb-1" role="img" aria-label="Spending by category">${list.filter((g) => g.total > 0).map((g) => `<span title="${g.info.label} ${peso(g.total)}" style="flex:${(g.total / sum).toFixed(4)} 1 0;background:${g.info.color}"></span>`).join("")}</div>`
+      : "";
+    return bar + list.map((g) => {
+      const n = g.items.length, nDone = g.items.filter(done).length;
+      const allDone = nDone === n;
+      const figure = allDone
+        ? `<p class="text-[13px] font-black text-slate-500">${peso(g.total)}</p>`
+        : `<p class="text-[13px] font-black text-white">${peso(g.left)}</p>${g.left < g.total - 0.005 ? `<p class="text-[11px] font-bold text-slate-500">of ${peso(g.total)}</p>` : ""}`;
+      return `<details data-persist="cardcat-${key}-${g.id}" class="group/c border-t border-white/[0.05]">
+          <summary class="flex items-center gap-2 px-1 py-2 cursor-pointer list-none select-none">
+            <span class="material-icons" style="font-size:18px;color:${g.info.color}">${g.info.icon}</span>
+            <div class="flex-1 min-w-0"><p class="text-[13px] font-black text-white truncate">${g.info.label}</p>
+              <p class="text-[11px] font-bold text-slate-500">${n} charge${n === 1 ? "" : "s"}${nDone ? ` &middot; ${covered && nDone === n ? "paid" : `${nDone} posted`}` : ""}</p></div>
+            <div class="text-right flex-shrink-0">${figure}</div>
             <span class="material-icons text-slate-500 transition-transform group-open/c:rotate-180" style="font-size:16px">expand_more</span>
           </summary>
-          <div class="pb-1 space-y-0.5">${g.list.map(rowHtml).join("")}</div></details>`;
-      }).join("");
+          <div class="pb-1 space-y-0.5">${g.items.map(rowHtml).join("")}</div></details>`;
+    }).join("");
   };
-  const chargeRows = !st.charges.length
-    ? `<p class="text-[10px] text-slate-500 px-2 py-1">No charges in this statement yet.</p>`
-    : st.charges.length > 6 ? groupHtml() : st.charges.map(rowHtml).join("");  const payRows = st.payments.map((p) => `<div class="flex items-center gap-2 px-2 py-1 text-[10px] font-bold text-slate-400">
-      <span class="material-icons text-emerald-400" style="font-size:13px">south_west</span>
+  const many = st.charges.length > 6;
+  let chargeRows;
+  if (!st.charges.length) chargeRows = `<p class="text-[11px] text-slate-500 px-2 py-1">No charges in this statement yet.</p>`;
+  else if (!shown.length) chargeRows = `<p class="text-[11px] font-bold text-emerald-300 px-2 py-1.5">${covered ? "All paid" : "All posted"} &middot; ${st.charges.length} charge${st.charges.length === 1 ? "" : "s"} hidden</p>`;
+  else chargeRows = many ? `<div data-card-groups>${groupHtml()}</div><div data-card-results class="hidden space-y-0.5"></div>` : shown.map(rowHtml).join("");
+  const toolbar = st.charges.length && doneCount
+    ? `<div class="flex items-center gap-2 px-1">
+        <p class="flex-1 min-w-0 text-[11px] font-bold text-slate-400 truncate">${doneCount === st.charges.length ? (covered ? "All paid" : "All posted") : `${doneCount} of ${st.charges.length} posted`}${leftAmt > 0.005 ? ` &middot; ${peso(leftAmt)} to post` : ""}</p>
+        <button type="button" data-action="cardToggleDone" data-arg0="${key}" class="flex-shrink-0 text-[11px] font-bold text-indigo-300 px-2.5 py-1.5 rounded-lg bg-white/5">${hide ? `Show ${doneCount} done` : "Hide done"}</button>
+      </div>` : "";
+  const search = many
+    ? `<div class="relative px-1"><span class="material-icons absolute text-slate-500 pointer-events-none" style="font-size:16px;left:12px;top:50%;transform:translateY(-50%)">search</span>
+        <input type="search" data-card-search aria-label="Search charges" placeholder="Search charges" autocomplete="off" class="w-full bg-slate-900/70 rounded-xl text-[13px] font-bold text-white focus:outline-none" style="padding:0.5rem 0.75rem 0.5rem 2rem" /></div>`
+    : "";
+  const payRows = st.payments.map((p) => `<div class="flex items-center gap-2 px-1 py-1 text-[11px] font-bold text-slate-400">
+      <span class="material-icons text-emerald-400" style="font-size:14px">south_west</span>
       <span class="flex-1 min-w-0 truncate">${fmtDate(p.date)} &middot; from ${escapeHtml(acctName(p.acctId))}</span>
       <span class="text-emerald-300">${peso(p.amount)}</span>
-      <button type="button" data-action="cardUndoPay" data-arg0="${p.id}" class="text-rose-300 px-1" title="Undo this payment">Undo</button></div>`).join("");
-  const stat = (name, val, tone = "text-white") => `<div class="flex-1 min-w-0 text-center"><p class="text-[8px] font-bold uppercase text-slate-500">${name}</p><p class="text-[11px] font-black ${tone}">${val}</p></div>`;
+      <button type="button" data-action="cardUndoPay" data-arg0="${p.id}" class="text-rose-300 px-1 py-1" title="Undo this payment">Undo</button></div>`).join("");
+  const stat = (name, val, tone = "text-white") => `<div class="flex-1 min-w-0 text-center"><p class="text-[11px] font-bold text-slate-500">${name}</p><p class="text-[12px] font-black ${tone}">${val}</p></div>`;
   const diffLine = st.statementAmount != null && Math.abs(st.diff) > 0.005
-    ? `<p class="text-[10px] font-bold text-amber-300 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">Statement is ${peso(Math.abs(st.diff))} ${st.diff > 0 ? "higher" : "lower"} than your tracked charges. ${st.diff > 0 ? "A charge may be missing (or interest/fees)." : "A tracked charge may not have posted yet."}</p>`
-    : st.statementAmount != null ? `<p class="text-[10px] font-bold text-emerald-300 px-2">Matches your tracked charges.</p>` : "";
+    ? `<p class="text-[11px] font-bold text-amber-300 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">Statement is ${peso(Math.abs(st.diff))} ${st.diff > 0 ? "higher" : "lower"} than your tracked charges. ${st.diff > 0 ? "A charge may be missing (or interest/fees)." : "A tracked charge may not have posted yet."}</p>`
+    : st.statementAmount != null ? `<p class="text-[11px] font-bold text-emerald-300 px-2">Matches your tracked charges.</p>` : "";
   return `<details data-stmt="${key}" data-persist="cardstmt-v2-${key}" class="group rounded-xl bg-slate-900/50 border border-white/[0.05]">
     <summary class="flex items-center gap-2 px-2.5 py-2 cursor-pointer list-none select-none">
       <span class="material-icons text-slate-500 transition-transform group-open:rotate-90" style="font-size:14px">chevron_right</span>
       <div class="flex-1 min-w-0"><p class="text-xs font-black text-white truncate">Cut ${fmtDate(st.cutoff)} &middot; due ${fmtDate(st.due)}</p>
-        <p class="text-[9px] font-bold text-slate-500">${st.charges.length} charge${st.charges.length === 1 ? "" : "s"}${st.isManual ? " &middot; your dates" : ""}</p></div>
-      <span class="text-[9px] font-black px-1.5 py-0.5 rounded border ${cls}">${label}</span>
+        <p class="text-[11px] font-bold text-slate-500 truncate">${st.charges.length} charge${st.charges.length === 1 ? "" : "s"} &middot; ${timingNote(st)}${st.isManual ? " &middot; your dates" : ""}</p></div>
+      <span class="text-[11px] font-black px-1.5 py-0.5 rounded border ${cls}">${label}</span>
       <p class="text-xs font-black ${st.remaining > 0.005 ? "text-rose-400" : "text-slate-500"} flex-shrink-0">${peso(st.remaining)}</p>
     </summary>
-    <div class="px-1.5 pb-2 space-y-1.5">
+    <div class="px-1 pb-2 space-y-1.5">
+      ${toolbar}
+      ${search}
       <div class="space-y-0.5">${chargeRows}</div>
       <div class="flex gap-1 py-1.5 border-y border-white/[0.05]">
         ${stat("Charged", peso(st.charged))}
@@ -98,11 +157,26 @@ function statementHtml(key, k) {
       ${diffLine}
       ${payRows ? `<div class="space-y-0.5">${payRows}</div>` : ""}
       <div class="flex gap-2 px-1">
-        ${st.remaining > 0.005 ? `<button type="button" data-action="cardPayOpen" data-arg0="${key}" class="flex-1 py-2 rounded-lg bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">payments</span>Pay card</button>` : ""}
-        <button type="button" data-action="cardStatementOpen" data-arg0="${key}" class="flex-1 py-2 rounded-lg bg-slate-700/60 text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">edit_calendar</span>Statement</button>
+        ${st.remaining > 0.005 ? `<button type="button" data-action="cardPayOpen" data-arg0="${key}" class="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white text-[12px] font-bold flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">payments</span>Pay card</button>` : ""}
+        <button type="button" data-action="cardStatementOpen" data-arg0="${key}" class="flex-1 py-2.5 rounded-lg bg-slate-700/60 text-slate-200 text-[12px] font-bold flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">edit_calendar</span>Statement</button>
       </div>
     </div></details>`;
 }
+
+/** Search box on a long statement: matching charges appear as one flat list while there is text, the category groups return when it is cleared. */
+document.addEventListener("input", (e) => {
+  const box = e.target?.closest?.("[data-card-search]");
+  if (!box) return;
+  const stmt = box.closest("details[data-stmt]");
+  const groups = stmt?.querySelector("[data-card-groups]"), out = stmt?.querySelector("[data-card-results]");
+  if (!groups || !out) return;
+  const q = box.value.trim().toLowerCase();
+  if (!q) { out.classList.add("hidden"); out.innerHTML = ""; groups.classList.remove("hidden"); return; }
+  const hits = [...groups.querySelectorAll(".item-row")].filter((r) => (r.dataset.name || "").includes(q));
+  groups.classList.add("hidden");
+  out.classList.remove("hidden");
+  out.innerHTML = hits.length ? hits.map((r) => r.outerHTML).join("") : `<p class="text-[11px] text-slate-500 px-2 py-2">No charge matches &ldquo;${escapeHtml(box.value.trim())}&rdquo;.</p>`;
+});
 
 /** The separate BPI Platinum Rewards section (charlie's expenses). */
 export function cardSectionHtml(k) {

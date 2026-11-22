@@ -12,7 +12,7 @@ import { initHistory, openHistory, histUndo, histRedo, histRestore } from "./ui/
 import { rebaseHistory } from "./history.js";
 import { migrateGroceryPerMonday, migrateRemovePcItems, migrateRenameFamilyExpense, migrateAddHouseholdExpense } from "./migrations.js";
 import { autoDeduct } from "./payfrom.js";
-import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo } from "./ui/cardui.js";
+import { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo, cardToggleDone } from "./ui/cardui.js";
 
 import {
   onValue,
@@ -232,7 +232,7 @@ window.saveBudgets = saveBudgets;
 window.tabGo = tabGo;
 initHistory();
 Object.assign(window, { openHistory, histUndo, histRedo, histRestore });
-Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo });
+Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo, cardToggleDone });
 Object.assign(window, { openAddSheet, addSheetTab });
 Object.assign(window, { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, clearSimulation, openSimCash, simCashSave, simCashFill, dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
 initExtras();
