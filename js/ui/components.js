@@ -307,20 +307,33 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
   </div>`;
 }
 
+const SALARY_RE = /salary|payroll|wage|paycheck|sweldo|sahod/i;
+const CONTRIB_RE = /contribution|ambag/i;
+const INCOME_GROUP_LABEL = { salary: "Salary", contrib: "Contribution" };
+/** Income is grouped by what it is (Salary, Contribution) before the usual One-time / Auto-pay / Recurring split. */
+function groupKeyOf(it, kind, who) {
+  if (kind === "income" && who !== "debt" && who !== "pdebt") {
+    if (SALARY_RE.test(it.name || "")) return "salary";
+    if (CONTRIB_RE.test(it.name || "")) return "contrib";
+  }
+  return itemCategory(it);
+}
+const groupLabel = (c) => INCOME_GROUP_LABEL[c] || CATEGORY_LABELS[c];
+const groupRank = (c) => (c === "salary" ? -2 : c === "contrib" ? -1 : Number(c));
+
 export function categoryGroupedHtml(items, k, kind, who) {
   if (!items.length) return "";
   const sorted = sortItems(items, kind);
-  const showHeaders = new Set(sorted.map(itemCategory)).size > 1 && who !== "debt" && who !== "pdebt";
+  const showHeaders = new Set(sorted.map((it) => groupKeyOf(it, kind, who))).size > 1 && who !== "debt" && who !== "pdebt";
   
   const buckets = {};
   for (const it of sorted) {
-    const c = itemCategory(it);
+    const c = groupKeyOf(it, kind, who);
     (buckets[c] = buckets[c] || []).push(it);
   }
   
   let html = "";
-  for (const cStr of Object.keys(buckets).sort((a, b) => Number(a) - Number(b))) {
-    const c = Number(cStr);
+  for (const c of Object.keys(buckets).sort((a, b) => groupRank(a) - groupRank(b))) {
     const list = buckets[c];
     const subtotal = list.reduce((s, it) => s + amountIn(it, k), 0);
     const rowsHtml = list.map(it => itemRowHtml(it, k, kind, who)).join("");
@@ -328,13 +341,13 @@ export function categoryGroupedHtml(items, k, kind, who) {
     
     if (showHeaders && (kind === "expenses" || kind === "income")) {
       // Clean style: small muted lowercase subheading with a muted subtotal (empty groups never get here)
-      html += `<div class="cat-group" style="margin-top:10px"><div class="flex justify-between items-baseline" style="padding:8px 8px 3px;${html ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold text-slate-400">${CATEGORY_LABELS[c]}</p><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(subtotal)}</p></div>${dragList(rowsHtml)}</div>`;
+      html += `<div class="cat-group" style="margin-top:10px"><div class="flex justify-between items-baseline" style="padding:8px 8px 3px;${html ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold text-slate-400">${groupLabel(c)}</p><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(subtotal)}</p></div>${dragList(rowsHtml)}</div>`;
     } else if (showHeaders) {
       html += `<details open class="group mb-1">
         <summary class="flex justify-between items-center px-3 pt-2 pb-1 cursor-pointer list-none select-none hover:bg-slate-800/30 rounded-lg outline-none -ml-2 -mr-2 mb-0.5">
           <div class="flex items-center gap-1.5 ml-2">
             <span class="material-icons text-[14px] text-slate-500 transition-transform group-open:rotate-90">chevron_right</span>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">${CATEGORY_LABELS[c]}</p>
+            <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">${groupLabel(c)}</p>
           </div>
           <p class="text-sm font-black text-slate-500 mr-2">${peso(subtotal)}</p>
         </summary>
