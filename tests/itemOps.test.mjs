@@ -70,3 +70,13 @@ test("startFreshAt removes items that ended before the start month", () => {
   assert.equal(res.items, 2);
   assert.equal(d.startMonth, "2026-11");
 });
+
+test("applyItemAmount 'future' in the item's first month changes the item itself (nothing earlier to keep)", () => {
+  const d = makeData();
+  const it = rec({ start: "2026-11" });
+  const list = [it];
+  applyItemAmount(d, list, it, 1500, "future", "2026-11");
+  assert.equal(list.length, 1);
+  assert.equal(it.amount, 1500);
+  assert.equal(it.end, undefined);
+});

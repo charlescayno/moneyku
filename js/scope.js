@@ -10,7 +10,7 @@ let open = false;
  * @param {string} label       what is being changed (item name)
  * @param {object} o
  * @param {string} o.monthLabel   e.g. "Nov 2026"
- * @param {boolean} o.canFuture   false when "this and future" would be the same as "all"
+ * @param {boolean} o.canFuture   false when "this and future" is the same as "all" (the item starts in this month); the option still shows, with a note
  * @param {string} [o.detail]     e.g. "₱1,000 → ₱1,200"
  */
 export function chooseScope(label, { monthLabel, canFuture = true, detail = "" } = {}) {
@@ -34,7 +34,7 @@ export function chooseScope(label, { monthLabel, canFuture = true, detail = "" }
       </div>
       <div class="space-y-2">
         ${opt("month", "This month only", `${escapeHtml(monthLabel)} only, other months stay as they are`)}
-        ${canFuture ? opt("future", "This and future months", `From ${escapeHtml(monthLabel)} onward, earlier months stay as they are`) : ""}
+        ${opt("future", "This and future months", canFuture ? `From ${escapeHtml(monthLabel)} onward, earlier months stay as they are` : `From ${escapeHtml(monthLabel)} onward (its first month, so nothing earlier exists)`)}
         ${opt("all", "All occurrences", "Every month, past and future")}
       </div>
       <button type="button" data-cancel class="w-full py-2 text-xs font-bold text-slate-500">Cancel</button>
