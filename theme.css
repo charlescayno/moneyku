@@ -184,6 +184,10 @@ select.as-input { text-transform: lowercase; }
 /* Person groups: keep the paid circles off the group outline */
 .sim-person-group .item-row { padding-left: 12px !important; }
 
+/* Charles / Ynah / Together lists use the same inset as the simulation groups: circle 22px and amount 9px from the box edge */
+#budget-body details[data-persist^="sec-"] > div > .item-row { padding-left: 8px !important; padding-right: 4px !important; }
+#budget-body details[data-persist^="sec-"] > div > .due-group { padding-left: 8px; }
+
 /* Muted text a little lighter so it stays readable on the tinted sections (4.5:1 and up) */
 #budget-body .text-slate-400 { color: #aab6c8; }
 #budget-body .text-slate-500 { color: #9ba8bb; }
