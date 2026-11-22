@@ -1451,12 +1451,56 @@ export function recurringPaymentsCardHtml() {
   </details>`;
 }
 
+/** Overview card: the Debt Tracker (Charles' and Ynah's) for the month on screen, owed to me and what I owe. */
+export function debtOverviewCardHtml() {
+  const k = getSelectedKey();
+  const rowsFor = (kind) => ["debt", "pdebt"].flatMap((who) => getItems(who, kind).filter((it) => itemActiveIn(it, k)).map((it) => ({ it, who, ...itemAmts(it, k) })));
+  const owed = rowsFor("income"), owe = rowsFor("expenses");
+  const sum = (rs, f) => rs.reduce((a, r) => a + f(r), 0);
+  const owedTot = sum(owed, (r) => r.total), oweTot = sum(owe, (r) => r.total);
+  const owedLeft = sum(owed, (r) => r.total - r.paid), oweLeft = sum(owe, (r) => r.total - r.paid);
+  const net = owedLeft - oweLeft;
+  const row = (r, kind) => {
+    const o = OWNERS[r.who === "pdebt" ? "partner" : "charlie"];
+    const left = r.total - r.paid, done = left < 0.005;
+    const tone = kind === "income" ? "text-emerald-400" : "text-rose-400";
+    return `<div data-action="openItemModal" data-arg0="${r.who}" data-arg1="${kind}" data-arg2="${r.it.id}" class="item-row flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/30 cursor-pointer">
+      <div class="min-w-0">
+        <div class="flex items-center gap-1.5"><p class="text-xs font-bold text-slate-200 truncate keep-case">${escapeHtml(r.it.name)}</p><span class="text-[8px] font-bold uppercase ${o.text} keep-case">${o.label}</span></div>
+        <p class="text-[10px] text-slate-400">${done ? (kind === "income" ? "received" : "paid") : `${peso(left)} ${kind === "income" ? "still to receive" : "still to pay"}`}</p>
+      </div>
+      <span class="text-xs font-black tabular-nums flex-shrink-0 ${done ? "text-slate-400 line-through" : tone}">${peso(r.total)}</span>
+    </div>`;
+  };
+  const section = (label, tone, kind, rs, tot) => `<div class="space-y-1">
+    <div class="flex items-center justify-between px-1 pt-1"><p class="text-[10px] font-black uppercase tracking-wider text-slate-400">${label}</p><p class="text-[11px] font-black tabular-nums ${tone}">${peso(tot)}</p></div>
+    ${rs.length ? rs.map((r) => row(r, kind)).join("") : `<p class="text-[11px] text-slate-500 px-2.5 py-1">None this month.</p>`}
+  </div>`;
+  return `<details open class="glass-card rounded-xl overflow-hidden border border-sky-500/15 w-full flex-shrink-0">
+    <summary class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer list-none">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">handshake</span></div>
+        <div><h3 class="text-xs font-black text-white uppercase tracking-wide">Debts</h3><p class="text-[8px] text-slate-400">${monthShort(k)} &middot; <span class="text-emerald-400">owed to me ${peso(owedTot)}</span> &middot; <span class="text-rose-400">I owe ${peso(oweTot)}</span></p></div>
+      </div>
+      <p class="text-xs font-black tabular-nums ${net >= 0 ? "text-emerald-400" : "text-rose-400"}" title="Still to receive minus still to pay">${net > 0 ? "+" : ""}${peso(net)}</p>
+    </summary>
+    <div class="p-2.5 pt-0 space-y-2">
+      ${section("Owed to me", "text-emerald-400", "income", owed, owedTot)}
+      ${section("I owe", "text-rose-400", "expenses", owe, oweTot)}
+      <div class="flex gap-2">
+        <button type="button" data-action="openItemModal" data-arg0="debt" data-arg1="income" class="flex-1 py-2 rounded-lg border border-dashed border-emerald-400/30 text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1" style="min-height:36px"><span class="material-icons" style="font-size:16px">add</span>Owed to me</button>
+        <button type="button" data-action="openItemModal" data-arg0="debt" data-arg1="expenses" class="flex-1 py-2 rounded-lg border border-dashed border-rose-400/30 text-rose-300 text-[11px] font-bold flex items-center justify-center gap-1" style="min-height:36px"><span class="material-icons" style="font-size:16px">add</span>I owe</button>
+      </div>
+    </div>
+  </details>`;
+}
+
 /** Redraw the Overview cards in place (used when data changes while Overview is open). */
 export function refreshMore() {
   const body = $("more-body"), ov = $("more-overlay");
   if (!body || !ov || !ov.classList.contains("open")) return;
   const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
-  body.innerHTML = `\n    ${investmentsCardHtml()}\n    ${inst}\n  `;
+  body.innerHTML = `\n    ${investmentsCardHtml()}\n    ${inst}\n    ${debtOverviewCardHtml()}\n  `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
 }
 
@@ -1466,6 +1510,7 @@ export function openMore() {
   body.innerHTML = `
     ${investmentsCardHtml()}
     ${inst}
+    ${debtOverviewCardHtml()}
   `;
   body.querySelectorAll("details").forEach((d) => (d.open = true));
   const ov = $("more-overlay");
