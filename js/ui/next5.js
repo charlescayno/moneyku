@@ -81,7 +81,7 @@ export function next5CardHtml() {
   // Amounts follow the same hide switch as the rest of the projections
   if (getHideProjected()) {
     return `<div id="next5-card" class="n5-hidden bg-slate-900/80 border border-white/5 rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3">
-      <div class="min-w-0"><h3 class="text-xs font-black text-white truncate">Projected in next ${keys.length} months</h3><p class="text-[11px] text-slate-400">Hidden</p></div>
+      <div class="min-w-0"><h3 class="text-xs font-black text-white truncate">Forecast hidden</h3><p class="text-[11px] text-slate-400">Amounts are off. Show them to see the next ${keys.length} months.</p></div>
       <button type="button" data-action="toggleProjected" class="flex-shrink-0 flex items-center gap-1 text-[11px] font-bold text-indigo-300 px-3 py-1.5 rounded-lg bg-white/5"><span class="material-icons" style="font-size:14px">visibility</span>Show</button>
     </div>`;
   }

@@ -4,7 +4,7 @@
 
 import { openBudgetModal, saveBudgets, dueMarkPaid } from "./insights.js";
 import { openChildMenu, childMenuEdit, childMenuReorder, childMenuDelete } from './ui/childmenu.js';
-import { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, askClearSimulationAgain, clearSimulation, openSimCash, simCashSave, simCashFill } from "./simulated.js";
+import { simInfo, openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, askClearSimulationAgain, clearSimulation, openSimCash, simCashSave, simCashFill } from "./simulated.js";
 import { openAddSheet, addSheetTab } from "./ui/addsheet.js";
 import { openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, openSectionMenu, sectionMenuGo, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
@@ -80,6 +80,7 @@ import {
   saveModal,
   saveChildAndAddAnother,
   toggleField,
+  setRecurring,
   pickOwner,
   pickIcon,
   updateBpiCcMonth,
@@ -189,6 +190,7 @@ window.closeModal = closeModal;
 window.saveModal = saveModal;
 window.saveChildAndAddAnother = saveChildAndAddAnother;
 window.toggleField = toggleField;
+window.setRecurring = setRecurring;
 window.pickOwner = pickOwner;
 window.pickIcon = pickIcon;
 window.updateBpiCcMonth = updateBpiCcMonth;
@@ -238,7 +240,7 @@ initHistory();
 Object.assign(window, { openHistory, histUndo, histRedo, histRestore });
 Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo, cardToggleDone });
 Object.assign(window, { openAddSheet, addSheetTab });
-Object.assign(window, { openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, askClearSimulationAgain, clearSimulation, openSimCash, simCashSave, simCashFill, dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, openSectionMenu, sectionMenuGo, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
+Object.assign(window, { simInfo, openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopyGo, simCopyResolve, askClearSimulation, askClearSimulationAgain, clearSimulation, openSimCash, simCashSave, simCashFill, dueMarkPaid, openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, openSectionMenu, sectionMenuGo, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip });
 initExtras();
 initTabs();
 window.fetchInvestmentRates = fetchInvestmentRates;

@@ -150,7 +150,7 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
       ? [["debt", `${OWNERS.charlie.label} debt tracker`], ["pdebt", `${OWNERS.partner.label} debt tracker`]]
       : [["charlie", OWNERS.charlie.label], ["partner", OWNERS.partner.label]];
     body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Whose account</label>
-      <div id="f-who" data-val="${who}" class="grid grid-cols-2 gap-2">${opts.map(([w, label]) => `<button type="button" data-action="pickOwner" data-arg0="${w}" class="py-3 rounded-xl font-bold text-xs ${w === who ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${escapeHtml(label)}</button>`).join("")}</div></div>`;
+      <div id="f-who" data-val="${who}" class="grid grid-cols-2 gap-2">${opts.map(([w, label]) => `<button type="button" data-action="pickOwner" data-arg0="${w}" class="py-2.5 rounded-xl font-bold text-xs ${w === who ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}">${escapeHtml(label)}</button>`).join("")}</div></div>`;
   }
   if (who === "simulated") {
     // The simulation can list an item under Charles or Ynah when "Person" grouping is on
@@ -178,19 +178,15 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
           <span class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all"></span>
         </button>
       </div>`;
-      if (as) more += groupHtml; else body += groupHtml;
+      more += groupHtml;
     }
   }
 
   // Spending log sits up front (not under "More options") so adding spending is one tap away
   if (!isNew && !kids.length && kind === "expenses" && who !== "simulated") body += `<div id="spend-section">${spendSectionHtml(it)}</div>`;
 
-  body += `<div class="flex items-center justify-between bg-slate-900 rounded-xl px-3.5 py-2.5">
-    <div><p class="text-sm font-bold text-white">Recurring</p><p class="text-[10px] text-slate-500">Repeats every month</p></div>
-    <button type="button" id="f-recurring" data-on="${recurring}" data-action="toggleField" data-arg0="this" class="w-10 h-6 rounded-full transition-colors ${recurring ? "bg-indigo-600" : "bg-slate-700"} relative flex-shrink-0">
-      <span class="absolute top-1 ${recurring ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span>
-    </button>
-  </div>`;
+  body += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">How often</label>
+    <div id="f-recurring" data-on="${recurring}" class="grid grid-cols-2 gap-2" role="group" aria-label="How often">${[["false", "Once", "Just this month"], ["true", "Every month", "Repeats monthly"]].map(([v, l, sub]) => `<button type="button" data-action="setRecurring" data-arg0="${v}" aria-pressed="${String(recurring) === v}" class="freq-opt ${String(recurring) === v ? "on" : ""}"><span class="block text-sm font-bold">${l}</span><span class="block text-[11px] opacity-80">${sub}</span></button>`).join("")}</div></div>`;
 
   if (kind === "expenses") {
     const incl = !(it && it.excluded);
@@ -200,7 +196,7 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
       <span class="absolute top-1 ${incl ? "left-5" : "left-1"} w-4 h-4 bg-white rounded-full transition-all"></span>
     </button>
   </div>`;
-    if (as) more += inclHtml; else body += inclHtml;
+    more += inclHtml;
   }
 
   let lastPm = "cash";

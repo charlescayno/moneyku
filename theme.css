@@ -209,3 +209,7 @@ select.as-input { -webkit-appearance: none; appearance: none; padding: 0 28px 0 
 .person-head.from-blue-500 .text-white\/60 { color: rgba(255, 255, 255, .96); }
 .person-head.from-blue-500 .text-white\/40 { color: rgba(255, 255, 255, .88); }
 .person-head .person-net { background: rgba(8, 15, 30, .62); }
+
+/* Type scale: 12 labels, 14 rows, 16 card titles, 28+ hero numbers */
+.glass-card > summary p.text-\[8px\], .acct-pair summary p { font-size: 12px !important; line-height: 1.3; }
+#budget-body .sec-title { letter-spacing: .06em; }

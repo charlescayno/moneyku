@@ -1642,3 +1642,18 @@ button:not(#tabbar button):active, [role="button"]:active { filter: brightness(1
 
 /* Section header buttons (+ and ...): keep a 28px look with a 44px touch area */
 summary button.sec-add, button.sec-add { min-height: 28px !important; min-width: 28px !important; width: 28px; height: 28px; padding: 0 !important; margin: 0 !important; justify-content: center !important; }
+
+/* "How often" choice in the item form */
+.freq-opt { text-align: left; padding: 8px 12px; border-radius: 12px; background: #0f172a; color: #94a3b8; border: 1px solid transparent; }
+.freq-opt.on { background: #4f46e5; color: #fff; }
+
+/* Hero numbers on phones: two columns of one-line tiles (label left, value right) */
+.kpi-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.kpi-strip .kpi-tile { flex-direction: row !important; align-items: center; justify-content: space-between; padding: 8px 10px !important; gap: 8px !important; min-height: 38px; }
+.kpi-strip .kpi-tile .material-icons { display: none; }
+.kpi-strip .kpi-tile > span:first-child { font-size: 11px !important; gap: 0 !important; min-width: 0; }
+.kpi-val { font-size: 14px; }
+@media (min-width: 640px) { .kpi-strip .kpi-tile { flex-direction: column !important; align-items: stretch; justify-content: flex-start; padding: 10px 12px !important; } .kpi-strip .kpi-tile .material-icons { display: inline-block; } .kpi-strip .kpi-tile > span:first-child { gap: 6px !important; } .kpi-val { font-size: 16px; } }
+
+.pull-ind { position: fixed; top: 64px; left: 50%; z-index: 60; width: 36px; height: 36px; border-radius: 50%; background: #1e293b; color: #a5b4fc; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transform: translate(-50%, 0); transition: opacity .15s; box-shadow: 0 4px 14px rgba(0, 0, 0, .4); }
+.welcome-card { border: 1px dashed rgba(129, 140, 248, .45); background: rgba(99, 102, 241, .08); border-radius: 16px; padding: 16px; }

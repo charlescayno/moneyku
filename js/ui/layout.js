@@ -14,6 +14,21 @@ import { upcomingBillsWidgetHtml } from '../calendar.js';
 // =============================
 // Dashboard Main Renderer
 // =============================
+// First run: nothing entered yet, so say where to start
+function welcomeHtml() {
+  const d = getAppData();
+  const any = ["charlie", "partner"].some((w) => ["income", "expenses"].some((k) => getItems(w, k).length)) || (d?.accounts || []).length;
+  if (any) return "";
+  return `<div class="welcome-card flex flex-col gap-2">
+    <p class="text-sm font-black text-white">Start here</p>
+    <p class="text-[12px] text-slate-300 leading-snug">Add your cash balances and your regular income and bills. The projection fills in as you go.</p>
+    <div class="flex gap-2 flex-wrap">
+      <button type="button" data-action="openAccountModal" data-arg0="" data-arg1="charlie" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-[12px] font-bold flex items-center justify-center gap-1" style="min-width:8rem"><span class="material-icons ic-16">account_balance</span>Add an account</button>
+      <button type="button" data-action="addInSection" data-arg0="charlie" data-arg1="income" data-arg2="salary" class="flex-1 py-2.5 rounded-xl bg-white/10 text-slate-100 text-[12px] font-bold flex items-center justify-center gap-1" style="min-width:8rem"><span class="material-icons ic-16">payments</span>Add your salary</button>
+    </div>
+  </div>`;
+}
+
 export function renderBudget() {
   const pb = document.getElementById("budget-body");
   const k = getSelectedKey();
@@ -118,11 +133,11 @@ export function renderBudget() {
         </div>
       </div>
       <!-- Four tiles: icon + label above, value below -->
-      <div class="grid grid-cols-2 gap-2">
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400 min-w-0" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">account_balance_wallet</span><span class="truncate min-w-0">current money</span></span><span class="text-base font-extrabold tabular-nums truncate ${current < -0.005 ? "text-rose-400" : onlyCls || "text-white"}">${peso(current)}</span></div>
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">savings</span>savings</span><span class="text-base font-extrabold tabular-nums truncate ${savColor}">${signedPeso(ht.savings)}</span></div>
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">south_west</span>to receive</span><span class="text-base font-extrabold tabular-nums truncate text-emerald-400">${signedPeso(toRecvAll)}</span></div>
-        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="text-base font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-toPayAll)}</span></div>
+      <div class="kpi-strip">
+        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 kpi-tile min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400 min-w-0" style="white-space:nowrap"><span class="material-icons text-indigo-300" style="font-size:15px">account_balance_wallet</span><span class="truncate min-w-0">cash now</span></span><span class="kpi-val font-extrabold tabular-nums truncate ${current < -0.005 ? "text-rose-400" : onlyCls || "text-white"}">${peso(current)}</span></div>
+        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 kpi-tile min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">savings</span>savings</span><span class="kpi-val font-extrabold tabular-nums truncate ${savColor}">${signedPeso(ht.savings)}</span></div>
+        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 kpi-tile min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-emerald-300" style="font-size:15px">south_west</span>to receive</span><span class="kpi-val font-extrabold tabular-nums truncate text-emerald-400">${signedPeso(toRecvAll)}</span></div>
+        <div class="bg-white/[0.03] border border-white/5 rounded-xl px-3.5 py-2.5 flex flex-col gap-1 kpi-tile min-w-0"><span class="flex items-center gap-2 text-[11px] font-bold text-slate-400" style="white-space:nowrap"><span class="material-icons text-rose-300" style="font-size:15px">north_east</span>to pay</span><span class="kpi-val font-extrabold tabular-nums truncate text-rose-400">${signedPeso(-toPayAll)}</span></div>
       </div>
       ${projChips.length ? `<div class="flex flex-wrap gap-1">${projChips[0]}</div>` : ""}
       ${projChips.length > 1 ? `<div class="flex flex-wrap gap-1">${projChips.slice(1).join("")}</div>` : ""}
@@ -139,15 +154,12 @@ export function renderBudget() {
     const hid = (s) => (hideProjected ? "••••" : s);
     $("budget-body").innerHTML = `
     <div id="sim-view" class="w-full flex flex-col gap-2 budget-pad">
-      <div class="w-full rounded-2xl border border-amber-400/40 bg-amber-500/10 px-3.5 py-3 flex flex-col gap-2 flex-shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="material-icons text-amber-300" style="font-size:20px">science</span>
-          <div class="min-w-0 flex-1"><p class="text-[11px] font-black uppercase tracking-wider text-amber-200">Simulated</p><p class="text-[11px] text-amber-100/80 leading-snug">A what-if sandbox. Nothing here changes Charles' or Ynah's budget, totals or calendar.</p></div>
-        </div>
-        <div class="flex gap-2">
-          <button type="button" data-action="openSimCash" class="flex-1 py-2 text-[11px] font-bold rounded-lg bg-white/5 text-amber-100 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">edit</span>Starting cash</button>
-          <button type="button" data-action="askClearSimulation" class="flex-1 py-2 text-[11px] font-bold rounded-lg bg-rose-500/15 text-rose-200 flex items-center justify-center gap-1"><span class="material-icons" style="font-size:14px">delete_sweep</span>Clear simulation</button>
-        </div>
+      <div class="w-full rounded-2xl border border-amber-400/40 bg-amber-500/10 pl-3.5 pr-2 py-1.5 flex items-center gap-2 flex-shrink-0">
+        <span class="material-icons text-amber-300 ic-20">science</span>
+        <p class="text-[11px] font-black uppercase tracking-wider text-amber-200 flex-1 min-w-0 truncate">Simulated sandbox</p>
+        <button type="button" data-action="simInfo" aria-label="What is the simulation?" title="What is this?" class="icon-btn text-amber-200/90 flex items-center justify-center" style="width:32px;height:32px"><span class="material-icons ic-20">info</span></button>
+        <button type="button" data-action="openSimCash" aria-label="Starting cash" title="Starting cash" class="icon-btn text-amber-100 flex items-center justify-center rounded-lg bg-white/5" style="width:36px;height:36px"><span class="material-icons ic-20">edit</span></button>
+        <button type="button" data-action="askClearSimulation" aria-label="Clear simulation" title="Clear simulation" class="icon-btn text-rose-200 flex items-center justify-center rounded-lg bg-rose-500/15" style="width:36px;height:36px"><span class="material-icons ic-20">delete_sweep</span></button>
       </div>
       <div class="proj-card w-full bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4 flex flex-col items-stretch gap-3 flex-shrink-0">
         <div class="flex flex-col gap-1 px-1">
@@ -173,6 +185,7 @@ export function renderBudget() {
   const next5Html = next5CardHtml();
   $("budget-body").innerHTML = `
     <div class="w-full flex flex-col gap-2 budget-pad">
+      ${welcomeHtml()}
       <!-- Projected card with the 6-month outlook to its right (stacked on phones) -->
       <div id="projected-row" class="w-full grid grid-cols-1 ${next5Html ? "md:grid-cols-2" : ""} gap-2 items-stretch min-w-0">
         ${kpiBar}

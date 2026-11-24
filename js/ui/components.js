@@ -974,10 +974,10 @@ export function investmentsCardHtml() {
         </div>
       </div>
       <div class="flex gap-2 mt-2">
-        <button data-action="refreshInvestmentRates" class="flex-1 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 rounded-xl font-bold text-emerald-400 text-[11px] flex items-center justify-center gap-1.5 transition-all active:scale-95">
+        <button data-action="refreshInvestmentRates" class="flex-1 py-2.5 rounded-xl font-bold text-slate-300 text-[12px] flex items-center justify-center gap-1.5 bg-white/5 transition-all active:scale-95">
           <span class="material-icons" style="font-size:16px">sync</span>Update Now
         </button>
-        <button data-action="openInvestmentModal" class="flex-1 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl font-bold text-amber-400 text-[11px] flex items-center justify-center gap-1.5 transition-all active:scale-95">
+        <button data-action="openInvestmentModal" class="flex-1 py-2.5 rounded-xl font-bold text-slate-300 text-[12px] flex items-center justify-center gap-1.5 bg-white/5 transition-all active:scale-95">
           <span class="material-icons" style="font-size:16px">edit</span>Edit Shares &amp; Rates
         </button>
       </div>
@@ -1509,6 +1509,14 @@ export function debtOverviewCardHtml() {
       <span class="text-xs font-black tabular-nums flex-shrink-0 ${done ? "text-slate-400 line-through" : tone}">${peso(r.total)}</span>
     </div>`;
   };
+  if (!owed.length && !owe.length) {
+    const pill = (kind, tone, label) => `<button type="button" data-action="openItemModal" data-arg0="debt" data-arg1="${kind}" class="${tone} text-[11px] font-bold px-2.5 rounded-full bg-white/5 flex items-center gap-0.5" style="min-height:32px"><span class="material-icons ic-16">add</span>${label}</button>`;
+    return `<div class="glass-card rounded-xl border border-sky-500/15 w-full flex-shrink-0 flex items-center gap-2 px-3.5 py-2.5 flex-wrap">
+      <div class="w-7 h-7 flex-shrink-0 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center"><span class="material-icons text-white" style="font-size:14px">handshake</span></div>
+      <div class="min-w-0 flex-1"><h3 class="text-xs font-black text-white uppercase tracking-wide">Debts</h3><p class="text-[11px] text-slate-400">None in ${monthShort(k)}</p></div>
+      ${pill("income", "text-emerald-300", "Owed to me")}${pill("expenses", "text-rose-300", "I owe")}
+    </div>`;
+  }
   const section = (label, tone, kind, rs, tot) => `<div class="space-y-1">
     <div class="flex items-center justify-between px-1 pt-1"><p class="text-[10px] font-black uppercase tracking-wider text-slate-400">${label}</p><p class="text-[11px] font-black tabular-nums ${tone}">${peso(tot)}</p></div>
     ${rs.length ? rs.map((r) => row(r, kind)).join("") : `<p class="text-[11px] text-slate-500 px-2.5 py-1">None this month.</p>`}
@@ -1533,22 +1541,23 @@ export function debtOverviewCardHtml() {
 }
 
 /** Redraw the Overview cards in place (used when data changes while Overview is open). */
+function overviewBodyHtml() {
+  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
+  const debts = debtOverviewCardHtml();
+  const debtsEmpty = !debts.includes("<details");
+  return `\n    ${debtsEmpty ? "" : debts}\n    ${inst}\n    ${debtsEmpty ? debts : ""}\n    ${investmentsCardHtml()}\n  `;
+}
+
 export function refreshMore() {
   const body = $("more-body"), ov = $("more-overlay");
   if (!body || !ov || !ov.classList.contains("open")) return;
-  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
-  body.innerHTML = `\n    ${debtOverviewCardHtml()}\n    ${inst}\n    ${investmentsCardHtml()}\n  `;
+  body.innerHTML = overviewBodyHtml();
   body.querySelectorAll("details").forEach((d) => (d.open = true));
 }
 
 export function openMore() {
   const body = $("more-body");
-  const inst = installmentsCardHtml() || `<div class="glass-card rounded-2xl p-6 text-center text-[12px] text-slate-500">No installments yet.<button type="button" data-action="openItemModal" data-arg0="charlie" data-arg1="expenses" class="mt-2 mx-auto flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed border-slate-600 text-indigo-300 font-bold"><span class="material-icons" style="font-size:16px">add</span>Add an expense with a "runs until" month</button></div>`;
-  body.innerHTML = `
-    ${debtOverviewCardHtml()}
-    ${inst}
-    ${investmentsCardHtml()}
-  `;
+  body.innerHTML = overviewBodyHtml();
   body.querySelectorAll("details").forEach((d) => (d.open = true));
   const ov = $("more-overlay");
   ov.classList.add("open");
@@ -1779,6 +1788,12 @@ export async function deleteSpend(entryId) {
   await syncSet(appData);
   refreshSpendSection(id);
   renderAll();
+}
+
+export function setRecurring(v) {
+  const box = $("f-recurring"); if (!box) return;
+  box.dataset.on = String(v === true || v === "true");
+  box.querySelectorAll(".freq-opt").forEach((b) => { const on = b.dataset.arg0 === box.dataset.on; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
 }
 
 export function toggleField(btn) {

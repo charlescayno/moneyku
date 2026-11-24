@@ -570,8 +570,31 @@ export function tipCardHtml() {
 export function dismissTip() { lsSet("moneyku_tip_seen", "1"); document.getElementById("tip-card")?.remove(); document.querySelectorAll(".nudge-hint").forEach((e) => e.classList.remove("nudge-hint")); }
 
 // ---------- boot ----------
+// Pull down from the very top of the page to sync
+function initPullSync() {
+  if (!("ontouchstart" in window) && !(navigator.maxTouchPoints > 0)) return;
+  let y0 = null, x0 = 0, ind = null;
+  const blocked = (t) => t?.closest?.("input, textarea, select, [data-drag-handle], .arr-row") || document.querySelector("#modal-overlay.open, #confirm-overlay.open, #calendar-overlay.open, #more-overlay.open, #month-picker.open, #ql-overlay.open, [role='dialog'][aria-modal='true']");
+  const el = () => ind || (ind = Object.assign(document.createElement("div"), { id: "pull-ind", className: "pull-ind", innerHTML: '<span class="material-icons">sync</span>' }), document.body.appendChild(ind), ind);
+  document.addEventListener("touchstart", (e) => { y0 = window.scrollY <= 0 && !blocked(e.target) ? e.touches[0].clientY : null; x0 = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (y0 == null) return;
+    const dy = e.touches[0].clientY - y0, dx = Math.abs(e.touches[0].clientX - x0);
+    if (dy <= 0 || dx > dy) { el().style.opacity = 0; return; }
+    const n = Math.min(dy, 120);
+    Object.assign(el().style, { opacity: Math.min(1, n / 80), transform: `translate(-50%, ${n / 2}px) rotate(${n * 3}deg)` });
+  }, { passive: true });
+  document.addEventListener("touchend", (e) => {
+    if (y0 == null) return;
+    const dy = e.changedTouches[0].clientY - y0; y0 = null;
+    if (ind) Object.assign(ind.style, { opacity: 0, transform: "translate(-50%, 0)" });
+    if (dy > 110 && window.scrollY <= 0) syncNow();
+  }, { passive: true });
+}
+
 export function initExtras() {
   applyTextSize();
+  initPullSync();
   // Daily safety backup: first state of each day, kept for a week (waits for data to load)
   const snapTimer = setInterval(() => { if (getAppData()) { takeDailySnapshot(); clearInterval(snapTimer); autoImportCard(); } }, 3000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) takeDailySnapshot(); });

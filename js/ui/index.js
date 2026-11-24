@@ -53,6 +53,7 @@ export {
   addSpend,
   deleteSpend,
   toggleField,
+  setRecurring,
   saveChildAndAddAnother,
   saveModal
 } from "./components.js";

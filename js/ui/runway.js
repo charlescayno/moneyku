@@ -35,10 +35,7 @@ export function runwayFacts(count = horizon) {
 export function runwayCardHtml() {
   const head = (right = "") => `<div class="flex items-center justify-between gap-2 mb-3"><h3 class="text-sm font-black text-white min-w-0 truncate">How long it lasts</h3>${right}</div>`;
   const wrap = (inner) => `<div id="runway-card" class="bg-slate-900/80 border border-white/5 rounded-3xl px-4 py-4">${inner}</div>`;
-  if (getHideProjected()) {
-    return wrap(`<div class="flex items-center justify-between gap-3"><div class="min-w-0"><h3 class="text-sm font-black text-white">How long it lasts</h3><p class="text-[11px] text-slate-500">Projected balances are hidden</p></div>
-      <button type="button" data-action="toggleProjected" class="flex-shrink-0 flex items-center gap-1 text-[11px] font-bold text-indigo-300 px-3 py-1.5 rounded-lg bg-white/5"><span class="material-icons" style="font-size:14px">visibility</span>Show</button></div>`);
-  }
+  if (getHideProjected()) return "";
   const { months, vals, firstNeg, lowI, empty } = runwayFacts();
   if (months.length < 2) return "";
   const pills = `<div class="flex items-center gap-1 flex-shrink-0">${OPTIONS.map((n) => `<button type="button" data-action="runwayHorizon" data-arg0="${n}" aria-pressed="${n === horizon}" class="text-[11px] font-bold px-2 py-1 rounded-lg ${n === horizon ? "bg-amber-400/20 text-amber-200" : "bg-white/5 text-slate-400"}">${n}m</button>`).join("")}</div>`;

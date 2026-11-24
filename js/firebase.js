@@ -123,10 +123,10 @@ export function renderSyncStatus() {
   let status = sync.status;
   if (status === "saving" && (!navigator.onLine || Date.now() - sync.since > 4000)) status = "unsynced";
   const dot = (c) => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-right:5px;vertical-align:1px"></span>`;
-  if (status === "synced" && !navigator.onLine) { el.innerHTML = dot("#94a3b8") + "Offline · last synced " + ago(sync.at); el.style.color = "#94a3b8"; }
+  if (status === "synced" && !navigator.onLine) { el.innerHTML = dot("#94a3b8") + "Offline · synced " + ago(sync.at); el.style.color = "#94a3b8"; }
   else if (status === "synced") { el.innerHTML = dot("#34d399") + "Synced " + ago(sync.at); el.style.color = "#94a3b8"; }
   else if (status === "saving") { el.innerHTML = dot("#fbbf24") + "Saving…"; el.style.color = "#fbbf24"; }
-  else { el.innerHTML = dot("#f87171") + (navigator.onLine ? "Not synced yet (saved on this phone)" : "Offline: saved on this phone"); el.style.color = "#fca5a5"; }
+  else { el.innerHTML = dot("#f87171") + (navigator.onLine ? "Not synced · tap to retry" : "Offline · saved here"); el.style.color = "#fca5a5"; }
 }
 export function markSync(status) {
   sync.status = status;

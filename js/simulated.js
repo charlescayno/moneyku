@@ -248,3 +248,7 @@ export async function simCashSave() {
   renderAll();
   toast("Saved");
 }
+
+export function simInfo() {
+  toast("A what-if sandbox. Nothing here changes Charles' or Ynah's budget, totals or calendar.", "ok", { duration: 5000 });
+}
