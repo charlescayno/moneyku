@@ -326,6 +326,12 @@ function setSimOwner(it, who) {
   if (who === "charlie" || who === "partner") it.copiedFromWho = who; else delete it.copiedFromWho;
 }
 
+/** The "+" at the end of a section heading: adds an item of that kind (One-time, Auto-pay, Recurring, Installment, Salary, Contribution). */
+function sectionPlusHtml(who, kind, c) {
+  const label = groupLabel(c);
+  return `<button type="button" data-action="addInSection" data-arg0="${who}" data-arg1="${kind}" data-arg2="${c}" aria-label="Add ${escapeHtml(label)}" title="Add ${escapeHtml(label)}" class="section-plus flex items-center justify-center rounded-full text-slate-300 bg-white/[0.07]" style="width:24px;height:24px;margin:-4px -2px -4px 0"><span class="material-icons" style="font-size:16px">add</span></button>`;
+}
+
 export function categoryGroupedHtml(items, k, kind, who) {
   if (!items.length) return "";
   const sorted = sortItems(items, kind);
@@ -346,7 +352,7 @@ export function categoryGroupedHtml(items, k, kind, who) {
     
     if (showHeaders && (kind === "expenses" || kind === "income")) {
       // Clean style: small muted lowercase subheading with a muted subtotal (empty groups never get here)
-      html += `<div class="cat-group" style="margin-top:10px"><div class="flex justify-between items-baseline" style="padding:8px 8px 3px;${html ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold text-slate-400">${groupLabel(c)}</p><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(subtotal)}</p></div>${dragList(rowsHtml)}</div>`;
+      html += `<div class="cat-group" style="margin-top:10px"><div class="flex justify-between items-baseline" style="padding:8px 8px 3px;${html ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold text-slate-400">${groupLabel(c)}</p><span class="flex items-center gap-1"><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(subtotal)}</p>${sectionPlusHtml(who, kind, c)}</span></div>${dragList(rowsHtml)}</div>`;
     } else if (showHeaders) {
       html += `<details open class="group mb-1">
         <summary class="flex justify-between items-center px-3 pt-2 pb-1 cursor-pointer list-none select-none hover:bg-slate-800/30 rounded-lg outline-none -ml-2 -mr-2 mb-0.5">
@@ -1976,6 +1982,9 @@ async function saveModalInner() {
   const ddInput = $("f-dueday");
   let dueDay = null;
   if (ddInput && ddInput.value !== "") { const d = parseInt(ddInput.value, 10); if (d >= 1 && d <= 31) dueDay = d; }
+  // Opened from a section's "+": the item has to belong to that section
+  if (!id && activeEdit.preset === 3 && !end) return fieldError("f-end", "Pick when it ends");
+  if (!id && activeEdit.preset === 1 && dueDay == null) return fieldError("f-dueday", "Day required");
   const list = appData.items[who][type];
 
   const payMethod = $("f-paymethod") ? $("f-paymethod").value : "cash";

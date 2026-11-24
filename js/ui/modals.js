@@ -105,6 +105,12 @@ export function closeModal() {
   setActiveEdit(null);
 }
 
+const PRESET_TITLE = { 0: "One-time", 1: "Auto-pay", 2: "Recurring", 3: "Installment", salary: "Salary", contrib: "Contribution" };
+/** The "+" on a list section (One-time, Auto-pay, Recurring, Installments, Salary, Contribution): the add form already set up for that kind. */
+export function addInSection(who, kind, preset) {
+  openItemModal(who, kind, undefined, undefined, { preset: /^\d$/.test(preset) ? Number(preset) : preset });
+}
+
 export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   const list = getItems(who, kind);
   const it = id ? list.find((x) => x.id === id) : null;
@@ -112,12 +118,13 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   const as = !!sheetOpts.addSheet && isNew; // opened from the "+" add sheet: compact layout, extras under More options
   const o = OWNERS[who];
   const selectedKey = getSelectedKey();
-  setActiveEdit({ kind: "item", who, type: kind, id });
+  const preset = isNew && !as && sheetOpts.preset !== undefined ? sheetOpts.preset : null;
+  setActiveEdit({ kind: "item", who, type: kind, id, preset });
 
-  const recurring = it ? it.recurring !== false : true;
+  const recurring = it ? it.recurring !== false : preset !== 0;
   const start = it ? it.start : selectedKey;
   const end = it && it.end ? it.end : "";
-  const name = it ? it.name : "";
+  const name = it ? it.name : preset === "salary" ? "Salary" : preset === "contrib" ? "Contribution" : "";
   const amount = it ? amountIn(it, selectedKey) : "";
   const settledNow = it ? isPaid(it.id, selectedKey) : false;
 
@@ -125,6 +132,7 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   if ((who === "debt" || who === "pdebt") && isNew) {
     title = kind === "income" ? "Add Person (They owe me)" : "Add Person (I owe them)";
   }
+  if (preset !== null && PRESET_TITLE[preset] && who !== "debt" && who !== "pdebt") title = `Add ${PRESET_TITLE[preset]} ${kind === "income" ? "Income" : "Expense"}`;
   $("modal-title").textContent = as ? (kind === "income" ? "Add Income" : "Add Expense") : title;
   $("modal-title").className = `text-lg font-black uppercase tracking-tight ${o.text}`;
 
@@ -290,7 +298,7 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
     more += `<button type="button" data-action="duplicateItem" data-arg0="${who}" data-arg1="${kind}" data-arg2="${id}" class="w-full py-2.5 bg-slate-900 rounded-xl font-bold text-slate-300 text-sm flex items-center justify-center gap-2"><span class="material-icons" style="font-size:18px">content_copy</span>Duplicate</button>`;
   }
   if (more) {
-    const openMoreByDefault = !as && (payMethod === "bpi_platinum" || (isNew && pd >= 1));
+    const openMoreByDefault = !as && (payMethod === "bpi_platinum" || (isNew && pd >= 1) || preset === 1 || preset === 3);
     body += `<details id="f-more" ${openMoreByDefault ? "open" : ""} class="group">
       <summary class="flex items-center justify-between cursor-pointer select-none text-xs font-bold text-slate-400 py-1 px-1 list-none">
         <span>More options</span><span class="material-icons text-base transition-transform group-open:rotate-180">expand_more</span>
@@ -307,7 +315,7 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   openModalShell();
   if (kind === "expenses") updateBpiCcMonth(!!it);
 
-  setTimeout(() => $("f-name")?.focus(), 50);
+  setTimeout(() => $(name && preset !== null ? "f-amount" : "f-name")?.focus(), 50);
 }
 
 export function openChildModal(who, parentId, childId) {

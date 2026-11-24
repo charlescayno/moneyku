@@ -64,6 +64,7 @@ export {
   openModalShell,
   closeModal,
   openItemModal,
+  addInSection,
   openChildModal,
   openInvestmentModal,
   openAccountModal,

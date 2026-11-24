@@ -66,6 +66,7 @@ import {
   jumpYear,
   selectMonth,
   openItemModal,
+  addInSection,
   openChildModal,
   openAccountModal,
   openTransferModal,
@@ -173,6 +174,7 @@ window.goToday = goToday;
 window.syncNow = syncNow;
 window.jumpYear = jumpYear;
 window.openItemModal = openItemModal;
+window.addInSection = addInSection;
 window.openChildModal = openChildModal;
 window.openAccountModal = openAccountModal;
 window.openTransferModal = openTransferModal;
