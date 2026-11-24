@@ -1,5 +1,4 @@
-const CACHE_NAME = 'moneyku-cache-v299';
-const FONT_CSS = 'https://fonts.googleapis.com/icon?family=Material+Icons';
+const CACHE_NAME = 'moneyku-cache-v301';
 const urlsToCache = [
   './',
   './index.html',
@@ -8,6 +7,66 @@ const urlsToCache = [
   './assets/icon-512.png',
   './assets/money-icon.png',
   './assets/bpi-logo.png',
+  './assets/fonts/material-icons.woff2',
+  './assets/brands/adobe.png',
+  './assets/brands/amazon.png',
+  './assets/brands/angkas.png',
+  './assets/brands/apple.png',
+  './assets/brands/aub.png',
+  './assets/brands/bdo.png',
+  './assets/brands/bpi.png',
+  './assets/brands/canva.png',
+  './assets/brands/ccf.png',
+  './assets/brands/chatgpt.png',
+  './assets/brands/cimb.png',
+  './assets/brands/claude.png',
+  './assets/brands/cms.png',
+  './assets/brands/coinsph.png',
+  './assets/brands/converge.png',
+  './assets/brands/ctbc.png',
+  './assets/brands/cursor.png',
+  './assets/brands/disney.png',
+  './assets/brands/eastwest.png',
+  './assets/brands/gcash.png',
+  './assets/brands/globe.png',
+  './assets/brands/google.png',
+  './assets/brands/gotyme.png',
+  './assets/brands/grab.png',
+  './assets/brands/grabpay.png',
+  './assets/brands/hbo.png',
+  './assets/brands/hsbc.png',
+  './assets/brands/icloud.png',
+  './assets/brands/ing.png',
+  './assets/brands/jollibee.png',
+  './assets/brands/landbank.png',
+  './assets/brands/lazada.png',
+  './assets/brands/maribank.png',
+  './assets/brands/mcdo.png',
+  './assets/brands/metrobank.png',
+  './assets/brands/microsoft.png',
+  './assets/brands/moveit.png',
+  './assets/brands/netflix.png',
+  './assets/brands/notion.png',
+  './assets/brands/ownbank.png',
+  './assets/brands/petron.png',
+  './assets/brands/pldt.png',
+  './assets/brands/prulife.png',
+  './assets/brands/psbank.png',
+  './assets/brands/puregold.png',
+  './assets/brands/rcbc.png',
+  './assets/brands/sc.png',
+  './assets/brands/seabank.png',
+  './assets/brands/securitybank.png',
+  './assets/brands/shell.png',
+  './assets/brands/shopee.png',
+  './assets/brands/shopeepay.png',
+  './assets/brands/sm.png',
+  './assets/brands/spotify.png',
+  './assets/brands/starbucks.png',
+  './assets/brands/tiktok.png',
+  './assets/brands/unionbank.png',
+  './assets/brands/viu.png',
+  './assets/brands/youtube.png',
   './assets/avatar-charlie.jpg',
   './assets/avatar-karla.jpg',
   './assets/avatar-ynah.jpg',
@@ -29,7 +88,7 @@ const urlsToCache = [
   './js/gemini.js',
   './js/itemOps.js', './js/migrations.js',
   './js/arrange.js', './js/payfrom.js', './js/scope.js', './js/card.js',
-  './js/ui/next5.js', './js/ui/runway.js', './js/simulated.js', './js/ui/childmenu.js', './js/history.js', './js/ui/historyui.js', './js/ui/cardui.js',
+  './js/icons.js', './js/ui/next5.js', './js/ui/runway.js', './js/simulated.js', './js/ui/childmenu.js', './js/history.js', './js/ui/historyui.js', './js/ui/cardui.js',
   './js/ui/quicklog.js', './js/ui/addsheet.js',
   './js/ui/index.js',
   './js/ui/core.js',
@@ -39,7 +98,6 @@ const urlsToCache = [
   './js/ui/layout.js',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdn.jsdelivr.net/npm/morphdom@2.7.0/dist/morphdom-umd.min.js',
-  'https://fonts.googleapis.com/icon?family=Material+Icons',
   // Firebase SDK modules (imported by js/firebase.js), so the app can start offline after one online visit
   'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js',
   'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js',
@@ -52,10 +110,6 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME).then(cache =>
       // Cache each file independently so one 404 doesn't abort the whole install
       Promise.all(urlsToCache.map(url => cache.add(url).catch(err => console.warn('SW cache skip:', url, err))))
-        // The icon font file itself (named inside the font CSS) must be cached too, or every icon is blank offline
-        .then(() => cache.match(FONT_CSS))
-        .then(res => (res ? res.text() : ''))
-        .then(css => Promise.all([...css.matchAll(/url\(([^)]+)\)/g)].map(m => cache.add(m[1].replace(/["']/g, '')).catch(() => {}))))
     )
   );
 });

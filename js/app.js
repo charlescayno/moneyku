@@ -81,6 +81,7 @@ import {
   saveChildAndAddAnother,
   toggleField,
   pickOwner,
+  pickIcon,
   updateBpiCcMonth,
   togglePaidQuick,
   togglePaidGroup,
@@ -189,6 +190,7 @@ window.saveModal = saveModal;
 window.saveChildAndAddAnother = saveChildAndAddAnother;
 window.toggleField = toggleField;
 window.pickOwner = pickOwner;
+window.pickIcon = pickIcon;
 window.updateBpiCcMonth = updateBpiCcMonth;
 window.togglePaidQuick = togglePaidQuick;
 window.togglePaidGroup = togglePaidGroup;

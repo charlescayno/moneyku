@@ -15,6 +15,7 @@ import { showSheet } from './quicklog.js';
 import { lastMonthOneTimes } from '../extras.js';
 import { toast, fieldError } from './core.js';
 import { saveQuickSpend } from './addsheet.js';
+import { iconSpec, tileHtml, logoImg, methodIconHtml, ICON_CHOICES } from '../icons.js';
 import { closeModal, openAccountModal, openChildModal, openInvestmentModal, openItemModal } from './modals.js';
 import { jumpOverviewYear, nextOverviewPage, prevOverviewPage, renderMonthStrip, scrollChipIntoView, toggleInvestments, togglePaidGroup, togglePaidQuick, updateHeader } from './actions.js';
 import { renderAll, renderBudget } from './layout.js';
@@ -34,19 +35,8 @@ import { renderAll, renderBudget } from './layout.js';
 // =============================
 // Row Icons & Components
 // =============================
-export function rowIconHtml(name, sz, kind = "expenses", noBg = false) {
-  const brand = iconFor(name);
-  if (brand && BRAND_DOMAINS[brand]) {
-    if (noBg) return `<div class="flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><img src="https://www.google.com/s2/favicons?domain=${BRAND_DOMAINS[brand]}&sz=128" alt="" class="w-4/5 h-4/5 object-contain grayscale opacity-60" /></div>`;
-    return `<div class="rounded-lg overflow-hidden flex-shrink-0" style="width:${sz}px;height:${sz}px"><img src="https://www.google.com/s2/favicons?domain=${BRAND_DOMAINS[brand]}&sz=128" alt="" class="w-full h-full object-cover bg-white" /></div>`;
-  }
-  const cat = categoryIcon(name);
-  const iconName = cat || (kind === "income" ? "payments" : "receipt_long");
-  
-  if (noBg) return `<span class="material-icons text-slate-500 flex-shrink-0 flex items-center justify-center" style="font-size:${Math.round(sz * 0.85)}px; width:${sz}px; height:${sz}px;">${iconName}</span>`;
-  
-  if (cat) return `<div class="rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-300" style="font-size:${Math.round(sz * 0.62)}px">${cat}</span></div>`;
-  return `<div class="rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0" style="width:${sz}px;height:${sz}px"><span class="material-icons text-slate-500" style="font-size:${Math.round(sz * 0.62)}px">${iconName}</span></div>`;
+export function rowIconHtml(name, sz, kind = "expenses", noBg = false, it = null) {
+  return tileHtml(iconSpec(it, name, kind), sz, { noBg });
 }
 
 /** The due day typed in the sub-expense form (1-31), or null when empty or invalid. */
@@ -126,10 +116,9 @@ export function parentRowHtml(it, k, kind, who, opts = {}) {
   const allPaid = kids.length > 0 && paidCount === kids.length;
   const pct = kids.length ? Math.round((paidCount / kids.length) * 100) : 0;
   const icon = opts.hideIcon ? null : iconFor(it.name);
-  const iconInner = icon
-    ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[icon] || ''}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
-    : `<span class="material-icons text-white" style="font-size:22px">home_work</span>`;
-  const iconBg = icon ? "bg-slate-800" : "bg-gradient-to-br from-fuchsia-500 to-purple-600";
+  const logo = icon ? logoImg(icon) : "";
+  const iconInner = logo || `<span class="material-icons text-white" style="font-size:22px">${it.icon || "home_work"}</span>`;
+  const iconBg = logo ? "bg-slate-800" : "bg-gradient-to-br from-fuchsia-500 to-purple-600";
   const arrange = isArranging(it.id) && kids.length > 1;
   // Display order: by due day, undated last, paid at the end. Arrange mode shows the stored order so dragging edits that order.
   const shownKids = arrange ? kids : displayKids(kids, k);
@@ -224,18 +213,18 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
       </div>`
     : "";
 
-  const iconHtml = opts.hideIcon || kind === "income" ? "" : rowIconHtml(it.name, 28, kind);
+  const iconHtml = opts.hideIcon ? "" : rowIconHtml(it.name, 28, kind, false, it);
   const installment = it.recurring && it.end;
   const dd = dueDayFor(it);
   const tags = [];
   if (!opts.hidePaymentTag) {
     if (it.paymentMethod === "bpi_platinum") {
-      tags.push(`<span class="text-[11px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-0.5">💳 BPI Platinum</span>`);
+      tags.push(`<span class="text-[11px] font-black text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-1">${logoImg("bpi", "w-3.5 h-3.5 rounded-[3px] bg-white object-cover")}BPI Platinum</span>`);
     } else if (isAccountMethod(it.paymentMethod)) {
       const m = ACCOUNT_PAYMENT_METHODS.find((x) => x.id === it.paymentMethod);
-      tags.push(`<span class="text-[11px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">${m.icon} ${escapeHtml(m.short)}</span>`);
+      tags.push(`<span class="text-[11px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-1">${methodIconHtml(m)}${escapeHtml(m.short)}</span>`);
     } else if (it.paymentMethod && it.paymentMethod.startsWith("cc_")) {
-      tags.push(`<span class="text-[11px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-0.5">💳 ${escapeHtml(PM_LABELS[it.paymentMethod] || "Credit Card")}</span>`);
+      tags.push(`<span class="text-[11px] font-black text-slate-300 bg-slate-700/50 px-1.5 py-0.5 rounded border border-slate-600 flex items-center gap-1"><span class="material-icons" style="font-size:14px" aria-hidden="true">credit_card</span>${escapeHtml(PM_LABELS[it.paymentMethod] || "Credit Card")}</span>`);
     }
   }
   
@@ -329,7 +318,7 @@ function setSimOwner(it, who) {
 /** The "+" at the end of a section heading: adds an item of that kind (One-time, Auto-pay, Recurring, Installment, Salary, Contribution). */
 function sectionPlusHtml(who, kind, c) {
   const label = groupLabel(c);
-  return `<button type="button" data-action="addInSection" data-arg0="${who}" data-arg1="${kind}" data-arg2="${c}" aria-label="Add ${escapeHtml(label)}" title="Add ${escapeHtml(label)}" class="section-plus flex items-center justify-center rounded-full text-slate-300 bg-white/[0.07]" style="width:24px;height:24px;margin:-4px -2px -4px 0"><span class="material-icons" style="font-size:16px">add</span></button>`;
+  return `<button type="button" data-action="addInSection" data-arg0="${who}" data-arg1="${kind}" data-arg2="${c}" aria-label="Add ${escapeHtml(label)}" title="Add ${escapeHtml(label)}" class="section-plus flex items-center justify-center rounded-full text-slate-300 bg-white/[0.07]" style="width:28px;height:28px;margin:-6px -3px -6px 0"><span class="material-icons ic-16">add</span></button>`;
 }
 
 /** Sections that are always listed (with a "+") even in months where nothing belongs to them yet. */
@@ -388,7 +377,7 @@ export function paymentMethodGroupHtml(pm, list, k, kind, who) {
       <div class="flex items-center gap-2">
         <span class="material-icons text-[14px] text-indigo-400 transition-transform group-open:rotate-90">chevron_right</span>
         <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-          <span class="text-[14px]">💳</span>
+          <span class="material-icons text-indigo-300" style="font-size:18px" aria-hidden="true">credit_card</span>
         </div>
         <p class="text-sm font-black text-indigo-300 flex-1 min-w-0 truncate">${label}</p>
       </div>
@@ -408,7 +397,7 @@ export function bankGroupHtml(bank, list, k, kind, who) {
   const subs = sortItems(list, kind).map((it) => itemRowHtml(it, k, kind, who, { hideIcon: true })).join("");
   return `<div class="py-1">
     <div class="flex items-center gap-3 px-3 py-2">
-      <div class="acct-icon flex-shrink-0"><img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[bank] || ''}&sz=128" alt="" class="w-full h-full object-cover bg-white" /></div>
+      <div class="acct-icon flex-shrink-0">${logoImg(bank) || `<span class="material-icons text-slate-300" style="font-size:18px">account_balance</span>`}</div>
       <p class="text-sm font-black text-white flex-1 min-w-0 truncate">${BANK_LABELS[bank] || bank}</p>
       <p class="text-sm font-black text-white flex-shrink-0">${peso(total)}</p>
     </div>
@@ -733,13 +722,9 @@ export function personSectionHtml(who, includeDebt = true) {
 // =============================
 export function acctIconHtml(a) {
   const key = bankIconFor(a.name);
-  const domain = key && BANK_DOMAINS[key];
   const isCash = !key && /cash/i.test(a.name || "");
-  const fallback = `<span class="material-icons text-slate-300" style="font-size:18px">${isCash ? "payments" : "account_balance"}</span>`;
-  if (!domain) return fallback;
-  // Bank logo (favicon service); falls back to the generic bank icon if it can't load (offline)
-  return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=128" alt="${escapeHtml(BANK_LABELS[key] || a.name)}" loading="lazy" class="w-full h-full object-cover bg-white" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span class="material-icons text-slate-300 items-center justify-center" style="font-size:18px;display:none">account_balance</span>`;
+  const logo = logoImg(key, "w-full h-full object-cover bg-white", escapeHtml(BANK_LABELS[key] || a.name));
+  return logo || `<span class="material-icons text-slate-300" style="font-size:18px">${isCash ? "payments" : "account_balance"}</span>`;
 }
 /** Tidy display name: a bare bank name ("Gcash", "MARIBANK") shows as its proper label; anything longer is left as typed. */
 export function acctDisplayName(a) {
@@ -810,10 +795,8 @@ export function acctCardHtml(a) {
   const dark = isCredit; // silver card uses dark text
   const fg = dark ? "#111827" : "#ffffff";
   const sub = dark ? "rgba(17,24,39,.65)" : "rgba(255,255,255,.75)";
-  const domain = key && BANK_DOMAINS[key];
-  const logo = domain
-    ? `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy" class="w-4 h-4 rounded-[4px] bg-white object-cover flex-shrink-0" onerror="this.style.display='none'">`
-    : `<span class="material-icons" style="font-size:15px;color:${fg}">${isCash ? "payments" : "account_balance"}</span>`;
+  const logo = logoImg(key, "w-4 h-4 rounded-[4px] bg-white object-cover flex-shrink-0")
+    || `<span class="material-icons" style="font-size:15px;color:${fg}">${isCash ? "payments" : "account_balance"}</span>`;
   const network = /debit|credit|mastercard|platinum|rewards/i.test(a.name || "") || isCredit;
   const chip = (key && !isCash) || isCredit
     ? `<div class="mt-3 w-7 h-[22px] rounded-[5px] border" style="background:rgba(255,255,255,.7);border-color:rgba(255,255,255,.4)"></div>
@@ -1471,7 +1454,7 @@ export function recurringPaymentsCardHtml() {
     return `
       <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/30 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
-          ${rowIconHtml(it.name, 22, it.kind)}
+          ${rowIconHtml(it.name, 22, it.kind, false, it)}
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
               <p class="text-xs font-bold ${settled ? 'text-slate-400 line-through' : 'text-slate-200'} truncate keep-case">${escapeHtml(it.name)}</p>
@@ -1998,6 +1981,7 @@ async function saveModalInner() {
   const cutoffDay = $("f-cutoff") ? parseInt($("f-cutoff").value, 10) : null;
   const txDate = $("f-txdate") ? $("f-txdate").value : null;
   const category = $("f-category") ? $("f-category").value : "";
+  const icon = $("f-icon")?.dataset.val || "";
 
   // A repeating item whose amount changed: ask which months it applies to
   let scope = "all";
@@ -2023,6 +2007,7 @@ async function saveModalInner() {
       if (txDate) it.txDate = txDate; else delete it.txDate;
       if ($("f-include")) { if ($("f-include").dataset.on === "true") delete it.excluded; else it.excluded = true; }
       if ($("f-category")) { if (category) it.category = category; else delete it.category; }
+      if ($("f-icon")) { if (icon) it.icon = icon; else delete it.icon; }
       if (getKids(it).length) {
         // Amount is sum of children
       } else {
@@ -2037,7 +2022,7 @@ async function saveModalInner() {
     if (it && who === "simulated" && $("f-simwho")) setSimOwner(it, $("f-simwho").dataset.val);
   } else {
     const isGroup = $("f-group")?.dataset.on === "true";
-    const created = addItemData(appData, { who, kind: type, name, amount: isGroup ? 0 : amount, start, recurring, end, dueDay, paymentMethod: payMethod, txDay, cutoffDay, txDate, category });
+    const created = addItemData(appData, { who, kind: type, name, amount: isGroup ? 0 : amount, start, recurring, end, dueDay, paymentMethod: payMethod, txDay, cutoffDay, txDate, category, icon });
     if (who === "simulated" && $("f-simwho")) setSimOwner(created, $("f-simwho").dataset.val);
     if (isGroup) {
       rememberPayMethod(payMethod);

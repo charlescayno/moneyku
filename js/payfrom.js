@@ -7,7 +7,8 @@
 // =============================
 import { acctOwner, acctType, childFinal, getAppData, getSpendList, isPaid, itemFinal } from "./state.js";
 import { isCardItem } from "./card.js";
-import { ACCOUNT_PAYMENT_METHODS, BANK_DOMAINS, bankIconFor, escapeHtml, peso } from "./utils.js";
+import { ACCOUNT_PAYMENT_METHODS, bankIconFor, escapeHtml, peso } from "./utils.js";
+import { logoImg } from "./icons.js";
 
 const r2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
@@ -204,9 +205,8 @@ function pickAccount(label, total, income, preferred = null, owner = "charlie") 
     el.className = "fixed inset-0 z-[75] bg-black/70 flex items-end sm:items-center justify-center p-4";
     const row = (a) => {
       const bank = bankIconFor(a.name);
-      const icon = bank
-        ? `<img src="https://www.google.com/s2/favicons?domain=${BANK_DOMAINS[bank] || ""}&sz=128" alt="" class="w-full h-full object-cover bg-white" />`
-        : `<span class="text-sm font-black text-white">${escapeHtml((a.name || "?").trim().charAt(0).toUpperCase() || "?")}</span>`;
+      const icon = logoImg(bank)
+        || `<span class="text-sm font-black text-white">${escapeHtml((a.name || "?").trim().charAt(0).toUpperCase() || "?")}</span>`;
       const after = (Number(a.amount) || 0) + (income ? total : -total);
       return `<button type="button" data-acct="${escapeHtml(a.id)}" class="w-full flex items-center gap-3 p-3 rounded-xl border ${a === pre ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-900/60"} text-left">
         <span class="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600">${icon}</span>

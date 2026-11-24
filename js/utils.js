@@ -45,10 +45,10 @@ export const CREDIT_CARD_METHODS = [
 // Ordinary (non-credit) payment methods. They behave like cash for totals; each one
 // defaults the "paid from" account to the account whose name matches `account`.
 export const ACCOUNT_PAYMENT_METHODS = [
-  { id: "maribank", label: "Maribank", short: "Maribank", icon: "\u{1F3E6}", account: /mari\s*bank/i },
-  { id: "gcash", label: "GCash", short: "GCash", icon: "\u{1F4F1}", account: /g\s*cash/i },
-  { id: "bpi_debit", label: "BPI Debit Card", short: "BPI Debit", icon: "\u{1F4B3}", account: /^bpi\b/i },
-  { id: "securitybank", label: "Security Bank", short: "Security Bank", icon: "\u{1F3E6}", account: /security\s*bank|\bsecb\b/i },
+  { id: "maribank", label: "Maribank", short: "Maribank", logo: "maribank", mi: "account_balance", account: /mari\s*bank/i },
+  { id: "gcash", label: "GCash", short: "GCash", logo: "gcash", mi: "smartphone", account: /g\s*cash/i },
+  { id: "bpi_debit", label: "BPI Debit Card", short: "BPI Debit", logo: "bpi", mi: "credit_card", account: /^bpi\b/i },
+  { id: "securitybank", label: "Security Bank", short: "Security Bank", logo: "securitybank", mi: "account_balance", account: /security\s*bank|\bsecb\b/i },
 ];
 export const PM_LABELS = Object.fromEntries([...CREDIT_CARD_METHODS, ...ACCOUNT_PAYMENT_METHODS].map((c) => [c.id, c.short]));
 export const isAccountMethod = (id) => ACCOUNT_PAYMENT_METHODS.some((m) => m.id === id);
@@ -265,14 +265,24 @@ export function bankIconFor(name) {
   return null;
 }
 
+/** Brand / bank logos shipped with the app (assets/brands/<key>.png), so they work offline and never depend on a favicon service. */
+export const BRAND_LOGOS = new Set("adobe amazon angkas apple aub bdo bpi canva ccf chatgpt cimb claude cms coinsph converge ctbc cursor disney eastwest gcash globe google gotyme grabpay grab hbo hsbc icloud ing jollibee landbank lazada maribank mcdo metrobank microsoft moveit netflix notion ownbank petron pldt prulife psbank puregold rcbc sc seabank securitybank shell shopeepay shopee sm spotify starbucks tiktok unionbank viu youtube".split(" "));
+export const brandLogoUrl = (key) => (key && BRAND_LOGOS.has(key) ? `assets/brands/${key}.png` : null);
+
+const BRAND_RULES = [
+  ["netflix", /netflix/], ["youtube", /youtube/], ["spotify", /spotify/], ["disney", /disney/], ["hbo", /\bhbo\b|max\.com/], ["viu", /\bviu\b/],
+  ["prulife", /prulife|prudential/], ["cms", /campus missionary/], ["ccf", /tithe|\bccf\b/],
+  ["claude", /claude|anthropic/], ["chatgpt", /chatgpt|openai/], ["cursor", /\bcursor\b/],
+  ["icloud", /icloud/], ["apple", /\bapple\b/], ["google", /google/], ["microsoft", /microsoft|office 365|xbox/], ["adobe", /adobe/], ["canva", /canva/], ["notion", /\bnotion\b/],
+  ["tiktok", /tiktok/], ["shopee", /shopee/], ["lazada", /lazada/], ["amazon", /amazon/],
+  ["moveit", /move ?it/], ["angkas", /angkas/], ["grab", /\bgrab\b/],
+  ["globe", /\bglobe\b|\bgomo\b/], ["pldt", /pldt/], ["converge", /converge/],
+  ["jollibee", /jollibee/], ["mcdo", /mcdo|mcdonald/], ["starbucks", /starbucks/],
+  ["petron", /petron/], ["shell", /\bshell\b/], ["puregold", /puregold/], ["sm", /^sm\b/],
+];
 export function brandIconFor(name) {
   const n = (name || "").toLowerCase();
-  if (n.includes("netflix")) return "netflix";
-  if (n.includes("youtube")) return "youtube";
-  if (n.includes("prulife") || n.includes("prudential")) return "prulife";
-  if (n.includes("campus missionary")) return "cms";
-  if (n.includes("tithe")) return "ccf";
-  if (n.includes("claude")) return "claude";
+  for (const [key, re] of BRAND_RULES) if (re.test(n)) return key;
   return null;
 }
 
@@ -283,25 +293,44 @@ export function iconFor(name) {
 export function categoryIcon(name) {
   const n = (name || "").toLowerCase();
   if (/electric|kuryent|meralco|\bpower\b/.test(n)) return "bolt";
-  if (/wifi|internet|pldt|converge|\bfiber\b|broadband|gomo|globe|smart/.test(n)) return "wifi";
+  if (/wifi|internet|pldt|converge|\bfiber\b|broadband|gomo|globe|\bsmart\b/.test(n)) return "wifi";
+  if (/\bload\b|prepaid|postpaid|mobile plan|cellphone|phone bill/.test(n)) return "smartphone";
+  if (/cable|streaming|\btv\b/.test(n)) return "tv";
   if (/drinking water|purified|mineral|distilled/.test(n)) return "local_drink";
   if (/\bwater\b|tubig|maynilad|manila water/.test(n)) return "water_drop";
   if (/gas station|gasoline|petrol|diesel|motor gas|fuel/.test(n)) return "local_gas_station";
   if (/gasul|lpg|cooking gas/.test(n)) return "local_fire_department";
   if (/parking/.test(n)) return "local_parking";
-  if (/grocer|palengke|market|supermarket|puregold|sm\b/.test(n)) return "shopping_cart";
+  if (/\btoll\b|easytrip|autosweep/.test(n)) return "toll";
+  if (/flight|airfare|cebu pacific|airasia|\bhotel\b|travel|vacation|trip\b/.test(n)) return "flight";
+  if (/\bgrab\b|taxi|\bfare\b|commute|jeep|angkas|move ?it|\bmrt\b|\blrt\b|\bbus\b/.test(n)) return "commute";
+  if (/coffee|cafe|starbucks|milk ?tea/.test(n)) return "local_cafe";
+  if (/beer|alcohol|bar tab|\bbar\b/.test(n)) return "sports_bar";
+  if (/bakery|bread|cake shop/.test(n)) return "bakery_dining";
+  if (/grocer|palengke|market|supermarket|puregold|^sm\b/.test(n)) return "shopping_cart";
   if (/laundry|labada/.test(n)) return "local_laundry_service";
+  if (/condo|association dues|\bhoa\b|amortization|mortgage|pag-?ibig/.test(n)) return "apartment";
   if (/\brent\b|renta/.test(n)) return "home";
-  if (/tuition|school|educ|braces/.test(n)) return "school";
-  if (/med|medicine|pharmacy|drug|health|doctor/.test(n)) return "medication";
-  if (/\bcar\b|auto|vehicle|change oil/.test(n)) return "directions_car";
-  if (/food|dining|resto|restaurant|\bmeal|kain/.test(n)) return "restaurant";
+  if (/tuition|school|educ|braces|\bbooks?\b/.test(n)) return "school";
+  if (/allowance|\bkids?\b|baby|diaper/.test(n)) return "child_care";
+  if (/\bgym\b|fitness|workout|yoga/.test(n)) return "fitness_center";
+  if (/haircut|salon|barber|\bspa\b|massage|nails/.test(n)) return "content_cut";
+  if (/\bmed\b|medic|pharmacy|drug|health|doctor|dentist|clinic|hospital|vitamin|watsons|mercury ?drug/.test(n)) return "medication";
+  if (/\bcar\b|auto|vehicle|change oil|motorcycle|\bregistration\b/.test(n)) return "directions_car";
+  if (/repair|maintenance|plumber|\bfix\b/.test(n)) return "build";
+  if (/food|dining|resto|restaurant|\bmeal|kain|lunch|dinner|breakfast|sukiya|contis|vikings|kfc|chowking|inasal|dailybeer|jollibee|mcdo/.test(n)) return "restaurant";
+  if (/movie|cinema|concert|\bgames?\b|gaming|steam|playstation|nintendo/.test(n)) return "sports_esports";
+  if (/clothes|clothing|shoes|\bshopping\b|fashion|uniqlo/.test(n)) return "shopping_bag";
   if (/insurance/.test(n)) return "verified_user";
+  if (/\btax\b|\bbir\b|\bsss\b|philhealth/.test(n)) return "account_balance";
+  if (/credit card|\bcc\b|installment|platinum/.test(n)) return "credit_card";
   if (/loan|utang|hulog/.test(n)) return "request_quote";
   if (/birthday|gift|regalo/.test(n)) return "cake";
-  if (/tithe|church|missionary|ministry|offering/.test(n)) return "volunteer_activism";
-  if (/salary|income|pay\b|sahod/.test(n)) return "payments";
-  if (/pet|dog|cat|kobe|dudu/.test(n)) return "pets";
+  if (/tithe|church|missionary|ministry|offering|donation/.test(n)) return "volunteer_activism";
+  if (/savings|ipon|emergency fund|invest/.test(n)) return "savings";
+  if (/salary|income|\bpay\b|sahod|wage/.test(n)) return "payments";
+  if (/subscription|membership|premium/.test(n)) return "subscriptions";
+  if (/\bpets?\b|\bdog\b|\bcat\b|kobe|dudu|vet\b/.test(n)) return "pets";
   return null;
 }
 

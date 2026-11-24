@@ -6,6 +6,7 @@ import { acctOwner, acctType, accountsTotal, allInstallments, amountIn, childFin
 import { syncSet } from '../firebase.js';
 import { SPEND_CATS, catInfo, categoryOf } from '../categories.js';
 import { toast } from './core.js';
+import { ICON_CHOICES } from '../icons.js';
 import { saveChildAndAddAnother, saveModal, spendSectionHtml, toggleField } from './components.js';
 import { renderAll } from './layout.js';
 import { addTabsHtml, ownerName } from './addsheet.js';
@@ -90,7 +91,7 @@ export function updateBpiCcMonth(isExistingInit = false) {
 
   const hintEl = $("bpi-cc-hint");
   if (hintEl) {
-    hintEl.innerHTML = `\u{1F4A1} Charged on <b>${MONTHS_SHORT[m]} ${ordinal(txDay)}</b> \u2192 Statement cut-off ${MONTHS_SHORT[cutoffDate.getMonth()]} ${ordinal(cutoff)} \u2192 <b>Due ${MONTHS_SHORT[dueDate.getMonth()]} ${ordinal(dueDate.getDate())}, ${dueDate.getFullYear()}</b>. Shown in the BPI Platinum Rewards section.`;
+    hintEl.innerHTML = `<span class="material-icons" style="font-size:14px;vertical-align:-3px;margin-right:4px" aria-hidden="true">lightbulb</span>Charged on <b>${MONTHS_SHORT[m]} ${ordinal(txDay)}</b> \u2192 Statement cut-off ${MONTHS_SHORT[cutoffDate.getMonth()]} ${ordinal(cutoff)} \u2192 <b>Due ${MONTHS_SHORT[dueDate.getMonth()]} ${ordinal(dueDate.getDate())}, ${dueDate.getFullYear()}</b>. Shown in the BPI Platinum Rewards section.`;
   }
 }
 export function openModalShell() {
@@ -217,8 +218,8 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
       <label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Payment Method / Category</label>
       <select id="f-paymethod" data-action="updateBpiCcMonth" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none">
         <option value="cash" ${payMethod === "cash" ? "selected" : ""}>Cash / Bank / E-Wallet</option>
-        ${ACCOUNT_PAYMENT_METHODS.map((c) => `<option value="${c.id}" ${payMethod === c.id ? "selected" : ""}>${c.icon} ${escapeHtml(c.label)}</option>`).join("")}
-        ${CREDIT_CARD_METHODS.map((c) => `<option value="${c.id}" ${payMethod === c.id ? "selected" : ""}>💳 ${escapeHtml(c.label)}</option>`).join("")}
+        ${ACCOUNT_PAYMENT_METHODS.map((c) => `<option value="${c.id}" ${payMethod === c.id ? "selected" : ""}>${escapeHtml(c.label)}</option>`).join("")}
+        ${CREDIT_CARD_METHODS.map((c) => `<option value="${c.id}" ${payMethod === c.id ? "selected" : ""}>${escapeHtml(c.label)}</option>`).join("")}
       </select>
     </div>`;
     if (as) more += pmHtml; else body += pmHtml;
@@ -275,6 +276,12 @@ export function openItemModal(who, kind, id, presetDay, sheetOpts = {}) {
   }
   if (!as) more += `<div class="space-y-0.5"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Auto-completes on day <span class="text-slate-600">(1-31, optional)</span></label>
     <input type="number" id="f-dueday" min="1" max="31" inputmode="numeric" value="${ddVal}" placeholder="e.g. 29" class="w-full bg-slate-900 rounded-xl py-2.5 px-3.5 text-sm font-bold text-white focus:outline-none" /></div>`;
+
+  if (who !== "debt" && who !== "pdebt") {
+    const curIcon = it?.icon || "";
+    more += `<div class="space-y-1"><label class="text-[10px] font-bold uppercase text-slate-500 ml-1">Icon <span class="text-slate-600">(Auto picks from the name)</span></label>
+      <div id="f-icon" data-val="${escapeHtml(curIcon)}" style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px">${["", ...ICON_CHOICES].map((n) => `<button type="button" data-action="pickIcon" data-arg0="${n}" aria-label="${n ? n.replace(/_/g, " ") : "Automatic icon"}" aria-pressed="${n === curIcon}" class="icon-pick flex items-center justify-center rounded-lg ${n === curIcon ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}" style="height:38px"><span class="material-icons" style="font-size:20px">${n || "auto_awesome"}</span></button>`).join("")}</div></div>`;
+  }
 
   if (!isNew && !kids.length) {
     const verb = kind === "income" ? "Received" : "Paid";
@@ -440,6 +447,17 @@ export function openTransferModal(who) {
   $("delete-btn").classList.add("hidden");
   openModalShell();
 }
+export function pickIcon(name) {
+  const box = $("f-icon");
+  if (!box) return;
+  box.dataset.val = name || "";
+  box.querySelectorAll("button").forEach((b) => {
+    const on = (b.dataset.arg0 || "") === (name || "");
+    b.setAttribute("aria-pressed", on);
+    b.className = `icon-pick flex items-center justify-center rounded-lg ${on ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-400"}`;
+  });
+}
+
 export function pickOwner(btn, w) {
   const wrap = btn.parentElement;
   if (!wrap) return;

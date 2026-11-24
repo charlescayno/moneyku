@@ -206,7 +206,7 @@ export function upcomingBillsWidgetHtml() {
       mark = `<button type="button" data-action="dueMarkPaid" data-arg0="${b.id}" title="Mark paid" aria-label="Mark ${plain} paid" class="reminder-pay w-10 h-10 rounded-xl border border-slate-600 flex items-center justify-center flex-shrink-0 text-slate-300"><span class="material-icons" style="font-size:18px">check</span></button>`;
     }
     return `<div ${open} data-reminder="${escapeHtml(b.id)}" class="reminder-row flex items-center gap-2 pl-2 pr-1.5 py-1.5 rounded-xl bg-slate-950/40 border border-white/5 cursor-pointer min-w-0">
-      ${rowIconHtml(b.name, 28)}
+      ${rowIconHtml(b.name, 28, "expenses", false, b)}
       <div class="min-w-0 flex-1">
         <p class="text-xs font-bold text-slate-100 truncate keep-case">${nm}</p>
         <p class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5 min-w-0"><span class="text-[9px] font-black px-1.5 py-0.5 rounded ${cls} flex-shrink-0">${badge}</span>${b.isOverdue ? "" : `<span class="text-[10px] font-bold text-slate-400 flex-shrink-0">${ordinal(b.dueDay)}</span>`}</p>

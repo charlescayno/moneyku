@@ -70,6 +70,7 @@ export {
   openAccountModal,
   openTransferModal,
   pickOwner,
+  pickIcon,
   confirmDelete,
   closeConfirm,
   doDelete

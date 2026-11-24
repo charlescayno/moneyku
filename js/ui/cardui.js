@@ -199,7 +199,7 @@ export function cardSectionHtml(k) {
             <span class="font-bold ${owed > 0.005 ? "text-rose-400" : "text-slate-500"}" style="font-size:14px">${peso(owed)}</span>
           </div>
         </div>
-        <button type="button" data-action="cardSettingsOpen" title="Card settings" aria-label="Card settings" class="text-slate-500 px-1"><span class="material-icons" style="font-size:14px">tune</span></button>
+        <button type="button" data-action="cardSettingsOpen" title="Card settings" aria-label="Card settings" class="icon-btn text-slate-500 px-1"><span class="material-icons" style="font-size:14px">tune</span></button>
       </summary>
       <div class="space-y-1.5 mt-1">${blocks || empty}</div>
     </details>
