@@ -386,7 +386,7 @@ async () => {
   out.paidText = /1\\/4 paid/.test(card.textContent); c.closeMore();
   out.syncTap = document.getElementById('sync-status').dataset.action === 'syncNow';
   ex.openHeaderMenu(); await w(200); out.menuSync = !!document.querySelector('[data-action="headerMenuGo"][data-arg0="syncNow"]');
-  out.dividers = document.querySelectorAll('.person-card div[style*="border-top:1px solid"]').length;
+  out.sectionPlus = document.querySelectorAll('.person-card .section-plus').length; // every section keeps its + even when empty: 3 income + 4 expense sections for each of Charles and Ynah
   (await import('/js/ui/quicklog.js')).qlClose(); await w(300);
   return out;
 }
@@ -394,7 +394,7 @@ async () => {
 
 def check_quick(pg, name, fails):
     r = pg.evaluate(QUICK); print(name, "quick wins", r)
-    want = {"emptyAdd": True, "cardEmptyAdd": True, "dots": 4, "paidDots": 1, "nowDot": 1, "paidText": True, "syncTap": True, "menuSync": True, "dividers": 0}
+    want = {"emptyAdd": True, "cardEmptyAdd": True, "dots": 4, "paidDots": 1, "nowDot": 1, "paidText": True, "syncTap": True, "menuSync": True, "sectionPlus": 14}
     bad = {k: (r.get(k), v) for k, v in want.items() if r.get(k) != v}
     if bad: fails.append(f"{name}: quick wins wrong (got, want): {bad}")
 def check_fold(pg, name, fails):

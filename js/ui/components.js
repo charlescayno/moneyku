@@ -332,12 +332,16 @@ function sectionPlusHtml(who, kind, c) {
   return `<button type="button" data-action="addInSection" data-arg0="${who}" data-arg1="${kind}" data-arg2="${c}" aria-label="Add ${escapeHtml(label)}" title="Add ${escapeHtml(label)}" class="section-plus flex items-center justify-center rounded-full text-slate-300 bg-white/[0.07]" style="width:24px;height:24px;margin:-4px -2px -4px 0"><span class="material-icons" style="font-size:16px">add</span></button>`;
 }
 
-export function categoryGroupedHtml(items, k, kind, who) {
-  if (!items.length) return "";
+/** Sections that are always listed (with a "+") even in months where nothing belongs to them yet. */
+const ALWAYS_SECTIONS = { expenses: [0, 1, 2, 3], income: [0, 1, 2] };
+
+export function categoryGroupedHtml(items, k, kind, who, full = false) {
+  if (!items.length && !full) return "";
   const sorted = sortItems(items, kind);
-  const showHeaders = new Set(sorted.map((it) => groupKeyOf(it, kind, who))).size > 1 && who !== "debt" && who !== "pdebt";
+  const showHeaders = (full || new Set(sorted.map((it) => groupKeyOf(it, kind, who))).size > 1) && who !== "debt" && who !== "pdebt";
   
   const buckets = {};
+  if (full && showHeaders) for (const c of ALWAYS_SECTIONS[kind] || []) buckets[c] = [];
   for (const it of sorted) {
     const c = groupKeyOf(it, kind, who);
     (buckets[c] = buckets[c] || []).push(it);
@@ -426,30 +430,32 @@ export function groupedRowsHtml(items, k, kind, who) {
       return `<div class="sim-person-group mb-1" data-who="${p.key}"><div class="flex justify-between items-center px-2 pt-2 pb-0.5"><p class="flex items-center gap-1.5 text-[11px] font-black text-slate-400 ${p.key ? "keep-case" : ""}">${av}${p.label}</p><p class="text-[11px] font-bold tabular-nums ${kind === "income" ? "text-emerald-400" : "text-slate-400"}">${peso(sub)}</p></div>${groupedRowsByDue(p.list, k, kind, who)}</div>`;
     }).join("");
   }
-  return groupedRowsByDue(items, k, kind, who);
+  const full = (kind === "expenses" || kind === "income") && who !== "debt" && who !== "pdebt";
+  return groupedRowsByDue(items, k, kind, who, full);
 }
 
-function groupedRowsByDue(items, k, kind, who) {
-  if (kind !== "expenses" || who === "debt" || who === "pdebt" || !items.length) return groupedRowsInner(items, k, kind, who);
+function groupedRowsByDue(items, k, kind, who, full = false) {
+  if (kind !== "expenses" || who === "debt" || who === "pdebt" || !items.length) return groupedRowsInner(items, k, kind, who, full);
   const over = [], week = [], later = [];
   for (const it of items) {
     const ds = getKids(it, k).length ? null : dueStatus(it, k);
     if (ds && ds.state === "overdue") over.push(it); else if (ds && ds.state === "week") week.push(it); else later.push(it);
   }
-  if (!over.length && !week.length) return groupedRowsInner(items, k, kind, who);
+  if (!over.length && !week.length) return groupedRowsInner(items, k, kind, who, full);
   const rows = (list) => list.sort((a, b) => (dueDayFor(a) || 0) - (dueDayFor(b) || 0)).map((it) => itemRowHtml(it, k, kind, who)).join("");
   let html = "";
   if (over.length) html += dueHeader("Overdue", "text-rose-400", "error_outline", over.length) + rows(over);
   if (week.length) html += dueHeader("This week", "text-amber-300", "schedule", week.length) + rows(week);
-  if (later.length) html += dueHeader("Later", "text-slate-500", "event", later.length) + groupedRowsInner(later, k, kind, who);
+  if (later.length) html += dueHeader("Later", "text-slate-500", "event", later.length) + groupedRowsInner(later, k, kind, who, full);
+  else if (full) html += groupedRowsInner(later, k, kind, who, full);
   return html;
 }
 
-function groupedRowsInner(items, k, kind, who) {
-  if (!items.length) {
+function groupedRowsInner(items, k, kind, who, full = false) {
+  if (!items.length && !full) {
     return `<div class="empty-state flex items-center justify-center gap-2 px-3 py-4 text-center"><p class="text-[11px] font-bold text-slate-500">${kind === "income" ? "No income yet" : "No expenses yet"}</p><button type="button" data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" class="text-[11px] font-bold ${(OWNERS[who] || OWNERS.charlie).text} flex items-center" style="min-height:32px"><span class="material-icons" style="font-size:14px">add</span>Add</button></div>`;
   }
-  if (!items.length) {
+  if (!items.length && !full) {
     const isInc = kind === "income";
     return `<div class="empty-state flex flex-col items-center gap-1 px-3 py-4 text-center">
       <span class="material-icons text-slate-600" style="font-size:22px" aria-hidden="true">${isInc ? "savings" : "receipt_long"}</span>
@@ -496,7 +502,7 @@ function groupedRowsInner(items, k, kind, who) {
     html += bankGroupHtml(b, buckets[b], k, kind, who); 
   }
   
-  html += categoryGroupedHtml(rest.filter((it) => !grouped.has(it.id)), k, kind, who);
+  html += categoryGroupedHtml(rest.filter((it) => !grouped.has(it.id)), k, kind, who, full);
   return html;
 }
 
