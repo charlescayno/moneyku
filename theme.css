@@ -71,8 +71,8 @@ body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px
 
 /* ---- Colour roles: green = money in, red = money out, amber = due soon, blue / purple = whose it is (avatar ring only) ---- */
 :root {
-  --inc-bg: #131d2f; --inc-bd: rgba(255, 255, 255, .08);
-  --exp-bg: #131d2f; --exp-bd: rgba(255, 255, 255, .08);
+  --inc-bg: #12332e; --inc-bd: #21604f;
+  --exp-bg: #371b29; --exp-bd: #6c2b43;
   --surface-in: rgba(0, 0, 0, .20); --surface-bd: rgba(255, 255, 255, .09);
 }
 /* Simulated: Charles' and Ynah's items as neutral blocks (the person shows in the avatar ring, not a second tint) */
@@ -194,9 +194,6 @@ select.as-input { -webkit-appearance: none; appearance: none; padding: 0 28px 0 
 #budget-body .text-slate-400 { color: #aab6c8; }
 #budget-body .text-slate-500 { color: #9ba8bb; }
 
-/* Income / expense sections: one neutral surface, with a coloured top edge saying which way the money goes */
-#budget-body details[data-persist^="sec-income"] { border-top: 2px solid #34d399; }
-#budget-body details[data-persist^="sec-expenses"] { border-top: 2px solid #fb7185; }
 .day-chip { background: rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 0 6px; line-height: 18px; }
 .cat-empty p { font-weight: 600; }
 .sec-add { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background: rgba(255, 255, 255, 0.07); }
