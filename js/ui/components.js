@@ -74,8 +74,8 @@ export function childRowHtml(parentId, c, k, who, kind = "expenses", arr = null)
 
   const spendLine = (hasSpend && !paid)
     ? `<div class="child-spendline flex items-center gap-2 mt-0.5">
-        <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden max-w-[100px]"><div class="h-full ${over ? "bg-rose-500" : "bg-emerald-400"} rounded-full" style="width:${pct}%"></div></div>
-        <span class="text-[10px] font-bold ${over ? "text-rose-400" : "text-slate-500"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
+        <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden max-w-[100px]"><div class="h-full ${over ? "bg-rose-500" : remaining < 200 ? "bg-amber-400" : "bg-emerald-400"} rounded-full" style="width:${pct}%"></div></div>
+        <span class="text-[10px] font-bold ${over ? "text-rose-400" : remaining < 200 ? "text-amber-300" : "text-slate-500"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
       </div>`
     : "";
 
@@ -208,8 +208,8 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
 
   const spendLine = (hasSpend && !settled)
     ? `<div class="child-spendline flex items-center gap-2 mt-1">
-        <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden max-w-[100px]"><div class="h-full ${over ? "bg-rose-500" : "bg-emerald-400"} rounded-full" style="width:${pctAmount}%"></div></div>
-        <span class="text-[10px] font-bold ${over ? "text-rose-400" : "text-emerald-400"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
+        <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden max-w-[100px]"><div class="h-full ${over ? "bg-rose-500" : remaining < 200 ? "bg-amber-400" : "bg-emerald-400"} rounded-full" style="width:${pctAmount}%"></div></div>
+        <span class="text-[10px] font-bold ${over ? "text-rose-400" : remaining < 200 ? "text-amber-300" : "text-emerald-400"}">${over ? `over ${peso(-remaining)}` : `${peso(remaining)} left`}</span>
       </div>`
     : "";
 
