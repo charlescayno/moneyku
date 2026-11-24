@@ -196,14 +196,14 @@ export function renderBudget() {
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->
         <div class="contents">
-          <div class="order-1 grid ${showC && showP ? "grid-cols-2 acct-pair" : "grid-cols-1"} gap-2.5 items-start min-w-0" style="scroll-margin-top:5.5rem">
+          <div id="acct-block" class="order-1 grid ${showC && showP ? "grid-cols-2 acct-pair" : "grid-cols-1"} gap-2.5 items-start min-w-0" style="scroll-margin-top:5.5rem">
             ${showC ? `<div class="min-w-0" id="sec-accounts">${accountsCardHtml("charlie")}</div>` : ""}
             ${showP ? `<div class="min-w-0" id="sec-accounts-partner">${accountsCardHtml("partner")}</div>` : ""}
           </div>
         </div>
 
         <!-- Charlie's budget (left) and partner's budget (right on wide screens, stacked on phones) -->
-        <div class="order-2 grid grid-cols-1 ${showC && showP ? "md:grid-cols-2" : ""} gap-2.5 items-start min-w-0">
+        <div id="bills-block" class="order-2 grid grid-cols-1 ${showC && showP ? "md:grid-cols-2" : ""} gap-2.5 items-start min-w-0">
           ${showC ? `<div class="flex flex-col gap-2 min-w-0" id="sec-budget" style="scroll-margin-top:5.5rem">
             ${personSectionHtml("charlie", true)}
             <div id="card-summary-slot" class="contents">${cardSummaryHtml()}</div>

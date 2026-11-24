@@ -1657,3 +1657,13 @@ summary button.sec-add, button.sec-add { min-height: 28px !important; min-width:
 
 .pull-ind { position: fixed; top: 64px; left: 50%; z-index: 60; width: 36px; height: 36px; border-radius: 50%; background: #1e293b; color: #a5b4fc; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transform: translate(-50%, 0); transition: opacity .15s; box-shadow: 0 4px 14px rgba(0, 0, 0, .4); }
 .welcome-card { border: 1px dashed rgba(129, 140, 248, .45); background: rgba(99, 102, 241, .08); border-radius: 16px; padding: 16px; }
+
+/* Tabs: Bills and Accounts each show only their own part of the page */
+body[data-view="bills"] #projected-row, body[data-view="bills"] #acct-block, body[data-view="bills"] .welcome-card,
+body[data-view="accounts"] #projected-row, body[data-view="accounts"] #bills-block, body[data-view="accounts"] .welcome-card { display: none; }
+body[data-view="accounts"] .acct-pair > div, .acct-pair:has(details[open]) > div { grid-column: 1 / -1; }
+
+/* Person header: quiet surface, a coloured edge for whose it is, net as the main figure */
+.person-head { background: #182036; border-left: 3px solid var(--acc, #94a3b8); }
+.person-av { box-shadow: 0 0 0 2px var(--acc, #94a3b8); }
+.person-head .person-net { display: block; background: none; padding: 0; border-radius: 0; }

@@ -33,6 +33,9 @@ try:
             for tab in ["bills", "accounts", "home"]:
                 pg.click(f'#tabbar [data-tab={tab}]'); pg.wait_for_timeout(900)
                 print(name, "click", tab, info())
+                vis = pg.evaluate("() => ['projected-row','acct-block','bills-block'].map(id => !!document.getElementById(id).offsetParent)")
+                want = {"bills": [False, False, True], "accounts": [False, True, False], "home": [True, True, True]}[tab]
+                if vis != want: print("FAIL", name, tab, "visible blocks", vis, "expected", want); sys.exit(1)
             pg.click('#tabbar [data-tab=bills]'); pg.wait_for_timeout(900); pg.screenshot(path=f"{TMP}/tabs_{name}_bills.png")
             pg.click('#tabbar [data-tab=overview]'); pg.wait_for_timeout(600)
             print(name, "overview open; bar display:", info()["shown"], "more open:", pg.evaluate("document.getElementById('more-overlay').classList.contains('open')"))
