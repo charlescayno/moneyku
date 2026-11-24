@@ -4,7 +4,7 @@
 // =============================
 import { $, addMonths, cmpKey, currentKey, dueDayFor, escapeHtml, generateId, monthShort, peso, PM_LABELS } from "./utils.js";
 import { exportData } from "./ui/actions.js";
-import { getAppData, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemAmts, itemTotal, childAmt, childFinal, monthTotals, outlookRows, runningFundsAt, getSimView, setAppData, timeline, includedWho } from "./state.js";
+import { getAppData, getExpenseSort, getSimPersonSort, getItems, getKids, getSelectedKey, isPaid, itemActiveIn, itemAmts, itemTotal, childAmt, childFinal, monthTotals, outlookRows, runningFundsAt, getSimView, setAppData, timeline, includedWho } from "./state.js";
 import { normalize, syncSet } from "./firebase.js";
 import { addItemData } from "./itemOps.js";
 import { CARD_METHOD, charges, statement } from "./card.js";
@@ -604,7 +604,7 @@ export function openHeaderMenu() {
       ${row("openAddSheet", "add", "Add income or expense")}
       ${row("histUndo", "undo", "Undo", u ? undoLabel() : "Nothing to undo", !u)}
       ${row("openHistory", "history", "History")}
-      ${row("openMore", "insights", "Overview")}
+      ${row("openMore", "bar_chart", "Overview")}
       ${row("toggleMonthPicker", "calendar_month", "Jump to month")}
       ${row("openSettings", "settings", "Settings")}
     </div>`, CLOSE_BTN);
@@ -618,4 +618,22 @@ export async function syncNow() {
 export function headerMenuGo(action) {
   qlClose();
   setTimeout(() => { if (typeof window[action] === "function") window[action](); }, 120);
+}
+export function openSectionMenu(who) {
+  const row = (act, icon, label, sub = "") => `<button type="button" data-action="sectionMenuGo" data-arg0="${act}" data-arg1="${who}" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-900/50 text-left"><span class="material-icons text-slate-300" style="font-size:20px">${icon}</span><span class="flex-1 min-w-0"><span class="block text-sm font-bold text-slate-100">${label}</span>${sub ? `<span class="block text-[11px] text-slate-400 truncate">${sub}</span>` : ""}</span></button>`;
+  const az = getExpenseSort() === "name";
+  showSheet("Expenses",
+    `<div class="space-y-1.5">
+      ${row("chart", "pie_chart", "View chart", "Where the money goes")}
+      ${row("sort", "sort_by_alpha", az ? "Sorted A-Z" : "Sort A-Z", az ? "Tap to go back to the default order" : "Default order: by due date")}
+      ${who === "simulated" ? row("person", "people", "Group by person", getSimPersonSort() ? "On" : "Off") : ""}
+    </div>`, CLOSE_BTN);
+}
+export function sectionMenuGo(act, who) {
+  qlClose();
+  setTimeout(() => {
+    if (act === "chart") window.openExpenseChart(who);
+    else if (act === "sort") window.toggleExpenseSort();
+    else if (act === "person") window.toggleSimPerson();
+  }, 120);
 }

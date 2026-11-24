@@ -261,13 +261,13 @@ export function itemRowHtml(it, k, kind, who, opts = {}) {
     else if (installment) badge.push(`<span class="text-amber-400/80 font-bold whitespace-nowrap">→ ${monthShort(it.end)}</span>`);
     else if (it.recurring && dd != null) dayTag = ordinal(dd);
     return `<div data-item="${it.id}" data-action="openItemModal" data-arg0="${who}" data-arg1="${kind}" data-arg2="${it.id}"
-    class="item-row flex items-center gap-2 pl-1.5 pr-2 rounded-xl transition-colors cursor-pointer" style="min-height:48px;border-top:0">
+    class="item-row flex items-center gap-2 pl-1.5 pr-2 rounded-xl transition-colors cursor-pointer" style="min-height:44px;border-top:0">
     <button data-action="togglePaidQuick" data-arg0="${it.id}" data-arg1="${kind}" title="${kind === "income" ? "Mark received" : "Mark paid"}" aria-label="Mark ${escapeHtml(it.name)} ${kind === "income" ? "received" : "paid"}" class="paid-check ${settled ? "is-paid bg-emerald-500 border-emerald-500" : "border-slate-600"} w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border">
       <span class="material-icons check-icon text-white" style="font-size:16px">check</span>
     </button>
     ${iconHtml}
     <div class="flex-1 min-w-0 py-1.5">
-      <div class="flex items-baseline gap-1.5 min-w-0"><p class="item-name text-sm font-bold ${settled ? "text-slate-400" : "text-slate-200"} truncate">${escapeHtml(it.name)}</p>${dayTag ? `<span class="text-[11px] font-bold text-slate-300 whitespace-nowrap flex-shrink-0">· ${dayTag}</span>` : ""}</div>
+      <div class="flex items-baseline gap-1.5 min-w-0"><p class="item-name text-sm font-semibold ${settled ? "text-slate-400" : "text-slate-100"} truncate">${escapeHtml(it.name)}</p>${dayTag ? `<span class="day-chip text-[11px] font-bold text-slate-300 whitespace-nowrap flex-shrink-0">${dayTag}</span>` : ""}</div>
       ${paidNoteHtml(it, k, kind, settled)}
       ${spendLine}
       ${progress}
@@ -345,7 +345,8 @@ export function categoryGroupedHtml(items, k, kind, who, full = false) {
     
     if (showHeaders && (kind === "expenses" || kind === "income")) {
       // Clean style: small muted lowercase subheading with a muted subtotal (empty groups never get here)
-      html += `<div class="cat-group" style="margin-top:10px"><div class="flex justify-between items-baseline" style="padding:8px 8px 3px;${html ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold text-slate-400">${groupLabel(c)}</p><span class="flex items-center gap-1"><p class="text-[11px] font-bold text-slate-400 tabular-nums">${peso(subtotal)}</p>${sectionPlusHtml(who, kind, c)}</span></div>${dragList(rowsHtml)}</div>`;
+      const none = !list.length;
+      html += `<div class="cat-group${none ? " cat-empty" : ""}" style="margin-top:${none ? 2 : 10}px"><div class="flex justify-between items-center" style="padding:${none ? "2px 8px" : "8px 8px 3px"};${html && !none ? "border-top:1px solid rgba(148,163,184,.12)" : ""}"><p class="text-[11px] font-bold ${none ? "text-slate-500" : "text-slate-300"}">${groupLabel(c)}</p><span class="flex items-center gap-1">${none ? "" : `<p class="text-[11px] font-bold text-slate-300 tabular-nums">${peso(subtotal)}</p>`}${sectionPlusHtml(who, kind, c)}</span></div>${dragList(rowsHtml)}</div>`;
     } else if (showHeaders) {
       html += `<details open class="group mb-1">
         <summary class="flex justify-between items-center px-3 pt-2 pb-1 cursor-pointer list-none select-none hover:bg-slate-800/30 rounded-lg outline-none -ml-2 -mr-2 mb-0.5">
@@ -691,7 +692,7 @@ export function personSectionHtml(who, includeDebt = true) {
               <span class="font-bold text-emerald-400" style="font-size:14px">${peso(incTot)}</span>
             </div>
           </div>
-          <span class="flex items-center gap-2">${simPersonBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="income" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></span>
+          <span class="flex items-center gap-2">${simPersonBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="income" aria-label="Add income" title="Add income" class="icon-btn sec-add ${o.text}"><span class="material-icons ic-20">add</span></button></span>
         </summary>
         <div class="space-y-0.5 mt-1">${incHtml || emptyRow(who, "income")}</div>${simIncomeSliderHtml(who)}${simCopyBar("income")}
       </details>
@@ -705,7 +706,7 @@ export function personSectionHtml(who, includeDebt = true) {
                 <span class="font-bold text-rose-400" style="font-size:14px">${peso(expTot)}</span>
               </div>
             </div>
-            <div class="flex items-center gap-2"><button data-action="openExpenseChart" data-arg0="${who}" class="text-[10px] font-bold text-slate-400 px-1.5 py-0.5 rounded-md flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">pie_chart</span>View</button>${expenseSortBtnHtml(who)}<button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" class="text-[10px] font-bold ${o.text} flex items-center gap-0.5" style="min-height:32px"><span class="material-icons" style="font-size:12px">add</span>Add</button></div>
+            <div class="flex items-center gap-1.5"><button data-action="openSectionMenu" data-arg0="${who}" aria-label="Expense options" title="View chart, sort" class="icon-btn sec-add text-slate-400"><span class="material-icons ic-20">more_horiz</span></button><button data-action="openItemModal" data-arg0="${who}" data-arg1="expenses" aria-label="Add expense" title="Add expense" class="icon-btn sec-add ${o.text}"><span class="material-icons ic-20">add</span></button></div>
           </summary>
           <div class="space-y-0.5 mt-1">${expHtml || emptyRow(who, "expenses")}</div>${simCopyBar("expenses")}
           ${copyBtn}
@@ -870,7 +871,7 @@ export function accountsCardHtml(who = "charlie") {
   return `<details data-persist="accounts${isP ? "-p" : ""}" class="glass-card rounded-xl overflow-hidden border ${isP ? "border-ynah" : "border-emerald-500/10"} w-full flex-shrink-0">
     <summary class="flex items-center justify-between gap-2 px-3.5 py-2.5 cursor-pointer list-none">
       <div class="flex items-center gap-2 min-w-0">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-br ${isP ? "ynah-grad" : "from-indigo-500 to-teal-600"} flex items-center justify-center flex-shrink-0">
+        <div class="acct-ic w-7 h-7 rounded-lg bg-gradient-to-br ${isP ? "ynah-grad" : "from-indigo-500 to-teal-600"} flex items-center justify-center flex-shrink-0">
           <span class="material-icons text-white" style="font-size:14px">account_balance</span>
         </div>
         <div class="min-w-0">
@@ -878,7 +879,7 @@ export function accountsCardHtml(who = "charlie") {
           <p class="text-[8px] text-slate-400 truncate">${sub}</p>
         </div>
       </div>
-      <p class="text-xs font-black tabular-nums flex-shrink-0 ${total < 0 ? "text-rose-400" : "text-emerald-400"}">${peso(total)}</p>
+      <p class="acct-total text-xs font-black tabular-nums flex-shrink-0 ${total < 0 ? "text-rose-400" : "text-emerald-400"}">${peso(total)}</p>
     </summary>
     <div class="p-2.5 pt-0 space-y-1">
       ${rows}

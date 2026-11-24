@@ -181,7 +181,7 @@ async () => {
     debt:{income:[mk('d1','Karla owes me',2000)],expenses:[mk('d2','I owe Mom',1500)]}}, settings:{}});
   st.setSimView(false); document.getElementById('budget-view')?.classList.remove('hidden');
   st.setSelectedKey(u.currentKey()); lay.renderBudget();
-  const bg = k => { const e = document.querySelector(`#budget-body details[data-persist="${k}"]`); return e ? getComputedStyle(e).backgroundColor : null; };
+  const bg = k => { const e = document.querySelector(`#budget-body details[data-persist="${k}"]`); return e ? getComputedStyle(e).borderTopColor : null; };
   return {income: bg('sec-income'), expenses: bg('sec-expenses'), debts: bg('debts')};
 }
 """
@@ -189,7 +189,7 @@ async () => {
 def check_tint(pg, name, fails):
     r = pg.evaluate(TINT); print(name, "tint", r)
     v = [r["income"], r["expenses"]]  # debts is intentionally flat now
-    if any(x is None or x == "rgba(0, 0, 0, 0)" for x in v) or len(set(v)) != 2: fails.append(f"{name}: income and expenses need different tinted backgrounds: {r}")
+    if any(x is None or x == "rgba(0, 0, 0, 0)" for x in v) or len(set(v)) != 2: fails.append(f"{name}: income and expenses need different coloured top edges: {r}")
 
 FOLD = """
 async () => {

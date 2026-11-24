@@ -1604,3 +1604,41 @@ details[data-persist^="sec-expenses"] > summary button { white-space: nowrap; }
 .section-plus::after, .icon-btn::after { content: ""; position: absolute; inset: -8px; }
 .icon-tile { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
 .icon-pick:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 1px; }
+
+/* Two account cards sit side by side; the one you open spans the full width */
+.acct-pair > div:has(details[open]) { grid-column: 1 / -1; }
+.acct-pair details:not([open]) > summary { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; }
+.acct-pair details:not([open]) > summary .acct-ic { display: none; }
+.acct-pair details:not([open]) > summary .acct-total { font-size: 15px; }
+.acct-pair details:not([open]) > summary > div { width: 100%; }
+@media (min-width: 640px) {
+  .acct-pair details:not([open]) > summary { flex-direction: row; align-items: center; }
+  .acct-pair details:not([open]) > summary .acct-ic { display: flex; }
+}
+
+/* Toast: bottom of the screen, above the tab bar, so it never covers the header or month picker */
+#toast { top: auto !important; bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)); padding: 8px 10px 8px 14px; font-size: 13px; }
+#toast:not(.show) { transform: translateX(-50%) translateY(14px) scale(0.96); }
+
+/* Loading skeleton: same shapes as the real screen (hero card, forecast strip, a list card) */
+.sk-wrap { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.sk, .sk i { background: linear-gradient(90deg, rgba(30, 41, 59, .7) 25%, rgba(51, 65, 85, .7) 50%, rgba(30, 41, 59, .7) 75%); background-size: 200% 100%; animation: skShimmer 1.4s linear infinite; }
+.sk { border-radius: 16px; }
+.sk-hero { height: 190px; }
+.sk-bar { height: 52px; border-radius: 16px; }
+.sk-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: none; animation: none; border: 1px solid rgba(255, 255, 255, .06); }
+.sk-card i { display: block; height: 44px; border-radius: 12px; }
+@keyframes skShimmer { to { background-position: -200% 0; } }
+
+/* Press feedback and a soft rise when a section opens */
+button:not(#tabbar button):active, [role="button"]:active { filter: brightness(1.15); }
+@media (prefers-reduced-motion: reduce) { .sk, .sk i { animation: none; } }
+
+/* Wide screens: use the room. Hero and forecast, accounts, and Charles / Ynah each sit side by side. */
+@media (min-width: 1100px) {
+  #app { max-width: 1120px !important; }
+  #next5-card.n5-hidden { align-self: start; }
+}
+
+/* Section header buttons (+ and ...): keep a 28px look with a 44px touch area */
+summary button.sec-add, button.sec-add { min-height: 28px !important; min-width: 28px !important; width: 28px; height: 28px; padding: 0 !important; margin: 0 !important; justify-content: center !important; }

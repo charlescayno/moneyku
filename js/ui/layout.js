@@ -113,7 +113,7 @@ export function renderBudget() {
           </button>
         </div>
         <div class="flex items-end justify-between gap-3">
-          <p id="sum-projected" class="font-black tracking-tight tabular-nums ${riskText}" style="font-size:34px;line-height:1.1">${hideProjected ? '••••••' : sp(projected)}</p>
+          <p id="sum-projected" class="font-black tracking-tight tabular-nums ${riskText}" style="font-size:${hideProjected ? 26 : 34}px;line-height:1.1">${hideProjected ? '••••••' : sp(projected)}</p>
           ${sparkHtml}
         </div>
       </div>
@@ -183,7 +183,7 @@ export function renderBudget() {
       <div class="w-full grid grid-cols-1 gap-2.5 items-stretch">
         <!-- Col 1: Liquid Accounts & Debt -->
         <div class="contents">
-          <div class="order-1 grid grid-cols-1 ${showC && showP ? "md:grid-cols-2" : ""} gap-2.5 items-start min-w-0" style="scroll-margin-top:5.5rem">
+          <div class="order-1 grid ${showC && showP ? "grid-cols-2 acct-pair" : "grid-cols-1"} gap-2.5 items-start min-w-0" style="scroll-margin-top:5.5rem">
             ${showC ? `<div class="min-w-0" id="sec-accounts">${accountsCardHtml("charlie")}</div>` : ""}
             ${showP ? `<div class="min-w-0" id="sec-accounts-partner">${accountsCardHtml("partner")}</div>` : ""}
           </div>

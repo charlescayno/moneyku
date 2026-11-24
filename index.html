@@ -38,8 +38,8 @@
     <script src="https://cdn.jsdelivr.net/npm/morphdom@2.7.0/dist/morphdom-umd.min.js"></script>
     
     <link rel="preload" href="assets/fonts/material-icons.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="style.css?v=20261124_icons2" />
-    <link rel="stylesheet" href="theme.css?v=20261124_icons2" />
+    <link rel="stylesheet" href="style.css?v=20261124_ui7" />
+    <link rel="stylesheet" href="theme.css?v=20261124_ui7" />
   </head>
   <body
     class="bg-slate-900 text-slate-100 font-sans select-none"
@@ -157,7 +157,7 @@
         </div>
         <div class="app-header-tools flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           <button type="button" id="fab-add" data-action="openAddSheet" title="Add" aria-label="Add income or expense" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl" style="background:#6366f1;box-shadow:0 6px 14px -4px rgba(79,70,229,.55)"><span class="material-icons text-white">add</span></button>
-          <button type="button" id="btn-overview" data-action="openMore" title="Overview" aria-label="Overview" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-indigo-300">insights</span></button>
+          <button type="button" id="btn-overview" data-action="openMore" title="Overview" aria-label="Overview" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-indigo-300">bar_chart</span></button>
           <button type="button" data-action="openHeaderMenu" title="More" aria-label="More" class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-800 rounded-2xl transition-transform shadow-lg"><span class="material-icons text-slate-300">more_horiz</span></button>
         </div>
       </header>
@@ -181,14 +181,10 @@
 
           <div class="px-5 sm:px-6 md:px-8 pb-4 stagger-in flex flex-col flex-shrink-0" id="budget-body">
             <!-- Skeleton shown until the first render replaces it -->
-            <div class="w-full h-full flex flex-col gap-3 animate-pulse" aria-hidden="true">
-              <div class="h-14 rounded-xl bg-slate-800/70"></div>
-              <div class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div class="rounded-xl bg-slate-800/60"></div>
-                <div class="rounded-xl bg-slate-800/60 hidden md:block"></div>
-                <div class="rounded-xl bg-slate-800/60 hidden lg:block"></div>
-                <div class="rounded-xl bg-slate-800/60 hidden lg:block"></div>
-              </div>
+            <div class="sk-wrap" aria-hidden="true">
+              <div class="sk sk-hero"></div>
+              <div class="sk sk-bar"></div>
+              <div class="sk sk-card"><i></i><i></i><i></i></div>
             </div>
             <!-- month detail injected -->
           </div>
@@ -201,7 +197,7 @@
       <button type="button" data-tab="home" data-action="tabGo" data-arg0="home"><span class="material-icons" aria-hidden="true">home</span><span>Home</span></button>
       <button type="button" data-tab="bills" data-action="tabGo" data-arg0="bills"><span class="material-icons" aria-hidden="true">receipt_long</span><span>Bills</span></button>
       <button type="button" data-tab="accounts" data-action="tabGo" data-arg0="accounts"><span class="material-icons" aria-hidden="true">account_balance_wallet</span><span>Accounts</span></button>
-      <button type="button" data-tab="overview" data-action="tabGo" data-arg0="overview"><span class="material-icons" aria-hidden="true">insights</span><span>Overview</span></button>
+      <button type="button" data-tab="overview" data-action="tabGo" data-arg0="overview"><span class="material-icons" aria-hidden="true">bar_chart</span><span>Overview</span></button>
     </nav>
 
 

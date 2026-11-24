@@ -56,7 +56,7 @@ header[class*="backdrop-blur"] { background-color: #0f172a !important; }
 /* ---- readability floor: nothing meaningful below 11px, greys readable on dark ---- */
 body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px\], .text-\[10px\]) { font-size: 11px !important; } /* Compact mode keeps the dense sizes */
 .text-slate-500 { color: #94a3b8 !important; } /* slate-400 */
-.text-slate-600 { color: #7b8ba3 !important; }
+.text-slate-600 { color: #8e9cb3 !important; }
 
 /* ---- home: due-soon reminders sit right under the headline on phones, full width under both cards on wide screens ---- */
 #reminders-slot:empty { display: none; }
@@ -71,8 +71,8 @@ body:not([data-density="compact"]) :is(.text-\[7px\], .text-\[8px\], .text-\[9px
 
 /* ---- Colour roles: green = money in, red = money out, amber = due soon, blue / purple = whose it is (avatar ring only) ---- */
 :root {
-  --inc-bg: #12332e; --inc-bd: #21604f;
-  --exp-bg: #371b29; --exp-bd: #6c2b43;
+  --inc-bg: #131d2f; --inc-bd: rgba(255, 255, 255, .08);
+  --exp-bg: #131d2f; --exp-bd: rgba(255, 255, 255, .08);
   --surface-in: rgba(0, 0, 0, .20); --surface-bd: rgba(255, 255, 255, .09);
 }
 /* Simulated: Charles' and Ynah's items as neutral blocks (the person shows in the avatar ring, not a second tint) */
@@ -193,3 +193,22 @@ select.as-input { -webkit-appearance: none; appearance: none; padding: 0 28px 0 
 /* Muted text a little lighter so it stays readable on the tinted sections (4.5:1 and up) */
 #budget-body .text-slate-400 { color: #aab6c8; }
 #budget-body .text-slate-500 { color: #9ba8bb; }
+
+/* Income / expense sections: one neutral surface, with a coloured top edge saying which way the money goes */
+#budget-body details[data-persist^="sec-income"] { border-top: 2px solid #34d399; }
+#budget-body details[data-persist^="sec-expenses"] { border-top: 2px solid #fb7185; }
+.day-chip { background: rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 0 6px; line-height: 18px; }
+.cat-empty p { font-weight: 600; }
+.sec-add { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background: rgba(255, 255, 255, 0.07); }
+
+/* ---- design tokens: spacing 4 / 8 / 12 / 16 / 24, card radius 16, tile radius 12, pill radius 999 ---- */
+:root { --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --r-card: 16px; --r-tile: 12px; --r-pill: 999px; }
+.proj-card, #next5-card, .glass-card, .person-card, #budget-body details[data-persist^="sec-income"], #budget-body details[data-persist^="sec-expenses"] { border-radius: var(--r-card) !important; }
+.proj-card .grid > div { border-radius: var(--r-tile); }
+#budget-body > div, #sim-view { gap: var(--sp-2); }
+
+/* Person header contrast: white text on a deeper blue, lighter secondary text, darker chip behind the net figure */
+.person-head.from-blue-500 { --tw-gradient-from: #2563eb; }
+.person-head.from-blue-500 .text-white\/60 { color: rgba(255, 255, 255, .96); }
+.person-head.from-blue-500 .text-white\/40 { color: rgba(255, 255, 255, .88); }
+.person-head .person-net { background: rgba(8, 15, 30, .62); }
