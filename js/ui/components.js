@@ -1,3 +1,4 @@
+import { amountValue } from "../calc.js";
 import { monthPaid } from '../state.js';
 import { accountForMethod, accountName, autoDeduct, paidMessage, payableAccounts, refundPayment } from "../payfrom.js";
 import { chooseScope } from "../scope.js";
@@ -1717,7 +1718,7 @@ export function spendSectionHtml(it) {
     <div class="spend-add rounded-xl border border-emerald-400/50 bg-emerald-500/10 p-3 space-y-2">
       <p class="text-[11px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1"><span class="material-icons" style="font-size:16px">add_circle</span>Add spending</p>
       <div class="flex items-center gap-2">
-        <input type="number" id="f-spend-amount" inputmode="decimal" placeholder="Amount  ₱0" class="spend-amt bg-slate-900 rounded-xl text-[14px] font-bold text-white focus:outline-none" />
+        <input type="text" id="f-spend-amount" data-calc inputmode="text" placeholder="Amount  ₱0 or 120+80" class="spend-amt bg-slate-900 rounded-xl text-[14px] font-bold text-white focus:outline-none" />
         <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 h-12 px-4 rounded-xl bg-emerald-500 text-slate-950 font-black text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform"><span class="material-icons" style="font-size:20px">add</span>Add</button>
       </div>
       <div class="grid grid-cols-2 gap-2">
@@ -1747,7 +1748,7 @@ function spendTodayIn(k) {
 export async function addSpend() {
   const activeEdit = getActiveEdit();
   if (!activeEdit || !activeEdit.id) return;
-  const amount = parseFloat($("f-spend-amount")?.value) || 0;
+  const amount = amountValue($("f-spend-amount"));
   if (!amount) return fieldError("f-spend-amount", "Amount required");
   if (activeEdit.who === "simulated") return; // the simulation has no accounts to take spending from
   const { id } = activeEdit, k = getSelectedKey();

@@ -3,6 +3,7 @@
 // Quick spend logs an amount (with a note) into a budget item's spending for this month.
 // New bill / income reuse the item form (openItemModal with addSheet) and its save.
 // =============================
+import { amountValue } from "../calc.js";
 import { $, OWNERS, escapeHtml, generateId, monthShort, peso } from "../utils.js";
 import { amountIn, getAppData, getItems, getKids, getSelectedKey, getSimView, getSpendList, includedWho, itemActiveIn, setActiveEdit } from "../state.js";
 import { CARD_METHOD } from "../card.js";
@@ -66,7 +67,7 @@ function refreshLeft() {
   if (!box) return;
   const hit = spendTargets(k).find(({ it }) => it.id === id);
   if (!hit) { box.innerHTML = `<p class="as-left-sub">Pick where the money comes from.</p>`; return; }
-  const left = leftOf(hit.it, k, parseFloat($("f-qs-amount")?.value) || 0);
+  const left = leftOf(hit.it, k, amountValue($("f-qs-amount")));
   box.classList.toggle("over", left < 0);
   box.innerHTML = `<p class="as-left-amt">${left < 0 ? "-" + peso(-left) : peso(left)}</p>
     <p class="as-left-sub">${left < 0 ? "over" : "left"} in ${escapeHtml(hit.it.name)} for ${escapeHtml(monthShort(k))}</p>`;
@@ -86,7 +87,7 @@ function openQuickSpend() {
       <div class="space-y-1"><label class="as-label" for="f-qs-note">What did you spend on?</label>
         <input type="text" id="f-qs-note" class="as-input" placeholder="e.g. grab, lunch, gas" autocomplete="off" /></div>
       <div class="space-y-1"><label class="as-label" for="f-qs-amount">How much? (₱)</label>
-        <input type="number" id="f-qs-amount" class="as-input" inputmode="decimal" placeholder="0" /></div>
+        <input type="text" id="f-qs-amount" data-calc class="as-input" inputmode="text" placeholder="0 or 120+80" /></div>
     </div>
     <div class="space-y-1"><label class="as-label" for="f-qs-item">From budget</label>
       ${list.length ? `<select id="f-qs-item" class="as-input">${opts}</select>` : `<p class="as-left-sub">No expenses this month to log against. Add a bill first.</p>`}</div>
@@ -103,7 +104,7 @@ function openQuickSpend() {
 /** Save for the quick spend tab (called from saveModal). */
 export async function saveQuickSpend() {
   const k = getSelectedKey();
-  const amount = parseFloat($("f-qs-amount")?.value) || 0;
+  const amount = amountValue($("f-qs-amount"));
   const id = $("f-qs-item")?.value || "";
   if (!amount) return fieldError("f-qs-amount", "Amount required");
   if (!id) return fieldError("f-qs-item", "Pick a budget");

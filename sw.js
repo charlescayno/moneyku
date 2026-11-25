@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneyku-cache-v316';
+const CACHE_NAME = 'moneyku-cache-v317';
 const urlsToCache = [
   './',
   './index.html',
@@ -86,6 +86,7 @@ const urlsToCache = [
   './js/tabs.js',
   './js/extras.js',
   './js/gemini.js',
+  './js/calc.js',
   './js/receipt.js',
   './js/receiptlogic.js',
   './js/itemOps.js', './js/migrations.js',

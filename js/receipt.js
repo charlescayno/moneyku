@@ -2,6 +2,7 @@
 // Receipt scan: photo -> Gemini vision -> editable suggestion -> Confirm -> spending entry or new one-time expense
 // The photo is only sent to Gemini to be read; it is never stored.
 // =============================
+import { amountValue } from "./calc.js";
 import { $, escapeHtml, generateId, monthShort, peso } from "./utils.js";
 import { getAppData, getSelectedKey, getSpendList, includedWho, setAppData, timeline } from "./state.js";
 import { askGeminiReceipt, GeminiError } from "./gemini.js";
@@ -130,7 +131,7 @@ function showConfirm(n) {
     `${noteHtml}
      <div class="grid grid-cols-2 gap-2.5">
        <div class="space-y-1"><label class="as-label" for="rc-note">Store or note</label><input type="text" id="rc-note" class="as-input" maxlength="60" value="${escapeHtml(n.merchant)}" autocomplete="off" /></div>
-       <div class="space-y-1"><label class="as-label" for="rc-amount">Total (₱)</label><input type="number" id="rc-amount" class="as-input" inputmode="decimal" value="${n.total ?? ""}" placeholder="0" /></div>
+       <div class="space-y-1"><label class="as-label" for="rc-amount">Total (₱)</label><input type="text" id="rc-amount" data-calc class="as-input" inputmode="text" value="${n.total ?? ""}" placeholder="0" /></div>
      </div>
      <div class="grid grid-cols-2 gap-2.5">
        <div class="space-y-1"><label class="as-label" for="rc-date">Date</label><input type="date" id="rc-date" class="as-input" value="${date}" /></div>
@@ -145,7 +146,7 @@ function showConfirm(n) {
     const o = ownerOf(t?.w || includedWho()[0]);
     const cur = $("rc-acct")?.value || "";
     if ($("rc-acct")) $("rc-acct").innerHTML = acctOptions(o, pickAcct(o, cur));
-    const amt = parseFloat($("rc-amount")?.value) || 0, d = $("rc-date")?.value || "";
+    const amt = amountValue($("rc-amount")), d = $("rc-date")?.value || "";
     const k = /^\d{4}-\d{2}/.test(d) ? d.slice(0, 7) : month;
     const dup = t && amt > 0 && findDuplicate(getSpendList(t.id, k), amt, d, $("rc-note")?.value);
     if ($("rc-dup")) $("rc-dup").textContent = dup ? "Looks like this is already logged (same amount, date and note)." : "";
@@ -158,7 +159,7 @@ function showConfirm(n) {
 
 export async function rcConfirm() {
   if (!rec) return;
-  const amount = parseFloat($("rc-amount")?.value) || 0;
+  const amount = amountValue($("rc-amount"));
   if (!(amount > 0)) { toast("Enter the total first", "error"); return $("rc-amount")?.focus(); }
   const date = $("rc-date")?.value || "";
   const month = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.slice(0, 7) : rec.month;
