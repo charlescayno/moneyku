@@ -89,6 +89,8 @@ import {
   togglePaidGroup,
   addSpend,
   deleteSpend,
+  editSpend,
+  cancelSpendEdit,
   confirmDelete,
   closeConfirm,
   doDelete,
@@ -199,6 +201,8 @@ window.togglePaidQuick = togglePaidQuick;
 window.togglePaidGroup = togglePaidGroup;
 window.addSpend = addSpend;
 window.deleteSpend = deleteSpend;
+window.editSpend = editSpend;
+window.cancelSpendEdit = cancelSpendEdit;
 window.confirmDelete = confirmDelete;
 window.closeConfirm = closeConfirm;
 window.doDelete = doDelete;

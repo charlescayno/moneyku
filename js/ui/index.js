@@ -52,6 +52,8 @@ export {
   refreshSpendSection,
   addSpend,
   deleteSpend,
+  editSpend,
+  cancelSpendEdit,
   toggleField,
   setRecurring,
   saveChildAndAddAnother,

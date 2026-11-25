@@ -1682,17 +1682,32 @@ export function toggleMonthPicker() {
 // Spending Tracker per Item
 // =============================
 /** Account choices for a spending entry: last one used, else the item's own account, else the first. */
-function spendAccountOptions(it) {
+let editingSpendId = null, editingFor = null;
+export const cancelSpendEdit = () => { editingSpendId = null; const a = getActiveEdit(); if (a?.id) refreshSpendSection(a.id); };
+export function editSpend(entryId) {
+  const a = getActiveEdit();
+  if (!a?.id) return;
+  editingSpendId = entryId;
+  editingFor = a;
+  refreshSpendSection(a.id);
+  $("spend-add-box")?.scrollIntoView({ block: "center", behavior: "smooth" });
+  setTimeout(() => $("f-spend-amount")?.focus(), 120);
+}
+
+function spendAccountOptions(it, force) {
   const owner = ["partner", "pdebt"].some((w) => getItems(w, "expenses").some((x) => x.id === it.id || getKids(x).some((c) => c.id === it.id))) ? "partner" : "charlie";
   const accts = payableAccounts(owner);
   let last = ""; try { last = localStorage.getItem("moneyku_spend_acct") || ""; } catch { /* ignore */ }
   const own = accountForMethod(it?.paymentMethod, owner)?.id || "";
-  const pick = [last, own].find((id) => id && accts.some((a) => a.id === id)) || accts[0]?.id || "";
+  const pick = force !== undefined ? force : [last, own].find((id) => id && accts.some((a) => a.id === id)) || accts[0]?.id || "";
   return `<option value="">No account</option>` + accts.map((a) => `<option value="${escapeHtml(a.id)}" ${a.id === pick ? "selected" : ""}>${escapeHtml(a.name)}</option>`).join("");
 }
 export function spendSectionHtml(it) {
   const k = getSelectedKey();
   const list = getSpendList(it.id, k);
+  if (editingFor !== getActiveEdit()) editingSpendId = null;
+  const ed = editingSpendId ? list.find((e) => e.id === editingSpendId) : null;
+  if (!ed) editingSpendId = null;
   const spent = spentIn(it.id, k);
   const est = amountIn(it, k);
   const remaining = est - spent;
@@ -1703,6 +1718,7 @@ export function spendSectionHtml(it) {
       <span class="material-icons text-emerald-400" style="font-size:16px">payments</span>
       <span class="flex-1 min-w-0 truncate text-[12px] font-bold text-slate-500">#${i + 1}${e.note ? ` <span class="text-slate-200 keep-case">${escapeHtml(e.note)}</span>` : ""}${e.date ? ` <span class="text-slate-300">&middot; ${escapeHtml(new Date(e.date + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric" }))}</span>` : ""}${e.acct ? ` <span class="text-indigo-300">&middot; from ${escapeHtml(accountName(e.acct))}</span>` : ""}</span>
       <span class="text-[13px] font-black text-white">${peso(e.amount)}</span>
+      <button type="button" data-action="editSpend" data-arg0="${e.id}" title="Edit" aria-label="Edit spending" class="${e.id === editingSpendId ? "text-emerald-300" : "text-slate-500 hover:text-emerald-300"} flex-shrink-0"><span class="material-icons" style="font-size:16px">edit</span></button>
       <button type="button" data-action="deleteSpend" data-arg0="${e.id}" title="Remove" class="text-slate-500 hover:text-rose-400 flex-shrink-0"><span class="material-icons" style="font-size:16px">close</span></button>
     </div>`).join("");
   return `<div class="space-y-2">
@@ -1715,20 +1731,20 @@ export function spendSectionHtml(it) {
       <span class="text-[11px] font-bold text-slate-400 flex-shrink-0">${peso(spent)} / ${peso(est)}</span>
     </div>
     ${rows ? `<div class="space-y-1.5">${rows}</div>` : `<p class="text-[11px] text-slate-600 text-center py-1">No spending logged yet.</p>`}
-    <div class="spend-add rounded-xl border border-emerald-400/50 bg-emerald-500/10 p-3 space-y-2">
-      <p class="text-[11px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1"><span class="material-icons" style="font-size:16px">add_circle</span>Add spending</p>
+    <div id="spend-add-box" class="spend-add rounded-xl border border-emerald-400/50 bg-emerald-500/10 p-3 space-y-2">
+      <p class="text-[11px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1"><span class="material-icons" style="font-size:16px">${ed ? "edit" : "add_circle"}</span>${ed ? "Edit spending" : "Add spending"}${ed ? `<button type="button" data-action="cancelSpendEdit" class="ml-auto text-[11px] font-bold text-slate-300 underline">Cancel</button>` : ""}</p>
       <div class="flex items-center gap-2">
-        <input type="text" id="f-spend-amount" data-calc inputmode="text" placeholder="Amount  ₱0 or 120+80" class="spend-amt bg-slate-900 rounded-xl text-[14px] font-bold text-white focus:outline-none" />
-        <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 h-12 px-4 rounded-xl bg-emerald-500 text-slate-950 font-black text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform"><span class="material-icons" style="font-size:20px">add</span>Add</button>
+        <input type="text" id="f-spend-amount" data-calc inputmode="text" placeholder="Amount  ₱0 or 120+80" value="${ed ? ed.amount : ""}" class="spend-amt bg-slate-900 rounded-xl text-[14px] font-bold text-white focus:outline-none" />
+        <button type="button" data-action="addSpend" title="Log spending" class="flex-shrink-0 h-12 px-4 rounded-xl bg-emerald-500 text-slate-950 font-black text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform"><span class="material-icons" style="font-size:20px">${ed ? "check" : "add"}</span>${ed ? "Save" : "Add"}</button>
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">From account</label>
-          <select id="f-spend-acct" title="Subtracted from this account&#39;s balance" aria-label="Account" class="w-full bg-slate-900 rounded-xl py-2.5 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it)}</select></div>
+          <select id="f-spend-acct" title="Subtracted from this account&#39;s balance" aria-label="Account" class="w-full bg-slate-900 rounded-xl py-2.5 px-2 text-[12px] font-bold text-white focus:outline-none">${spendAccountOptions(it, ed ? (ed.ded ? ed.acct : "") : undefined)}</select></div>
         <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1">Date <span class="text-slate-500">(optional)</span></label>
-          <input type="date" id="f-spend-date" data-action="openDatePicker" value="${spendTodayIn(k)}" min="${k}-01" max="${k}-${String(new Date(keyParts(k).y, keyParts(k).m + 1, 0).getDate()).padStart(2, "0")}" aria-label="Date (optional)" class="w-full bg-slate-900 rounded-xl text-[12px] font-bold text-white focus:outline-none" /></div>
+          <input type="date" id="f-spend-date" data-action="openDatePicker" value="${ed ? (ed.date || "") : spendTodayIn(k)}" min="${k}-01" max="${k}-${String(new Date(keyParts(k).y, keyParts(k).m + 1, 0).getDate()).padStart(2, "0")}" aria-label="Date (optional)" class="w-full bg-slate-900 rounded-xl text-[12px] font-bold text-white focus:outline-none" /></div>
       </div>
       <div><label class="text-[9px] font-bold uppercase text-slate-400 ml-1" for="f-spend-note">Description <span class="text-slate-500">(optional)</span></label>
-        <input type="text" id="f-spend-note" maxlength="60" autocomplete="off" placeholder="e.g. grab, lunch, gas" class="w-full bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" /></div>
+        <input type="text" id="f-spend-note" maxlength="60" autocomplete="off" placeholder="e.g. grab, lunch, gas" value="${ed ? escapeHtml(ed.note || "") : ""}" class="w-full bg-slate-900 rounded-xl text-[13px] font-bold text-white focus:outline-none" /></div>
     </div>
   </div>`;
 }
@@ -1757,21 +1773,27 @@ export async function addSpend() {
   const acct = $("f-spend-acct")?.value || "";
   try { localStorage.setItem("moneyku_spend_acct", acct); } catch { /* ignore */ }
   // Taking it from an account subtracts it from that balance now (and Delete gives it back)
+  const old = editingSpendId ? cur.find((e) => e.id === editingSpendId) : null;
+  if (old && old.ded) {
+    const oa = (appData.accounts || []).find((a) => a.id === old.acct);
+    if (oa) oa.amount = Math.round(((Number(oa.amount) || 0) + (Number(old.amount) || 0) + Number.EPSILON) * 100) / 100;
+  }
   const account = acct ? (appData.accounts || []).find((a) => a.id === acct) : null;
   if (account) account.amount = Math.round(((Number(account.amount) || 0) - amount + Number.EPSILON) * 100) / 100;
-  const date = $("f-spend-date")?.value || spendTodayIn(k); // blank = today (when this month is the current one)
-  const entry = account ? { id: generateId(), amount, acct, ded: true } : { id: generateId(), amount };
+  const date = $("f-spend-date")?.value || (old ? "" : spendTodayIn(k)); // blank = today (when this month is the current one)
+  const entry = account ? { id: old ? old.id : generateId(), amount, acct, ded: true } : { id: old ? old.id : generateId(), amount };
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) entry.date = date;
   const note = ($("f-spend-note")?.value || "").trim().slice(0, 60);
   if (note) entry.note = note;
-  cur.push(entry);
+  if (old) cur[cur.indexOf(old)] = entry; else cur.push(entry);
+  editingSpendId = null;
   appData.spend = appData.spend || {};
   appData.spend[k] = appData.spend[k] || {};
   appData.spend[k][id] = cur;
   await syncSet(appData);
   refreshSpendSection(id);
   renderAll();
-  toast(account ? `Logged - ${peso(amount)} taken from ${account.name}` : "Logged");
+  toast(old ? "Spending updated" : account ? `Logged - ${peso(amount)} taken from ${account.name}` : "Logged");
   setTimeout(() => $("f-spend-amount")?.focus(), 60);
 }
 
