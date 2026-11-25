@@ -14,6 +14,8 @@ import { budgetAlertText, budgetBefore } from "../insights.js";
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 let pending = null; // { text, rows }
 let runId = 0;
+export const currentRun = () => runId;
+export const bumpRun = () => ++runId;
 
 const btn = (cls, action, label, extra = "") =>
   `<button type="button" data-action="${action}" ${extra} class="flex-1 py-2.5 text-sm font-bold rounded-xl transition-transform ${cls}">${label}</button>`;
@@ -79,6 +81,7 @@ export async function qlSaveKey() {
   const text = pending?.text;
   qlClose();
   if (text) runQuickLog(text);
+  else if (typeof window.resumeReceiptScan === "function") window.resumeReceiptScan();
 }
 
 export async function qlRemoveKey() {

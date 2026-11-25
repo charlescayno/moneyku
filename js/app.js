@@ -8,6 +8,7 @@ import { simInfo, openSimulated, openSimCopy, simCopyToggle, simCopyAll, simCopy
 import { openAddSheet, addSheetTab } from "./ui/addsheet.js";
 import { openSearch, srOpen, qlAddChooser, qlSpendPick, openExpenseChart, openSectionMenu, sectionMenuGo, addNew, duplicateItem, copyLastMonth, openCopyPicker, copyToggle, copyAll, openHeaderMenu, headerMenuGo, syncNow, openSettings, setTextSize, exportMonthCsv, openExport, exportOutlookCsv, exportItemsCsv, exportCardCsv, openRestore, restoreSnapshot, importCardAsk, importCardGo, dismissTip, initExtras } from "./extras.js";
 import { tabGo, initTabs } from "./tabs.js";
+import { openReceiptScan, receiptPick, rcConfirm, rcManual } from "./receipt.js";
 import { initHistory, openHistory, histUndo, histRedo, histRestore } from "./ui/historyui.js";
 import { rebaseHistory } from "./history.js";
 import { migrateGroceryPerMonday, migrateRemovePcItems, migrateRenameFamilyExpense, migrateAddHouseholdExpense } from "./migrations.js";
@@ -236,6 +237,7 @@ window.closeCalendarModal = closeCalendarModal;
 window.openBudgetModal = openBudgetModal;
 window.saveBudgets = saveBudgets;
 window.tabGo = tabGo;
+Object.assign(window, { openReceiptScan, receiptPick, rcConfirm, rcManual });
 initHistory();
 Object.assign(window, { openHistory, histUndo, histRedo, histRestore });
 Object.assign(window, { cardPayOpen, cardStatementOpen, cardSettingsOpen, cardUndoPay, cardSummaryGo, cardToggleDone });

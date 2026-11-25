@@ -45,17 +45,11 @@ Actions:
 - mark_paid: set an existing item's paid state for a month. id from the list; paid true unless the user says unpaid; optional month.
 Rules: never invent ids. Never delete anything. Amounts are plain numbers (no symbols). Resolve relative dates using today's date. If the message is unclear or unsupported, return an empty actions array and a short "message" explaining why. Keep names short and Title Case.`;
 
-export async function askGemini(text, context, apiKey, model = GEMINI_MODEL) {
+async function postGemini(body, apiKey, model, parseMsg) {
   if (!apiKey) throw new GeminiError("no_key", "Add your Gemini API key first.");
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    throw new GeminiError("offline", "You're offline. Quick log needs an internet connection.");
+    throw new GeminiError("offline", "You're offline. This needs an internet connection.");
   }
-  const body = {
-    systemInstruction: { parts: [{ text: SYSTEM }] },
-    contents: [{ role: "user", parts: [{ text: JSON.stringify({ request: text, ...context }) }] }],
-    generationConfig: { temperature: 0.1, responseMimeType: "application/json", responseSchema: SCHEMA },
-  };
-
   let res;
   try {
     res = await fetch(endpoint(model), {
@@ -76,14 +70,58 @@ export async function askGemini(text, context, apiKey, model = GEMINI_MODEL) {
     throw new GeminiError("http", `Gemini error (${res.status}). ${detail}`.trim());
   }
 
-  let parsed;
   try {
     const data = await res.json();
     const raw = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
-    parsed = JSON.parse(raw);
+    return JSON.parse(raw);
   } catch {
-    throw new GeminiError("parse", "Couldn't understand Gemini's reply. Try rephrasing.");
+    throw new GeminiError("parse", parseMsg);
   }
-  if (!parsed || !Array.isArray(parsed.actions)) throw new GeminiError("parse", "Couldn't understand Gemini's reply. Try rephrasing.");
+}
+
+export async function askGemini(text, context, apiKey, model = GEMINI_MODEL) {
+  const body = {
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: [{ role: "user", parts: [{ text: JSON.stringify({ request: text, ...context }) }] }],
+    generationConfig: { temperature: 0.1, responseMimeType: "application/json", responseSchema: SCHEMA },
+  };
+  const msg = "Couldn't understand Gemini's reply. Try rephrasing.";
+  const parsed = await postGemini(body, apiKey, model, msg);
+  if (!parsed || !Array.isArray(parsed.actions)) throw new GeminiError("parse", msg);
   return { actions: parsed.actions, message: parsed.message || "" };
+}
+
+// ---------- receipts ----------
+export const RECEIPT_CATEGORIES = ["subs", "health", "transport", "groceries", "food", "family", "debts", "bills", "shopping", "other"];
+
+const RECEIPT_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    merchant: nullable("STRING"),
+    date: nullable("STRING"),
+    total: nullable("NUMBER"),
+    currency: nullable("STRING"),
+    category: nullable("STRING", { enum: RECEIPT_CATEGORIES }),
+    lineItems: {
+      type: "ARRAY",
+      items: { type: "OBJECT", properties: { name: nullable("STRING"), amount: nullable("NUMBER") } },
+    },
+    confidence: nullable("NUMBER"),
+  },
+  required: ["merchant", "total"],
+};
+
+const RECEIPT_SYSTEM = `You read photos of receipts (usually Philippine, currency peso) for a budgeting app.
+Return: merchant (store or restaurant name, short), date (YYYY-MM-DD, null if not printed), total (the amount actually paid: the grand total, not the subtotal, VAT line, cash tendered or change), currency, category (one of ${RECEIPT_CATEGORIES.join(", ")}, null if unsure), lineItems (name and amount of each purchased line, may be empty), confidence (0 to 1).
+Rules: plain numbers only (no symbols or thousands separators). Use null for anything you cannot read. Never guess or invent values. If the image is not a receipt, return merchant null and total null.`;
+
+export async function askGeminiReceipt(imageBase64, mime, context, apiKey, model = GEMINI_MODEL) {
+  const body = {
+    systemInstruction: { parts: [{ text: RECEIPT_SYSTEM }] },
+    contents: [{ role: "user", parts: [{ inlineData: { mimeType: mime || "image/jpeg", data: imageBase64 } }, { text: JSON.stringify({ today: context?.today || null }) }] }],
+    generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: RECEIPT_SCHEMA },
+  };
+  const parsed = await postGemini(body, apiKey, model, "Couldn't read that receipt. Try a clearer photo.");
+  if (!parsed || typeof parsed !== "object") throw new GeminiError("parse", "Couldn't read that receipt. Try a clearer photo.");
+  return parsed;
 }

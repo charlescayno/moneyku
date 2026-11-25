@@ -625,6 +625,7 @@ export function openHeaderMenu() {
       ${row("syncNow", "sync", "Sync now", "Send this phone's changes and refresh")}
       ${row("openSearch", "search", "Search")}
       ${row("openAddSheet", "add", "Add income or expense")}
+      ${row("openReceiptScan", "document_scanner", "Scan a receipt", "Read a photo and log it")}
       ${row("histUndo", "undo", "Undo", u ? undoLabel() : "Nothing to undo", !u)}
       ${row("openHistory", "history", "History")}
       ${row("openMore", "bar_chart", "Overview")}

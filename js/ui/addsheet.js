@@ -38,7 +38,7 @@ export function openAddSheet(tab) {
 export function addSheetTab(t) { openAddSheet(t); }
 
 /** Expense items this month that can take spending: active, no sub-expenses, not a credit-card charge. */
-function spendTargets(k) {
+export function spendTargets(k) {
   const out = [];
   for (const w of includedWho()) {
     for (const it of getItems(w, "expenses")) {
@@ -90,7 +90,8 @@ function openQuickSpend() {
     </div>
     <div class="space-y-1"><label class="as-label" for="f-qs-item">From budget</label>
       ${list.length ? `<select id="f-qs-item" class="as-input">${opts}</select>` : `<p class="as-left-sub">No expenses this month to log against. Add a bill first.</p>`}</div>
-    <div id="qs-left" class="as-left"></div>`;
+    <div id="qs-left" class="as-left"></div>
+    <button type="button" data-action="openReceiptScan" class="w-full py-2.5 rounded-xl bg-white/5 text-slate-200 text-[13px] font-bold flex items-center justify-center gap-2"><span class="material-icons ic-20">document_scanner</span>Scan a receipt instead</button>`;
   $("delete-btn").classList.add("hidden");
   openModalShell();
   $("f-qs-amount")?.addEventListener("input", refreshLeft);
