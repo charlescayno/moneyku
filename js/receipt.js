@@ -77,7 +77,11 @@ function message(title, msg, extraActions = "") {
   showSheet(title, `<p class="text-sm text-slate-300 leading-relaxed">${escapeHtml(msg)}</p>`, extraActions + btn(CANCEL, "qlClose", "Close"));
 }
 
+let lastFile = null;
+export const rcRetry = () => { if (lastFile) handleFile(lastFile); };
+
 async function handleFile(file) {
+  lastFile = file;
   const key = getAppData()?.settings?.geminiKey;
   if (!key) { wantScan = true; return qlOpenKey(); }
   const my = bumpRun();
@@ -93,7 +97,7 @@ async function handleFile(file) {
     if (my !== currentRun()) return;
     if (e instanceof GeminiError) {
       const keyIssue = e.code === "bad_key";
-      return message("Scan a receipt", e.message, keyIssue ? btn(PRIMARY, "qlOpenKey", "Key settings") : btn(PRIMARY, "rcManual", "Enter manually"));
+      return message("Scan a receipt", e.message, keyIssue ? btn(PRIMARY, "qlOpenKey", "Key settings") : (e.code === "busy" || e.code === "network" || e.code === "rate" ? btn(PRIMARY, "rcRetry", "Try again") : "") + btn(keyIssue || e.code === "busy" || e.code === "network" || e.code === "rate" ? CANCEL : PRIMARY, "rcManual", "Enter manually"));
     }
     return message("Scan a receipt", "Couldn't open that photo. Try another one.", btn(PRIMARY, "rcManual", "Enter manually"));
   }

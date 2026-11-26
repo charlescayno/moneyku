@@ -2,6 +2,7 @@
 // Gemini client (REST, called straight from the browser)
 // =============================
 export const GEMINI_MODEL = "gemini-3.8-flash";
+const BACKUP_MODEL = "gemini-2.5-flash";
 const endpoint = (m) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
 
 export class GeminiError extends Error {
@@ -50,16 +51,26 @@ async function postGemini(body, apiKey, model, parseMsg) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     throw new GeminiError("offline", "You're offline. This needs an internet connection.");
   }
-  let res;
-  try {
-    res = await fetch(endpoint(model), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new GeminiError("network", "Couldn't reach Gemini. Check your connection and try again.");
+  const send = async (m) => {
+    try {
+      return await fetch(endpoint(m), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new GeminiError("network", "Couldn't reach Gemini. Check your connection and try again.");
+    }
+  };
+  // Overloaded (500/503/504): retry with a short wait, then once on the backup model.
+  const busy = (r) => r.status === 500 || r.status === 503 || r.status === 504;
+  let res = await send(model);
+  for (const wait of [1200, 2500]) {
+    if (!busy(res)) break;
+    await new Promise((r) => setTimeout(r, wait));
+    res = await send(model);
   }
+  if (busy(res) && model !== BACKUP_MODEL) res = await send(BACKUP_MODEL);
 
   if (!res.ok) {
     let detail = "";
@@ -67,6 +78,7 @@ async function postGemini(body, apiKey, model, parseMsg) {
     if (res.status === 429) throw new GeminiError("rate", "Gemini rate limit reached. Wait a minute and try again.");
     if (res.status === 400 && /api key/i.test(detail)) throw new GeminiError("bad_key", "That API key isn't valid. Check it in the key settings.");
     if (res.status === 401 || res.status === 403) throw new GeminiError("bad_key", "Gemini rejected the API key. Check it in the key settings.");
+    if (busy(res)) throw new GeminiError("busy", "Gemini is overloaded right now. Try again in a minute.");
     throw new GeminiError("http", `Gemini error (${res.status}). ${detail}`.trim());
   }
 
